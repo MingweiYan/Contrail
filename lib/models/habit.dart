@@ -1,4 +1,7 @@
 import 'package:hive/hive.dart';
+import '../pages/habit_management_page.dart';
+// 从focus_selection_page.dart导入TrackingMode枚举
+import '../pages/focus_selection_page.dart' show TrackingMode;
 
 part 'habit.g.dart';
 
@@ -6,12 +9,6 @@ enum GoalType {
   none,
   positive,
   negative,
-}
-
-enum TrackingMode {
-  stopwatch,
-  pomodoro,
-  countdown,
 }
 
 @HiveType(typeId: 0)
@@ -23,9 +20,6 @@ class Habit extends HiveObject {
   final String name;
 
   @HiveField(2)
-  final String icon;
-
-  @HiveField(3)
   int currentCount;
 
   @HiveField(4)
@@ -46,16 +40,27 @@ class Habit extends HiveObject {
   @HiveField(9)
   String? imagePath;
 
+  @HiveField(10)
+  CycleType? cycleType;
+
+  @HiveField(11)
+  String? cycleConfig;
+
+  @HiveField(12)
+  final bool trackTime;
+
   Habit({
     required this.id,
     required this.name,
-    required this.icon,
     this.currentCount = 0,
     this.currentDays = 0,
     this.targetCount,
     this.targetDays,
     this.goalType = GoalType.none,
     this.imagePath,
+    this.cycleType,
+    this.cycleConfig,
+    this.trackTime = false,
     Map<DateTime, List<Duration>>? trackingRecords,
   }) : trackingRecords = trackingRecords ?? {};
 

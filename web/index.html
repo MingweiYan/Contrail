@@ -8,8 +8,8 @@
     The path provided below has to start and end with a slash "/" in order for
     it to work correctly.
 
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+    For more details, see:
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
@@ -21,7 +21,7 @@
   <meta name="description" content="A new Flutter project.">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="app">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -32,7 +32,50 @@
   <title>app</title>
   <link rel="manifest" href="manifest.json">
 
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    var serviceWorkerVersion = "{{flutter_service_worker_version}}";
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('load', function(ev) {
+      console.log('页面已加载，准备初始化Flutter...');
+
+      // 检查_flutter对象是否存在
+      if (window._flutter === undefined) {
+        console.error('Flutter对象未定义，请检查flutter.js是否正确加载');
+        return;
+      }
+
+      // 设置构建配置
+      _flutter.buildConfig = {
+        "entrypoint": "main.dart.js",
+        "assetBase": "/"
+      };
+      console.log('已设置Flutter构建配置');
+
+      // 检查loader对象是否存在
+      if (_flutter.loader === undefined) {
+        console.error('Flutter loader未定义，无法加载应用');
+        return;
+      }
+
+      // 配置Flutter使用HTML渲染器
+      try {
+        console.log('开始加载Flutter应用，使用HTML渲染器');
+        _flutter.loader.load({
+          renderer: 'html',
+          serviceWorker: {
+            serviceWorkerVersion: serviceWorkerVersion,
+          }
+        });
+      } catch (error) {
+        console.error('加载Flutter应用时出错:', error);
+      }
+    });
+  </script>
+</body>
 </html>

@@ -1,9 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart' as img_picker;
+import 'dart:io';
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
 import './habit_tracking_page.dart';
+import './focus_selection_page.dart';
+import './add_habit_page.dart';
+
+// 周期类型枚举
+enum CycleType {
+  daily,
+  weekly,
+  monthly,
+}
+
+// 图片来源枚举
+enum ImageSourceType {
+  gallery,
+  assets,
+}
 
 class HabitManagementPage extends StatefulWidget {
   const HabitManagementPage({super.key});
@@ -21,7 +39,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => _showAddHabitDialog(context, habitProvider),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddHabitPage()),
+        ),
       ),
       body: Column(
         children: [
@@ -67,16 +88,16 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   ],
                 ),
                 Positioned(
-                  top: 40,
-                  right: 16,
-                  child: ElevatedButton(
-                    onPressed: () => _showSupplementDialog(context, habitProvider),
-                    style: ElevatedButton.styleFrom(
-                      shape: CircleBorder(),
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      padding: EdgeInsets.all(10),
-                    ),
-                    child: Icon(Icons.add, color: Colors.white),
+                      top: 10,
+                      right: 16,
+                      child: ElevatedButton(
+                        onPressed: () => _showSupplementDialog(context, habitProvider),
+                        style: ElevatedButton.styleFrom(
+                          shape: CircleBorder(),
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          padding: EdgeInsets.all(10),
+                        ),
+                        child: Icon(Icons.edit, color: Colors.white),
                   ),
                 ),
               ],
@@ -105,14 +126,44 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           ),
                           child: Icon(Icons.delete, color: Colors.white),
                         ),
-                        onDismissed: (direction) async {
-                          await habitProvider.deleteHabit(habit.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${habit.name} 已删除')),
+                        confirmDismiss: (direction) async {
+                          // 显示确认对话框
+                          bool? confirmDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('确认删除'),
+                              content: Text('确定要删除习惯 "${habit.name}" 吗？'),
+                              actions: [
+                                TextButton(
+                                  child: const Text('取消'),
+                                  onPressed: () => Navigator.pop(context, false),
+                                ),
+                                TextButton(
+                                  child: const Text('确认'),
+                                  style: TextButton.styleFrom(textStyle: TextStyle(color: Colors.red)),
+                                  onPressed: () => Navigator.pop(context, true),
+                                ),
+                              ],
+                            ),
                           );
+
+                          if (confirmDelete == true) {
+                            await habitProvider.deleteHabit(habit.id);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('${habit.name} 已删除')),
+                              );
+                            }
+                          }
+                          return confirmDelete ?? false;
                         },
                         child: GestureDetector(
-                          onLongPress: () => _showEditHabitDialog(context, habitProvider, habit),
+                          onLongPress: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddHabitPage(habitToEdit: habit),
+                            ),
+                          ),
                           child: Card(
                             margin: EdgeInsets.only(bottom: 16),
                             elevation: 0,
@@ -130,7 +181,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                 ),
                                 image: habit.imagePath != null
                                     ? DecorationImage(
-                                        image: AssetImage(habit.imagePath!),
+                                        image: FileImage(File(habit.imagePath!)),
                                         fit: BoxFit.cover,
                                         opacity: 0.15,
                                       )
@@ -148,129 +199,124 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // 标题和按钮行
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.blueAccent,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            padding: EdgeInsets.all(8),
-                                            child: Icon(
-                                              IconData(
-                                                int.parse(habit.icon, radix: 16),
-                                                fontFamily: 'MaterialIcons',
-                                              ),
-                                              color: Colors.white,
-                                              size: 24,
-                                            ),
-                                          ),
-                                          SizedBox(width: 12),
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                habit.name,
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              SizedBox(height: 4),
-                                              Text(
-                                                '当前: ${habit.currentCount}/${habit.targetCount ?? '无'} 次',
-                                                style: TextStyle(
-                                                  color: Colors.grey[500],
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      Text(
+                                        habit.name,
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                       ElevatedButton(
-                                        onPressed: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => HabitTrackingPage(habit: habit),
-                                          ),
-                                        ),
+                                        onPressed: () {
+                                          if (habit.trackTime) {
+                                            // 导航到专注选择页面
+                                            Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FocusSelectionPage(habit: habit),
+                                      ),
+                                    );
+                                          } else {
+                                            // 打卡逻辑
+                                            habit.currentCount++;
+                                            habitProvider.updateHabit(habit);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('${habit.name} 打卡成功')),
+                                            );
+                                          }
+                                        },
                                         style: ElevatedButton.styleFrom(
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
                                           backgroundColor: Colors.blueAccent,
+                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                         ),
-                                        child: Text(habit.targetDays != null ? '开始' : '打卡'),
+                                        child: Text(habit.trackTime ? '开始专注' : '打卡'),
                                       ),
                                     ],
                                   ),
                                   SizedBox(height: 16),
-                                  // 进度环
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Container(
-                                        width: 100,
-                                        height: 100,
-                                        child: Stack(
-                                          alignment: Alignment.center,
+                                  // 进度环行
+                                  if (habit.goalType != GoalType.none && habit.targetCount != null) 
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
                                           children: [
-                                            CircularProgressIndicator(
-                                              value: habit.targetCount != null
-                                                  ? habit.currentCount / habit.targetCount!
-                                                  : 0,
-                                              strokeWidth: 8,
-                                              backgroundColor: Colors.grey[200],
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                habit.targetCount != null &&
-                                                        habit.currentCount >= habit.targetCount!
-                                                    ? Colors.green
-                                                    : Colors.blueAccent,
-                                              ),
-                                            ),
-                                            Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                            // 次数进度环和文字描述
+                                            Row(
                                               children: [
-                                                Text(
-                                                  habit.targetCount != null
-                                                      ? '${(habit.currentCount / habit.targetCount! * 100).round()}%'
-                                                      : '0%',
-                                                  style: TextStyle(
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(
+                                                  width: 24,
+                                                  height: 24,
+                                                  child: CircularProgressIndicator(
+                                                    value: habit.currentCount / habit.targetCount!, 
+                                                    strokeWidth: 2,
+                                                    backgroundColor: Colors.grey[200],
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
                                                   ),
                                                 ),
+                                                SizedBox(width: 8),
                                                 Text(
-                                                  '完成率',
+                                                  '${habit.currentCount}/${habit.targetCount}次',
                                                   style: TextStyle(
-                                                    color: Colors.grey[500],
-                                                    fontSize: 12,
+                                                    fontSize: 14,
+                                                    color: Colors.grey[600],
                                                   ),
                                                 ),
                                               ],
                                             ),
+                                            // 时间进度环和文字描述（仅当trackTime为true时显示）
+                                            if (habit.trackTime) 
+                                              Row(
+                                                children: [
+                                                  SizedBox(width: 16),
+                                                  SizedBox(
+                                                    width: 24,
+                                                    height: 24,
+                                                    child: CircularProgressIndicator(
+                                                      value: habit.targetCount != null
+                                                          ? habit.getTotalDurationForWeek(DateTime.now()).inMinutes / (habit.targetCount! * 30) // 假设每次目标30分钟
+                                                          : 0,
+                                                      strokeWidth: 2,
+                                                      backgroundColor: Colors.grey[200],
+                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    '${habit.getTotalDurationForWeek(DateTime.now()).inMinutes}分钟',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                           ],
                                         ),
-                                      ),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '本周累计: ${habit.getTotalDurationForWeek(DateTime.now()).inMinutes}分钟',
-                                            style: TextStyle(
-                                              color: Colors.grey[500],
-                                              fontSize: 12,
-                                              fontStyle: FontStyle.italic,
-                                            ),
+                                      ],
+                                    ),
+                                  // 本周累计时间（与进度环水平对齐）
+                                  if (habit.trackTime) 
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '本周累计: ${habit.getTotalDurationForWeek(DateTime.now()).inMinutes}分钟',
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                            fontSize: 12,
+                                            fontStyle: FontStyle.italic,
                                           ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
                             ),
@@ -317,10 +363,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         child: Row(
                           children: [
                             Icon(
-                              IconData(
-                                int.parse(habit.icon, radix: 16),
-                                fontFamily: 'MaterialIcons',
-                              ),
+                              Icons.add,
                               size: 18,
                             ),
                             SizedBox(width: 8),
@@ -332,12 +375,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                     onChanged: (value) {
                       setState(() {
                         selectedHabit = value;
-                        trackingDuration = value?.targetDays != null ? Duration(minutes: 30) : null;
+                        trackingDuration = value?.trackTime == true ? Duration(minutes: 30) : null;
                       });
                     },
                     isExpanded: true,
                   ),
-                  if (selectedHabit?.targetDays != null) ...[
+                  if (selectedHabit?.trackTime == true) ...[
                     SizedBox(height: 12),
                     TextField(
                       keyboardType: TextInputType.number,
@@ -400,285 +443,14 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     );
   }
 
-  void _showAddHabitDialog(BuildContext context, HabitProvider provider) {
-    final nameController = TextEditingController();
-    final targetCountController = TextEditingController();
-    final targetDaysController = TextEditingController();
-    GoalType selectedGoalType = GoalType.none;
-    String selectedIcon = 'emoji_events';
-    String? selectedImagePath;
-    final Map<String, IconData> addIconOptions = {
-      'emoji_events': Icons.emoji_events,
-      'book': Icons.book,
-      'fitness_center': Icons.fitness_center,
-      'music_note': Icons.music_note,
-    };
+  // _showAddHabitDialog方法已被移除，使用AddHabitPage替代
+  // void _showAddHabitDialog(BuildContext context, HabitProvider provider) {
+  //   // 方法内容已迁移到AddHabitPage
+  // }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('添加习惯'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: '习惯名称',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  DropdownButton<String>(
-                    value: selectedIcon,
-                    hint: const Text('选择图标'),
-                    items: [
-                      DropdownMenuItem(value: 'emoji_events', child: Row(children: [Icon(Icons.emoji_events), SizedBox(width: 8), Text('成就')])),
-                      DropdownMenuItem(value: 'book', child: Row(children: [Icon(Icons.book), SizedBox(width: 8), Text('阅读')])),
-                      DropdownMenuItem(value: 'fitness_center', child: Row(children: [Icon(Icons.fitness_center), SizedBox(width: 8), Text('运动')])),
-                      DropdownMenuItem(value: 'music_note', child: Row(children: [Icon(Icons.music_note), SizedBox(width: 8), Text('音乐')])),
-                    ],
-                    onChanged: (value) => setState(() => selectedIcon = value!),
-                    isExpanded: true,
-                  ),
-                  SizedBox(height: 12),
-                  DropdownButton<GoalType>(
-                    value: selectedGoalType,
-                    hint: const Text('选择目标类型'),
-                    items: const [
-                      DropdownMenuItem(value: GoalType.none, child: Text('无目标')),
-                      DropdownMenuItem(value: GoalType.positive, child: Text('正向目标')),
-                      DropdownMenuItem(value: GoalType.negative, child: Text('反向目标')),
-                    ],
-                    onChanged: (value) => setState(() => selectedGoalType = value!),
-                    isExpanded: true,
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: targetCountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '目标次数',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    controller: targetDaysController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '目标天数',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  child: const Text('取消'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                TextButton(
-                  child: const Text('添加'),
-                  onPressed: () async {
-                    if (nameController.text.isNotEmpty) {
-                        try {
-                          await provider.addHabit(Habit(
-                            id: uuid.v4(),
-                            name: nameController.text,
-                            icon: addIconOptions[selectedIcon]!.codePoint.toRadixString(16),
-                            goalType: selectedGoalType,
-                            imagePath: selectedImagePath,
-                            targetCount: int.tryParse(targetCountController.text),
-                            targetDays: int.tryParse(targetDaysController.text),
-                          ));
-                          if (mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('习惯添加成功！')),
-                            );
-                          }
-                        } catch (e) {
-                          print('添加习惯时发生错误: $e');
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('添加习惯失败: ${e.toString()}')),
-                            );
-                          }
-                        }
-                      } else {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('请输入习惯名称')),
-                          );
-                        }
-                      }
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+  // 删除了_showActionDialog和_showEditHabitDialog方法，直接使用AddHabitPage进行编辑
 
-  void _showActionDialog(BuildContext context, HabitProvider provider, Habit habit) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('操作选择'),
-        actions: [
-          TextButton(
-            child: const Text('编辑'),
-            onPressed: () {
-              Navigator.pop(context);
-              _showEditHabitDialog(context, provider, habit);
-            },
-          ),
-          TextButton(
-            child: const Text('删除'),
-            style: TextButton.styleFrom(textStyle: TextStyle(color: Colors.red)),
-            onPressed: () async {
-              await provider.deleteHabit(habit.id);
-              if (mounted) Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditHabitDialog(BuildContext context, HabitProvider provider, Habit habit) {
-    final nameController = TextEditingController(text: habit.name);
-    final targetCountController = TextEditingController(text: habit.targetCount?.toString() ?? '');
-    final targetDaysController = TextEditingController(text: habit.targetDays?.toString() ?? '');
-    GoalType selectedGoalType = habit.goalType;
-    final Map<String, IconData> iconOptions = {
-      'emoji_events': Icons.emoji_events,
-      'book': Icons.book,
-      'fitness_center': Icons.fitness_center,
-      'music_note': Icons.music_note,
-    };
-    int codePoint = int.parse(habit.icon, radix: 16);
-    String selectedIconName = 'emoji_events';
-    String? selectedImagePath = habit.imagePath;
-
-    for (var entry in iconOptions.entries) {
-      if (entry.value.codePoint == codePoint) {
-        selectedIconName = entry.key;
-        break;
-      }
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('编辑习惯'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: '习惯名称',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  DropdownButton<String>(
-                    value: selectedIconName,
-                    hint: const Text('选择图标'),
-                    items: [
-                      DropdownMenuItem(value: 'emoji_events', child: Row(children: [Icon(Icons.emoji_events), SizedBox(width: 8), Text('成就')])),
-                      DropdownMenuItem(value: 'book', child: Row(children: [Icon(Icons.book), SizedBox(width: 8), Text('阅读')])),
-                      DropdownMenuItem(value: 'fitness_center', child: Row(children: [Icon(Icons.fitness_center), SizedBox(width: 8), Text('运动')])),
-                      DropdownMenuItem(value: 'music_note', child: Row(children: [Icon(Icons.music_note), SizedBox(width: 8), Text('音乐')])),
-                    ],
-                    onChanged: (value) => setState(() => selectedIconName = value!),
-                    isExpanded: true,
-                  ),
-                  SizedBox(height: 12),
-                  DropdownButton<GoalType>(
-                    value: selectedGoalType,
-                    hint: const Text('选择目标类型'),
-                    items: const [
-                      DropdownMenuItem(value: GoalType.none, child: Text('无目标')),
-                      DropdownMenuItem(value: GoalType.positive, child: Text('正向目标')),
-                      DropdownMenuItem(value: GoalType.negative, child: Text('反向目标')),
-                    ],
-                    onChanged: (value) => setState(() => selectedGoalType = value!),
-                    isExpanded: true,
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '目标次数',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    controller: targetCountController,
-                  ),
-                  SizedBox(height: 12),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '目标天数',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    controller: targetDaysController,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  child: const Text('取消'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                TextButton(
-                  child: const Text('保存'),
-                  onPressed: () async {
-                    if (nameController.text.isNotEmpty) {
-                      final updatedHabit = Habit(
-                        id: habit.id,
-                        name: nameController.text,
-                        icon: iconOptions[selectedIconName]!.codePoint.toRadixString(16),
-                        currentCount: habit.currentCount,
-                        currentDays: habit.currentDays,
-                        targetCount: int.tryParse(targetCountController.text),
-                        targetDays: int.tryParse(targetDaysController.text),
-                        goalType: selectedGoalType,
-                        imagePath: selectedImagePath,
-                        trackingRecords: habit.trackingRecords,
-                      );
-                      await provider.updateHabit(updatedHabit);
-                      if (mounted) Navigator.pop(context);
-                    }
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+  // void _showEditHabitDialog(BuildContext context, HabitProvider provider, Habit habit) {
+  //   // 方法内容已迁移到AddHabitPage
+  // }
 }

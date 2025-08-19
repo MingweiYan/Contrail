@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import '../models/habit.dart';
+import '../pages/focus_selection_page.dart' show TrackingMode;
 
 class HabitProvider extends ChangeNotifier {
   final Box<Habit> _habitBox;
