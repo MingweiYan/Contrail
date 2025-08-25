@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_picker/image_picker.dart' as img_picker;
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
-// 从habit_management_page.dart导入CycleType枚举
-import './habit_management_page.dart' show CycleType;
+// 从habit.dart导入所需枚举
+import '../models/habit.dart' show CycleType;
 
 // 不再需要在这里定义CycleType，使用从habit_management_page.dart导入的枚举
 
@@ -21,7 +21,6 @@ class AddHabitPage extends StatefulWidget {
 class _AddHabitPageState extends State<AddHabitPage> {
   final uuid = Uuid();
   final nameController = TextEditingController();
-  final targetCountController = TextEditingController();
   int targetDays = 7; // 默认每周
   CycleType? selectedCycleType = CycleType.daily; // 默认每天
   GoalType selectedGoalType = GoalType.positive; // 默认正向目标
@@ -317,28 +316,17 @@ class _AddHabitPageState extends State<AddHabitPage> {
                   onPressed: () async {
                     if (nameController.text.isNotEmpty) {
                       try {
-                        // 处理周期配置
-                        String cycleConfig = '';
-                        if (selectedCycleType == CycleType.daily) {
-                          cycleConfig = 'daily';
-                        } else if (selectedCycleType == CycleType.weekly || selectedCycleType == CycleType.monthly) {
-                          cycleConfig = targetDays.toString();
-                        }
-
-                        if (isEditing && widget.habitToEdit != null) {
+if (isEditing && widget.habitToEdit != null) {
                         // 更新现有习惯
                         final updatedHabit = Habit(
                           id: widget.habitToEdit!.id,
                           name: nameController.text,
                           goalType: selectedGoalType,
                           imagePath: selectedImagePath,
-                          targetCount: targetDays,
                           targetDays: targetDays,
                           cycleType: selectedCycleType,
-                          cycleConfig: cycleConfig,
                           trackTime: trackTime,
-                          trackingRecords: widget.habitToEdit!.trackingRecords,
-                          currentCount: widget.habitToEdit!.currentCount,
+                          trackingDurations: widget.habitToEdit!.trackingDurations,
                           currentDays: widget.habitToEdit!.currentDays,
                         );
                         await habitProvider.updateHabit(updatedHabit);
@@ -349,10 +337,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                           name: nameController.text,
                           goalType: selectedGoalType,
                           imagePath: selectedImagePath,
-                          targetCount: targetDays,
                           targetDays: targetDays,
                           cycleType: selectedCycleType,
-                          cycleConfig: cycleConfig,
                           trackTime: trackTime,
                         ));
                       }

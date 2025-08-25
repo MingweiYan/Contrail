@@ -19,17 +19,17 @@ class HabitAdapter extends TypeAdapter<Habit> {
     return Habit(
       id: fields[0] as String,
       name: fields[1] as String,
-      currentCount: fields[2] as int,
+      totalDuration: fields[3] as Duration,
       currentDays: fields[4] as int,
-      targetCount: fields[5] as int?,
       targetDays: fields[6] as int?,
       goalType: fields[7] as GoalType,
       imagePath: fields[9] as String?,
       cycleType: fields[10] as CycleType?,
-      cycleConfig: fields[11] as String?,
-      trackTime: fields[12] as bool,
-      trackingRecords: (fields[8] as Map?)?.map((dynamic k, dynamic v) =>
+      icon: fields[15] as String?,
+      trackTime: fields[11] as bool,
+      trackingDurations: (fields[13] as Map?)?.map((dynamic k, dynamic v) =>
           MapEntry(k as DateTime, (v as List).cast<Duration>())),
+      dailyCompletionStatus: (fields[14] as Map?)?.cast<DateTime, bool>(),
     );
   }
 
@@ -41,26 +41,26 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.currentCount)
-      ..writeByte(4)
-      ..write(obj.currentDays)
-      ..writeByte(5)
-      ..write(obj.targetCount)
-      ..writeByte(6)
-      ..write(obj.targetDays)
-      ..writeByte(7)
-      ..write(obj.goalType)
-      ..writeByte(8)
-      ..write(obj.trackingRecords)
       ..writeByte(9)
       ..write(obj.imagePath)
       ..writeByte(10)
       ..write(obj.cycleType)
+      ..writeByte(15)
+      ..write(obj.icon)
       ..writeByte(11)
-      ..write(obj.cycleConfig)
-      ..writeByte(12)
-      ..write(obj.trackTime);
+      ..write(obj.trackTime)
+      ..writeByte(3)
+      ..write(obj.totalDuration)
+      ..writeByte(4)
+      ..write(obj.currentDays)
+      ..writeByte(6)
+      ..write(obj.targetDays)
+      ..writeByte(7)
+      ..write(obj.goalType)
+      ..writeByte(13)
+      ..write(obj.trackingDurations)
+      ..writeByte(14)
+      ..write(obj.dailyCompletionStatus);
   }
 
   @override

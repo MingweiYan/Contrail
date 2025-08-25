@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import '../pages/habit_management_page.dart';
+import './habit.dart' show CycleType;
 
 // CycleType枚举的Hive适配器
 class CycleTypeAdapter extends TypeAdapter<CycleType> {

@@ -1,41 +1,42 @@
 import 'package:hive/hive.dart';
-import '../pages/habit_management_page.dart';
-// 从focus_selection_page.dart导入TrackingMode枚举
-import '../pages/focus_selection_page.dart' show TrackingMode;
-
 part 'habit.g.dart';
 
+// 周期类型枚举
+enum CycleType {
+  daily,
+  weekly,
+  monthly,
+}
+
+// 图片来源枚举
+enum ImageSourceType {
+  gallery,
+  assets,
+}
+
+// 跟踪模式枚举
+enum TrackingMode {
+  stopwatch,
+  pomodoro,
+  countdown,
+}
+
 enum GoalType {
-  none,
   positive,
   negative,
 }
 
 @HiveType(typeId: 0)
 class Habit extends HiveObject {
+
+  // firt part is about property
+
+  // unique id
   @HiveField(0)
   final String id;
 
   @HiveField(1)
   final String name;
-
-  @HiveField(2)
-  int currentCount;
-
-  @HiveField(4)
-  int currentDays;
-
-  @HiveField(5)
-  int? targetCount;
-
-  @HiveField(6)
-  int? targetDays;
-
-  @HiveField(7)
-  GoalType goalType;
-
-  @HiveField(8)
-  Map<DateTime, List<Duration>> trackingRecords;
 
   @HiveField(9)
   String? imagePath;
@@ -43,48 +44,85 @@ class Habit extends HiveObject {
   @HiveField(10)
   CycleType? cycleType;
 
-  @HiveField(11)
-  String? cycleConfig;
+  @HiveField(15)
+  String? icon; // 习惯图标路径或标识符
 
-  @HiveField(12)
+  @HiveField(11)
   final bool trackTime;
+
+  @HiveField(3)
+  Duration totalDuration;
+
+  @HiveField(4)
+  int currentDays;
+
+  @HiveField(6)
+  int? targetDays;
+
+  @HiveField(7)
+  GoalType goalType;
+
+  @HiveField(13)
+  Map<DateTime, List<Duration>> trackingDurations; // 存储每天的持续时间列表
+
+  @HiveField(14)
+  Map<DateTime, bool> dailyCompletionStatus; // 记录每天的打卡状态，true 表示当天已完成打卡
+
 
   Habit({
     required this.id,
     required this.name,
-    this.currentCount = 0,
+    this.totalDuration = Duration.zero,
     this.currentDays = 0,
-    this.targetCount,
     this.targetDays,
-    this.goalType = GoalType.none,
+    this.goalType = GoalType.positive,
     this.imagePath,
     this.cycleType,
-    this.cycleConfig,
+    this.icon,
     this.trackTime = false,
-    Map<DateTime, List<Duration>>? trackingRecords,
-  }) : trackingRecords = trackingRecords ?? {};
+    Map<DateTime, List<Duration>>? trackingDurations,
+    Map<DateTime, bool>? dailyCompletionStatus,
+  }) : 
+    trackingDurations = trackingDurations ?? {},
+    dailyCompletionStatus = dailyCompletionStatus ?? {};
 
   void addTrackingRecord(DateTime date, Duration duration) {
-    final key = DateTime(date.year, date.month, date.day);
-    final isNewDay = !trackingRecords.containsKey(key);
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final hasCompletedToday = dailyCompletionStatus.containsKey(dateOnly) && dailyCompletionStatus[dateOnly] == true;
 
-    if (isNewDay) {
-      trackingRecords[key] = [];
+    // 记录完成时间
+    if (!hasCompletedToday) {
+      // 如果当天尚未完成打卡
       currentDays++;
-    }
+      dailyCompletionStatus[dateOnly] = true; // 标记当天已完成打卡
+    } 
+    totalDuration += duration;
+    trackingDurations[date] = [duration]; // key是具体到秒的时间
+  }
 
-    trackingRecords[key]!.add(duration);
-    currentCount++;
+  // 检查当天是否已经完成过该习惯
+  bool hasCompletedToday() {
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    return dailyCompletionStatus.containsKey(todayOnly) && dailyCompletionStatus[todayOnly] == true;
   }
 
   Duration getTotalDurationForDay(DateTime date) {
-    final key = DateTime(date.year, date.month, date.day);
-    if (!trackingRecords.containsKey(key)) return Duration.zero;
+    final targetDate = DateTime(date.year, date.month, date.day);
+    Duration total = Duration.zero;
 
-    return trackingRecords[key]!.fold(
-      Duration.zero,
-      (sum, duration) => sum + duration,
-    );
+    // 遍历所有记录，累加目标日期的持续时间
+    trackingDurations.forEach((recordDate, durations) {
+      final recordDateOnly = DateTime(recordDate.year, recordDate.month, recordDate.day);
+      if (recordDateOnly == targetDate) {
+        total += durations.fold(
+          Duration.zero,
+          (sum, duration) => sum + duration,
+        );
+      }
+    });
+
+    return total;
   }
 
   Duration getTotalDurationForWeek(DateTime date) {
@@ -100,21 +138,4 @@ class Habit extends HiveObject {
     return total;
   }
 
-  bool isGoalAchieved() {
-    if (goalType == GoalType.none) return false;
-
-    if (targetCount != null) {
-      return goalType == GoalType.positive
-          ? currentCount >= targetCount!
-          : currentCount <= targetCount!;
-    }
-
-    if (targetDays != null) {
-      return goalType == GoalType.positive
-          ? currentDays >= targetDays!
-          : currentDays <= targetDays!;
-    }
-
-    return false;
-  }
 }

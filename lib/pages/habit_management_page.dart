@@ -10,18 +10,8 @@ import './habit_tracking_page.dart';
 import './focus_selection_page.dart';
 import './add_habit_page.dart';
 
-// 周期类型枚举
-enum CycleType {
-  daily,
-  weekly,
-  monthly,
-}
-
-// 图片来源枚举
-enum ImageSourceType {
-  gallery,
-  assets,
-}
+// 从habit.dart导入所需枚举
+import '../models/habit.dart' show CycleType, ImageSourceType;
 
 class HabitManagementPage extends StatefulWidget {
   const HabitManagementPage({super.key});
@@ -222,7 +212,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                     );
                                           } else {
                                             // 打卡逻辑
-                                            habit.currentCount++;
+                                            // 调用addTrackingRecord方法，传入当前时间和0时长
+                                            habit.addTrackingRecord(DateTime.now(), Duration.zero);
                                             habitProvider.updateHabit(habit);
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(content: Text('${habit.name} 打卡成功')),
@@ -242,7 +233,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                   ),
                                   SizedBox(height: 16),
                                   // 进度环行
-                                  if (habit.goalType != GoalType.none && habit.targetCount != null) 
+                                  if (habit.targetDays != null) 
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
@@ -255,7 +246,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                                   width: 24,
                                                   height: 24,
                                                   child: CircularProgressIndicator(
-                                                    value: habit.currentCount / habit.targetCount!, 
+                                                    value: habit.currentDays / habit.targetDays!, 
                                                     strokeWidth: 2,
                                                     backgroundColor: Colors.grey[200],
                                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
@@ -263,7 +254,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                                 ),
                                                 SizedBox(width: 8),
                                                 Text(
-                                                  '${habit.currentCount}/${habit.targetCount}次',
+                                                  '${habit.currentDays}/${habit.targetDays}天',
                                                   style: TextStyle(
                                                     fontSize: 14,
                                                     color: Colors.grey[600],
@@ -280,8 +271,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                                     width: 24,
                                                     height: 24,
                                                     child: CircularProgressIndicator(
-                                                      value: habit.targetCount != null
-                                                          ? habit.getTotalDurationForWeek(DateTime.now()).inMinutes / (habit.targetCount! * 30) // 假设每次目标30分钟
+                                                      value: habit.targetDays != null
+                                                          ? habit.getTotalDurationForWeek(DateTime.now()).inMinutes / (habit.targetDays! * 30) // 假设每天目标30分钟
                                                           : 0,
                                                       strokeWidth: 2,
                                                       backgroundColor: Colors.grey[200],

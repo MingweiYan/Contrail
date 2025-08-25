@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
-import '../models/habit.dart';
-import '../pages/focus_selection_page.dart' show TrackingMode;
+import '../models/habit.dart' show Habit, TrackingMode;
 
 class HabitProvider extends ChangeNotifier {
   final Box<Habit> _habitBox;
@@ -64,8 +63,8 @@ class HabitProvider extends ChangeNotifier {
   void stopTracking(String habitId, Duration duration) {
     final habit = getHabitById(habitId);
     if (habit != null) {
-      habit.addTrackingRecord(DateTime.now(), duration);
-      updateHabit(habit);
+        habit.addTrackingRecord(DateTime.now(), duration);
+        updateHabit(habit);
     }
   }
 }

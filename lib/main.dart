@@ -8,6 +8,7 @@ import 'dart:async';
 import 'models/cycle_type_adapter.dart';
 import 'models/habit.dart';
 import 'models/goal_type_adapter.dart';
+import 'models/duration_adapter.dart';
 import 'providers/habit_provider.dart';
 import 'pages/habit_management_page.dart';
 import 'pages/habit_tracking_page.dart';
@@ -45,6 +46,8 @@ void main() async {
     Hive.registerAdapter(GoalTypeAdapter());
     print('注册CycleTypeAdapter...');
     Hive.registerAdapter(CycleTypeAdapter());
+    print('注册DurationAdapter...');
+    Hive.registerAdapter(DurationAdapter());
 
     print('已注册所有适配器');
     
