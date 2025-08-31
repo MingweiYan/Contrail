@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker/image_picker.dart' as img_picker;
+import 'package:intl/intl.dart';
 import 'dart:io';
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
@@ -21,6 +22,131 @@ class HabitManagementPage extends StatefulWidget {
 }
 
 class _HabitManagementPageState extends State<HabitManagementPage> {
+  // 显示补充打卡对话框
+  void _showSupplementCheckInDialog(BuildContext context, HabitProvider habitProvider) {
+    if (habitProvider.habits.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('暂无习惯，请先添加习惯')),
+      );
+      return;
+    }
+
+    Habit? selectedHabit;
+    DateTime selectedDate = DateTime.now();
+    int durationMinutes = 30; // 默认时长30分钟
+
+    showDialog(
+      context: context, 
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: const Text('补充打卡'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 习惯选择
+                DropdownButton<Habit>(
+                  hint: const Text('选择习惯'),
+                  value: selectedHabit,
+                  onChanged: (Habit? newValue) {
+                    setStateDialog(() {
+                      selectedHabit = newValue;
+                    });
+                  },
+                  items: habitProvider.habits.map((Habit habit) {
+                    return DropdownMenuItem<Habit>(
+                      value: habit,
+                      child: Text(habit.name),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // 日期选择
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children:
+                    [
+                      const Text('选择日期:'),
+                      TextButton(
+                        onPressed: () async {
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setStateDialog(() {
+                              selectedDate = picked;
+                            });
+                          }
+                        },
+                        child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
+                      ),
+                    ],
+                ),
+                const SizedBox(height: 16),
+
+                // 时长选择（仅当习惯需要追踪时间时显示）
+                if (selectedHabit?.trackTime ?? false)
+                  Column(
+                    children:
+                      [
+                        const Text('选择时长 (分钟):'),
+                        Slider(
+                          value: durationMinutes.toDouble(),
+                          min: 1.0,
+                          max: 120.0,
+                          divisions: 119,
+                          label: '$durationMinutes 分钟',
+                          onChanged: (double value) {
+                            setStateDialog(() {
+                              durationMinutes = value.toInt();
+                            });
+                          },
+                        ),
+                        Text('$durationMinutes 分钟'),
+                      ],
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (selectedHabit == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('请选择习惯')),
+                  );
+                  return;
+                }
+
+                // 执行补充打卡
+                final duration = selectedHabit!.trackTime
+                  ? Duration(minutes: durationMinutes)
+                  : Duration.zero;
+
+                selectedHabit!.addTrackingRecord(selectedDate, duration);
+                habitProvider.updateHabit(selectedHabit!);
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${selectedHabit!.name} 补充打卡成功')),
+                );
+              },
+              child: const Text('确认'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitProvider = Provider.of<HabitProvider>(context);
@@ -30,7 +156,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () => Navigator.push(
-          context,
+          context, 
           MaterialPageRoute(builder: (context) => const AddHabitPage()),
         ),
       ),
@@ -81,7 +207,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       top: 10,
                       right: 16,
                       child: ElevatedButton(
-                        onPressed: () => _showSupplementDialog(context, habitProvider),
+                        onPressed: () => _showSupplementCheckInDialog(context, habitProvider),
                         style: ElevatedButton.styleFrom(
                           shape: CircleBorder(),
                           backgroundColor: Colors.white.withOpacity(0.2),

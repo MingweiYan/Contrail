@@ -43,6 +43,10 @@ dependencies:
 
   # Charts
   fl_chart: ^0.68.0
+  # Calendar view
+  calendar_view: ^1.2.0
+  # ECharts for heatmap
+  flutter_echarts: ^2.0.0
 
   # Notifications
   flutter_local_notifications: ^17.0.0
@@ -56,6 +60,7 @@ dependencies:
   # Customization
   shared_preferences: ^2.2.2
   uuid: ^4.4.0
+  intl: ^0.19.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

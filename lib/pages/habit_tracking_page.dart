@@ -343,205 +343,211 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('习惯追踪')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_selectedHabit != null)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  '正在追踪: ${_selectedHabit!.name}',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ),
-
-            // 时钟显示 - 在配置页面和专注页面都显示
-            Center(
-              child: ClockWidget(
-                duration: _showSettings ? Duration(minutes: _timerDuration) : _elapsedTime,
-                isRunning: !_showSettings && _isTracking,
-                onDurationChanged: _updateTimerDuration,
-                isCountdown: _selectedMode == TrackingMode.countdown || 
-                            (!_showSettings && _selectedMode == TrackingMode.pomodoro && !_isBreakTime),
-              ),
-            ),
-
-            if (_showSettings) ...[
-              // 模式选择
-              SizedBox(height: 30),
-              Text(
-                '选择模式',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 16),
-              GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                children: [
-                  _buildModeCard(
-                    icon: Icons.timer_outlined,
-                    title: '正计时',
-                    mode: TrackingMode.stopwatch,
-                  ),
-                  _buildModeCard(
-                    icon: Icons.timer_off_outlined,
-                    title: '倒计时',
-                    mode: TrackingMode.countdown,
-                  ),
-                  _buildModeCard(
-                    icon: Icons.alarm_add_outlined,
-                    title: '番茄钟',
-                    mode: TrackingMode.pomodoro,
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-
-              // 模式设置
-              Text(
-                '模式设置',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 16),
-              if (_selectedMode == TrackingMode.stopwatch) ...[
-                // 正计时设置（简单显示说明，无需额外设置）
-                Center(
-                  child: Text('正计时从0开始，点击开始后记录时间'),
-                ),
-              ] else if (_selectedMode == TrackingMode.countdown) ...[
-                // 倒计时设置
-                _buildDurationSelector(
-                  label: '倒计时时长（分钟）',
-                  value: _timerDuration,
-                  onChanged: (value) => setState(() => _timerDuration = value),
-                ),
-              ] else if (_selectedMode == TrackingMode.pomodoro) ...[
-                // 番茄钟设置
-                _buildDurationSelector(
-                  label: '工作时长（分钟）',
-                  value: _timerDuration,
-                  onChanged: (value) => setState(() => _timerDuration = value),
-                ),
-                _buildDurationSelector(
-                  label: '短休息时长（分钟）',
-                  value: _shortBreakDuration,
-                  onChanged: (value) => setState(() => _shortBreakDuration = value),
-                ),
-                _buildDurationSelector(
-                  label: '长休息时长（分钟）',
-                  value: _longBreakDuration,
-                  onChanged: (value) => setState(() => _longBreakDuration = value),
-                ),
-                _buildDurationSelector(
-                  label: '轮数',
-                  value: _pomodoroRounds,
-                  onChanged: (value) => setState(() => _pomodoroRounds = value),
-                  min: 1,
-                  max: 10,
-                ),
-              ],
-              Spacer(),
-
-              // 开始按钮
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showSettings = false;
-                      _toggleTimer();
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: Colors.blueAccent,
-                  ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_selectedHabit != null)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Text(
-                    '开始',
-                    style: TextStyle(fontSize: 18),
+                    '正在追踪: ${_selectedHabit!.name}',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+
+              // 时钟显示 - 在配置页面和专注页面都显示
+              Center(
+                child: Container(
+                  height: 300,
+                  child: ClockWidget(
+                    duration: _showSettings ? Duration(minutes: _timerDuration) : _elapsedTime,
+                    isRunning: !_showSettings && _isTracking,
+                    onDurationChanged: _updateTimerDuration,
+                    isCountdown: _selectedMode == TrackingMode.countdown || 
+                                (!_showSettings && _selectedMode == TrackingMode.pomodoro && !_isBreakTime),
                   ),
                 ),
               ),
-            ] else ...[
-              // 模式信息
-              Center(
-                child: Column(
+
+              if (_showSettings) ...[
+                // 模式选择
+                SizedBox(height: 30),
+                Text(
+                  '选择模式',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 16),
+                GridView.count(
+                  shrinkWrap: true,
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
                   children: [
-                    if (_selectedMode == TrackingMode.pomodoro) ...[
-                      Text(
-                        _isBreakTime
-                            ? '休息时间 (${_currentRound % _pomodoroRounds == 0 ? '长' : '短'})' 
-                            : '工作时间 (第 $_currentRound 轮)',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Text(
-                        '共 $_pomodoroRounds 轮',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ] else if (_selectedMode == TrackingMode.countdown) ...[
-                      Text(
-                        '倒计时模式',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ] else ...[
-                      Text(
-                        '正计时模式',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ],
+                    _buildModeCard(
+                      icon: Icons.timer_outlined,
+                      title: '正计时',
+                      mode: TrackingMode.stopwatch,
+                    ),
+                    _buildModeCard(
+                      icon: Icons.timer_off_outlined,
+                      title: '倒计时',
+                      mode: TrackingMode.countdown,
+                    ),
+                    _buildModeCard(
+                      icon: Icons.alarm_add_outlined,
+                      title: '番茄钟',
+                      mode: TrackingMode.pomodoro,
+                    ),
                   ],
                 ),
-              ),
+                SizedBox(height: 24),
 
-              Spacer(),
-
-              // 控制按钮
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: _toggleTimer,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                      backgroundColor: _isTracking ? Colors.yellow : Colors.blueAccent,
-                    ),
-                    child: Text(_isTracking ? '暂停' : '继续'),
+                // 模式设置
+                Text(
+                  '模式设置',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  SizedBox(width: 20),
-                  ElevatedButton(
-                    onPressed: _stopTracking,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                      backgroundColor: Colors.red,
-                    ),
-                    child: const Text('结束'),
+                ),
+                SizedBox(height: 16),
+                if (_selectedMode == TrackingMode.stopwatch) ...[
+                  // 正计时设置（简单显示说明，无需额外设置）
+                  Center(
+                    child: Text('正计时从0开始，点击开始后记录时间'),
                   ),
-                  SizedBox(width: 20),
-                  ElevatedButton(
-                    onPressed: _abandonTracking,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                      backgroundColor: Colors.grey,
-                    ),
-                    child: const Text('放弃'),
+                ] else if (_selectedMode == TrackingMode.countdown) ...[
+                  // 倒计时设置
+                  _buildDurationSelector(
+                    label: '倒计时时长（分钟）',
+                    value: _timerDuration,
+                    onChanged: (value) => setState(() => _timerDuration = value),
+                  ),
+                ] else if (_selectedMode == TrackingMode.pomodoro) ...[
+                  // 番茄钟设置
+                  _buildDurationSelector(
+                    label: '工作时长（分钟）',
+                    value: _timerDuration,
+                    onChanged: (value) => setState(() => _timerDuration = value),
+                  ),
+                  _buildDurationSelector(
+                    label: '短休息时长（分钟）',
+                    value: _shortBreakDuration,
+                    onChanged: (value) => setState(() => _shortBreakDuration = value),
+                  ),
+                  _buildDurationSelector(
+                    label: '长休息时长（分钟）',
+                    value: _longBreakDuration,
+                    onChanged: (value) => setState(() => _longBreakDuration = value),
+                  ),
+                  _buildDurationSelector(
+                    label: '轮数',
+                    value: _pomodoroRounds,
+                    onChanged: (value) => setState(() => _pomodoroRounds = value),
+                    min: 1,
+                    max: 10,
                   ),
                 ],
-              ),
+                SizedBox(height: 24),
+
+                // 开始按钮
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _showSettings = false;
+                        _toggleTimer();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                    child: Text(
+                      '开始',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // 模式信息
+                Center(
+                  child: Column(
+                    children: [
+                      if (_selectedMode == TrackingMode.pomodoro) ...[
+                        Text(
+                          _isBreakTime
+                              ? '休息时间 (${_currentRound % _pomodoroRounds == 0 ? '长' : '短'})' 
+                              : '工作时间 (第 $_currentRound 轮)',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        Text(
+                          '共 $_pomodoroRounds 轮',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ] else if (_selectedMode == TrackingMode.countdown) ...[
+                        Text(
+                          '倒计时模式',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ] else ...[
+                        Text(
+                          '正计时模式',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 40),
+
+                // 控制按钮
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _toggleTimer,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        backgroundColor: _isTracking ? Colors.yellow : Colors.blueAccent,
+                      ),
+                      child: Text(_isTracking ? '暂停' : '继续'),
+                    ),
+                    SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: _stopTracking,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Text('结束'),
+                    ),
+                    SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: _abandonTracking,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        backgroundColor: Colors.grey,
+                      ),
+                      child: const Text('放弃'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
