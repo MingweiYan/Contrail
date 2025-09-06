@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../pages/habit_management_page.dart';
-import '../pages/statistics_page.dart';
-import '../pages/profile_page.dart';
+import 'package:contrail/features/habit/presentation/pages/habit_management_page.dart';
+import 'package:contrail/features/statistics/presentation/pages/statistics_page.dart';
+import 'package:contrail/features/profile/presentation/pages/profile_page.dart';
 
 class MainTabPage extends StatefulWidget {
   const MainTabPage({super.key});

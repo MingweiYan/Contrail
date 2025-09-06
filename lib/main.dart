@@ -1,59 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:calendar_view/calendar_view.dart';
+import 'package:hive/hive.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
 
-import 'models/cycle_type_adapter.dart';
-import 'models/habit.dart';
-import 'models/goal_type_adapter.dart';
-import 'models/duration_adapter.dart';
-import 'providers/habit_provider.dart';
-import 'pages/habit_management_page.dart';
-import 'pages/habit_tracking_page.dart';
-import 'pages/statistics_page.dart';
-import 'pages/profile_page.dart';
+import 'shared/models/habit.dart';
+import 'shared/models/goal_type.dart';
+import 'shared/models/cycle_type.dart';
+import 'core/di/injection_container.dart';
+import 'features/habit/presentation/pages/habit_management_page.dart';
+import 'features/habit/presentation/pages/habit_tracking_page.dart';
+import 'features/statistics/presentation/pages/statistics_page.dart';
+import 'features/statistics/presentation/providers/statistics_provider.dart';
+import 'features/profile/presentation/pages/profile_page.dart';
 import 'navigation/main_tab_page.dart';
-import 'router/app_router.dart';
+import 'core/routing/app_router.dart';
+import 'shared/utils/logger.dart';
+import 'features/habit/presentation/providers/habit_provider.dart';
 
 void main() async {
-  print('开始初始化应用...');
+  logger.info('开始初始化应用...');
   // 确保WidgetsBinding已初始化
   WidgetsFlutterBinding.ensureInitialized();
   
   // 打印当前Flutter版本
-  print('Flutter版本: ${flutterVersion()}');
-
-  // 移除国际化初始化，因为统计页面已不再依赖locale-specific日期格式
-  // 使用简单的数字表示代替周几和月份名称
+  logger.debug('Flutter版本: ${flutterVersion()}');
 
   try {
-    // 详细记录Hive初始化过程
-    print('开始初始化Hive...');
-    await Hive.initFlutter();
-    print('Hive初始化成功');
+    // 初始化依赖注入
+    logger.debug('初始化依赖注入...');
+    await init();
+    logger.debug('依赖注入初始化成功');
 
-    print('注册HabitAdapter...');
-    Hive.registerAdapter(HabitAdapter());
-    print('注册GoalTypeAdapter...');
-    Hive.registerAdapter(GoalTypeAdapter());
-    print('注册CycleTypeAdapter...');
-    Hive.registerAdapter(CycleTypeAdapter());
-    print('注册DurationAdapter...');
-    Hive.registerAdapter(DurationAdapter());
-
-    print('已注册所有适配器');
-    
-    print('打开habits数据库...');
-    final box = await Hive.openBox<Habit>('habits');
-    print('已打开habits数据库，包含 ${box.length} 条记录');
-    
     // 添加测试数据（仅当数据库为空时）
-    if (box.length == 0) {
-      print('添加测试数据...');
+    final habitBox = sl<Box<Habit>>();
+    if (habitBox.length == 0) {
+      logger.debug('添加测试数据...');
       // 创建一个测试习惯
       final testHabit = Habit(
         id: 'test_habit_1',
@@ -79,20 +64,19 @@ void main() async {
         }
       }
 
-      await box.put(testHabit.id, testHabit);
-      print('测试数据添加成功');
+      await habitBox.put(testHabit.id, testHabit);
+      logger.debug('测试数据添加成功');
     }
 
     // 打印数据库中的习惯数据
-    if (box.length > 0) {
-      print('数据库中第一条习惯: ${box.getAt(0)?.name}');
+    if (habitBox.length > 0) {
+      logger.debug('数据库中第一条习惯: ${habitBox.getAt(0)?.name}');
     }
 
-    print('启动应用...');
+    logger.info('启动应用...');
     runApp(const ContrailApp());
   } catch (e, stackTrace) {
-    print('初始化过程中出错: $e');
-    print('错误堆栈: $stackTrace');
+    logger.error('初始化过程中出错', e, stackTrace);
   }
 
   
@@ -109,18 +93,20 @@ class ContrailApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CalendarControllerProvider(
-      controller: EventController(),
-      child: ChangeNotifierProvider(
-        create: (context) => HabitProvider(Hive.box<Habit>('habits')),
-        child: MaterialApp(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => HabitProvider()..loadHabits()),
+        ChangeNotifierProvider(create: (context) => StatisticsProvider()),
+      ],
+      child: CalendarControllerProvider(
+        controller: EventController(),
+        child: MaterialApp.router(
           title: 'Contrail',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
             useMaterial3: true,
           ),
-          initialRoute: '/',
-          onGenerateRoute: AppRouter.generateRoute,
+          routerConfig: AppRouter.router,
         ),
       ),
     );
