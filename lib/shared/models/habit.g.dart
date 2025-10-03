@@ -27,6 +27,7 @@ class HabitAdapter extends TypeAdapter<Habit> {
       cycleType: fields[10] as CycleType?,
       icon: fields[15] as String?,
       trackTime: fields[11] as bool,
+      colorValue: fields[8] as int?,
       trackingDurations: (fields[13] as Map?)?.map((dynamic k, dynamic v) =>
           MapEntry(k as DateTime, (v as List).cast<Duration>())),
       dailyCompletionStatus: (fields[14] as Map?)?.cast<DateTime, bool>(),
@@ -36,7 +37,7 @@ class HabitAdapter extends TypeAdapter<Habit> {
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -57,6 +58,8 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..write(obj.targetDays)
       ..writeByte(7)
       ..write(obj.goalType)
+      ..writeByte(8)
+      ..write(obj.colorValue)
       ..writeByte(13)
       ..write(obj.trackingDurations)
       ..writeByte(14)

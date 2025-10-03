@@ -3,44 +3,70 @@ import 'package:contrail/features/habit/presentation/providers/habit_provider.da
 import 'package:contrail/shared/models/habit.dart';
 
 class StatisticsProvider with ChangeNotifier {
-  String _selectedPeriod = 'week'; // 'week', 'month', 'year'
-  String _selectedView = 'trend'; // 'trend' 或 'detail'
-  int _selectedYear = DateTime.now().year;
-  int _selectedMonth = DateTime.now().month;
-  String _detailViewType = 'calendar'; // 'calendar' 或 'timeline'
+  // 趋势视图的时间选择状态
+  String _trendSelectedPeriod = 'week'; // 'week', 'month', 'year'
+  int _trendSelectedYear = DateTime.now().year;
+  int _trendSelectedMonth = DateTime.now().month;
+  int _trendSelectedWeek = _getWeekNumber(DateTime.now()); // 当前周
+  
+  // 明细视图的时间选择状态（固定为月份视图）
+  int _detailSelectedYear = DateTime.now().year;
+  int _detailSelectedMonth = DateTime.now().month;
+  
   List<bool>? _isHabitVisible;
+  
+  // 计算日期是当年的第几周
+  static int _getWeekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final days = date.difference(firstDayOfYear).inDays;
+    // 假设每周从周一开始
+    final firstDayOfYearWeekday = firstDayOfYear.weekday;
+    final daysToFirstMonday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
+    final adjustedDays = days - daysToFirstMonday;
+    return adjustedDays >= 0 ? (adjustedDays ~/ 7) + 1 : 1;
+  }
 
-  // 获取器
-  String get selectedPeriod => _selectedPeriod;
-  String get selectedView => _selectedView;
-  int get selectedYear => _selectedYear;
-  int get selectedMonth => _selectedMonth;
-  String get detailViewType => _detailViewType;
+  // 趋势视图获取器
+  String get trendSelectedPeriod => _trendSelectedPeriod;
+  int get trendSelectedYear => _trendSelectedYear;
+  int get trendSelectedMonth => _trendSelectedMonth;
+  int get trendSelectedWeek => _trendSelectedWeek;
+  
+  // 明细视图获取器
+  int get detailSelectedYear => _detailSelectedYear;
+  int get detailSelectedMonth => _detailSelectedMonth;
+  
   List<bool>? get isHabitVisible => _isHabitVisible;
 
-  // 设置器
-  void setSelectedPeriod(String period) {
-    _selectedPeriod = period;
+  // 趋势视图设置器
+  void setTrendSelectedPeriod(String period) {
+    _trendSelectedPeriod = period;
     notifyListeners();
   }
 
-  void setSelectedView(String view) {
-    _selectedView = view;
+  void setTrendSelectedYear(int year) {
+    _trendSelectedYear = year;
     notifyListeners();
   }
 
-  void setSelectedYear(int year) {
-    _selectedYear = year;
+  void setTrendSelectedMonth(int month) {
+    _trendSelectedMonth = month;
     notifyListeners();
   }
 
-  void setSelectedMonth(int month) {
-    _selectedMonth = month;
+  void setTrendSelectedWeek(int week) {
+    _trendSelectedWeek = week;
     notifyListeners();
   }
-
-  void setDetailViewType(String type) {
-    _detailViewType = type;
+  
+  // 明细视图设置器
+  void setDetailSelectedYear(int year) {
+    _detailSelectedYear = year;
+    notifyListeners();
+  }
+  
+  void setDetailSelectedMonth(int month) {
+    _detailSelectedMonth = month;
     notifyListeners();
   }
 
@@ -94,5 +120,82 @@ class StatisticsProvider with ChangeNotifier {
       'daysInMonth': endDate.day,
       'completionRate': endDate.day > 0 ? completedDays / endDate.day : 0.0,
     };
+  }
+
+  // 获取最近一年（12个月）的时间范围
+  List<Map<String, int>> getLastYearMonthRanges() {
+    final now = DateTime.now();
+    final monthRanges = <Map<String, int>>[];
+    
+    for (int i = 0; i < 12; i++) {
+      final targetMonth = now.month - i;
+      final targetYear = now.year + (targetMonth <= 0 ? -1 : 0);
+      final actualMonth = targetMonth <= 0 ? 12 + targetMonth : targetMonth;
+      
+      monthRanges.add({
+        'year': targetYear,
+        'month': actualMonth
+      });
+    }
+    
+    return monthRanges;
+  }
+
+  // 获取年度统计数据（最近12个月）
+  Map<String, dynamic> getYearlyStatistics(List<Habit> habits) {
+    final monthRanges = getLastYearMonthRanges();
+    final yearlyStats = <String, dynamic>{
+      'monthlyStats': <String, dynamic>{},
+      'totalCompletedDays': 0,
+      'totalMinutes': 0,
+      'averageCompletionRate': 0.0
+    };
+    
+    double totalCompletionRate = 0.0;
+    int totalMonths = 0;
+    
+    // 对每个习惯进行年度统计
+    for (var habit in habits) {
+      final habitMonthlyStats = <String, dynamic>{};
+      int habitTotalCompletedDays = 0;
+      int habitTotalMinutes = 0;
+      
+      for (var monthRange in monthRanges) {
+        final monthYearKey = '${monthRange['year']}-${monthRange['month']}';
+        final monthStats = getMonthlyStatistics(habit, monthRange['year']!, monthRange['month']!);
+        
+        habitMonthlyStats[monthYearKey] = monthStats;
+        habitTotalCompletedDays += monthStats['completedDays'] as int;
+        habitTotalMinutes += monthStats['totalMinutes'] as int;
+      }
+      
+      yearlyStats['monthlyStats'][habit.name] = habitMonthlyStats;
+      yearlyStats['totalCompletedDays'] = (yearlyStats['totalCompletedDays'] as int) + habitTotalCompletedDays;
+      yearlyStats['totalMinutes'] = (yearlyStats['totalMinutes'] as int) + habitTotalMinutes;
+      
+      // 计算该习惯的年度完成率（平均月完成率）
+      double habitYearlyCompletionRate = 0.0;
+      int validMonths = 0;
+      
+      habitMonthlyStats.forEach((_, monthStats) {
+        final rate = monthStats['completionRate'] as double;
+        if (rate > 0) {
+          habitYearlyCompletionRate += rate;
+          validMonths++;
+        }
+      });
+      
+      if (validMonths > 0) {
+        totalCompletionRate += habitYearlyCompletionRate / validMonths;
+        totalMonths++;
+      }
+    }
+    
+    // 计算所有习惯的平均完成率
+    if (totalMonths > 0) {
+      yearlyStats['averageCompletionRate'] = totalCompletionRate / totalMonths;
+    }
+    
+    return yearlyStats;
   }
 }

@@ -1,3 +1,5 @@
+import 'package:contrail/shared/utils/logger.dart';
+import 'package:flutter/material.dart'; // 导入Material包以使用Color类
 import 'package:hive/hive.dart';
 import 'goal_type.dart';
 import 'cycle_type.dart';
@@ -52,11 +54,22 @@ class Habit extends HiveObject {
   @HiveField(7)
   GoalType goalType;
 
+  @HiveField(8) // 使用未使用的字段索引8
+  int colorValue; // 存储颜色的整数值，便于Hive存储
+
   @HiveField(13)
   Map<DateTime, List<Duration>> trackingDurations; // 存储每天的持续时间列表
 
   @HiveField(14)
   Map<DateTime, bool> dailyCompletionStatus; // 记录每天的打卡状态，true 表示当天已完成打卡
+
+  // 获取Color对象
+  Color get color => Color(colorValue);
+  
+  // 设置Color对象
+  set color(Color newColor) {
+    colorValue = newColor.value;
+  }
 
 
   Habit({
@@ -70,6 +83,27 @@ class Habit extends HiveObject {
     this.cycleType,
     this.icon,
     this.trackTime = false,
+    int? colorValue,
+    Map<DateTime, List<Duration>>? trackingDurations,
+    Map<DateTime, bool>? dailyCompletionStatus,
+  }) : 
+    colorValue = colorValue ?? Colors.blue.value,
+    trackingDurations = trackingDurations ?? {},
+    dailyCompletionStatus = dailyCompletionStatus ?? {};
+    
+  // 创建一个专门用于Hive读取的构造函数，确保colorValue在对象创建时就被正确设置
+  Habit.fromHive({
+    required this.id,
+    required this.name,
+    required this.totalDuration,
+    required this.currentDays,
+    this.targetDays,
+    required this.goalType,
+    this.imagePath,
+    this.cycleType,
+    this.icon,
+    required this.trackTime,
+    required this.colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
   }) : 
@@ -77,17 +111,31 @@ class Habit extends HiveObject {
     dailyCompletionStatus = dailyCompletionStatus ?? {};
 
   void addTrackingRecord(DateTime date, Duration duration) {
+    logger.debug('📝  开始添加追踪记录: 日期=${date.toString()}, 时长=${duration.inMinutes}分钟');
+    
     final dateOnly = DateTime(date.year, date.month, date.day);
     final hasCompletedToday = dailyCompletionStatus.containsKey(dateOnly) && dailyCompletionStatus[dateOnly] == true;
-
+    
+    logger.debug('🔍  检查当天打卡状态: hasCompletedToday=$hasCompletedToday, dateOnly=${dateOnly.toString()}');
+    logger.debug('📊  添加前状态 - 完成天数: $currentDays, 总时长: ${totalDuration.inMinutes}分钟');
+    
     // 记录完成时间
     if (!hasCompletedToday) {
       // 如果当天尚未完成打卡
       currentDays++;
       dailyCompletionStatus[dateOnly] = true; // 标记当天已完成打卡
-    } 
+      logger.debug('✅  标记当天已完成打卡，更新后完成天数: $currentDays');
+    } else {
+      logger.debug('ℹ️  当天已经完成打卡，不增加完成天数');
+    }
+    
     totalDuration += duration;
-    trackingDurations[date] = [duration]; // key是具体到秒的时间
+    // 修复：使用putIfAbsent和add方法确保所有记录都被保存，而不是覆盖
+    trackingDurations.putIfAbsent(date, () => []).add(duration);
+    
+    logger.debug('📈  添加追踪记录完成 - 总时长: ${totalDuration.inMinutes}分钟');
+    logger.debug('📋  追踪记录总数: ${trackingDurations.length}');
+    logger.debug('📅  打卡天数: ${dailyCompletionStatus.length}');
   }
 
   // 检查当天是否已经完成过该习惯

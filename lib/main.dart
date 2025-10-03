@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:calendar_view/calendar_view.dart';
 import 'package:hive/hive.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
@@ -10,7 +9,9 @@ import 'dart:async';
 import 'shared/models/habit.dart';
 import 'shared/models/goal_type.dart';
 import 'shared/models/cycle_type.dart';
+import 'shared/models/theme_model.dart' as app_theme;
 import 'core/di/injection_container.dart';
+import 'core/state/theme_provider.dart';
 import 'features/habit/presentation/pages/habit_management_page.dart';
 import 'features/habit/presentation/pages/habit_tracking_page.dart';
 import 'features/statistics/presentation/pages/statistics_page.dart';
@@ -19,7 +20,19 @@ import 'features/profile/presentation/pages/profile_page.dart';
 import 'navigation/main_tab_page.dart';
 import 'core/routing/app_router.dart';
 import 'shared/utils/logger.dart';
+import 'shared/utils/theme_helper.dart';
 import 'features/habit/presentation/providers/habit_provider.dart';
+import 'shared/services/notification_service.dart';
+import 'shared/services/task_scheduler.dart';
+import 'shared/services/habit_statistics_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// 全局变量，用于跟踪通知点击状态
+bool isNotificationClicked = false;
+// 全局变量，用于跟踪是否是统计报告通知
+bool isStatsReportNotification = false;
+// 全局变量，用于跟踪统计报告类型
+String? statsReportType; // 'weekly_report' 或 'monthly_report'
 
 void main() async {
   logger.info('开始初始化应用...');
@@ -34,44 +47,78 @@ void main() async {
     logger.debug('初始化依赖注入...');
     await init();
     logger.debug('依赖注入初始化成功');
+    
+    // 检查并存储首次启动日期
+    final prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey('firstLaunchDate')) {
+      final now = DateTime.now();
+      prefs.setString('firstLaunchDate', now.toIso8601String());
+      logger.debug('存储首次启动日期: $now');
+    }
 
     // 添加测试数据（仅当数据库为空时）
     final habitBox = sl<Box<Habit>>();
-    if (habitBox.length == 0) {
-      logger.debug('添加测试数据...');
-      // 创建一个测试习惯
-      final testHabit = Habit(
-        id: 'test_habit_1',
-        name: '晨跑',
-        trackTime: true,
-        totalDuration: Duration.zero,
-        currentDays: 0,
-        targetDays: 30,
-        goalType: GoalType.positive,
-        cycleType: CycleType.daily,
-      );
 
-      // 添加一些打卡记录
-      final now = DateTime.now();
-      for (int i = 0; i < 10; i++) {
-        final date = DateTime(now.year, now.month, now.day - i);
-        // 随机决定是否完成打卡
-        final isCompleted = i % 2 == 0;
-        if (isCompleted) {
-          // 随机生成10-30分钟的专注时间
-          final duration = Duration(minutes: 10 + (i % 21));
-          testHabit.addTrackingRecord(date, duration);
-        }
-      }
-
-      await habitBox.put(testHabit.id, testHabit);
-      logger.debug('测试数据添加成功');
-    }
-
-    // 打印数据库中的习惯数据
-    if (habitBox.length > 0) {
-      logger.debug('数据库中第一条习惯: ${habitBox.getAt(0)?.name}');
-    }
+    // 初始化通知服务和任务调度器
+    logger.debug('初始化通知服务...');
+    final notificationService = NotificationService();
+    final statisticsService = HabitStatisticsService();
+    final taskScheduler = TaskScheduler(notificationService, statisticsService);
+    
+    // 注册到依赖注入容器
+    sl.registerSingleton<NotificationService>(notificationService);
+    sl.registerSingleton<HabitStatisticsService>(statisticsService);
+    sl.registerSingleton<TaskScheduler>(taskScheduler);
+    
+    // 初始化通知服务
+    await notificationService.initialize();
+    
+    // 设置通知点击回调
+      notificationService.setNotificationCallback((String? payload) {
+        logger.debug('📢 通知被点击，payload: $payload');
+        // 延迟一下，确保应用已经完全启动
+        Future.delayed(const Duration(milliseconds: 500), () {
+          final router = AppRouter.router;
+          
+          logger.debug('⏱️  延迟500ms后执行通知处理逻辑');
+          logger.debug('🚦  当前全局变量状态: isStatsReportNotification=$isStatsReportNotification, isNotificationClicked=$isNotificationClicked, statsReportType=$statsReportType');
+          
+          // 先设置全局变量标记
+          if (payload == 'weekly_report' || payload == 'monthly_report') {
+            // 如果是统计报告通知，设置统计报告标志和报告类型
+            logger.debug('📊  检测到统计报告通知: $payload');
+            isStatsReportNotification = true;
+            isNotificationClicked = true;
+            statsReportType = payload; // 保存具体的报告类型
+            logger.debug('✅  更新全局变量: isStatsReportNotification=true, isNotificationClicked=true, statsReportType=$payload');
+          } else if (payload == 'stats_report') {
+            // 兼容旧版本的payload
+            logger.debug('📊  检测到旧版本统计报告通知');
+            isStatsReportNotification = true;
+            isNotificationClicked = true;
+            statsReportType = 'weekly_report'; // 默认设为周报告
+            logger.debug('✅  更新全局变量: isStatsReportNotification=true, isNotificationClicked=true, statsReportType=weekly_report');
+          } else {
+            // 普通通知，设置普通通知标志
+            logger.debug('💬  检测到普通通知: $payload');
+            isNotificationClicked = true;
+            isStatsReportNotification = false;
+            statsReportType = null;
+            logger.debug('✅  更新全局变量: isNotificationClicked=true, isStatsReportNotification=false, statsReportType=null');
+          }
+          
+          // 直接导航到主页，这会触发MainTabPage的重建和状态检查
+          logger.debug('🚀  导航到主页，触发MainTabPage重建和状态检查');
+          router.go('/');
+        });
+      });
+    
+    // 根据用户设置更新通知状态
+    await notificationService.updateNotificationSettings();
+    
+    // 初始化任务调度器
+    await taskScheduler.initialize();
+    logger.debug('通知服务和任务调度器初始化成功');
 
     logger.info('启动应用...');
     runApp(const ContrailApp());
@@ -97,17 +144,32 @@ class ContrailApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => HabitProvider()..loadHabits()),
         ChangeNotifierProvider(create: (context) => StatisticsProvider()),
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
       ],
-      child: CalendarControllerProvider(
-        controller: EventController(),
-        child: MaterialApp.router(
-          title: 'Contrail',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-            useMaterial3: true,
-          ),
-          routerConfig: AppRouter.router,
-        ),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          // 将自定义ThemeMode转换为Flutter的ThemeMode
+          ThemeMode flutterThemeMode;
+          switch (themeProvider.themeMode) {
+            case app_theme.ThemeMode.light:
+              flutterThemeMode = ThemeMode.light;
+              break;
+            case app_theme.ThemeMode.dark:
+              flutterThemeMode = ThemeMode.dark;
+              break;
+            case app_theme.ThemeMode.system:
+              flutterThemeMode = ThemeMode.system;
+              break;
+          }
+          
+          return MaterialApp.router(
+            title: 'Contrail',
+            theme: themeProvider.currentTheme.lightTheme,
+            darkTheme: themeProvider.currentTheme.darkTheme,
+            themeMode: flutterThemeMode,
+            routerConfig: AppRouter.router,
+          );
+        },
       ),
     );
   }

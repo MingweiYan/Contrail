@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
+
+// 日历视图中习惯点大小分析：
+// 1. 当某天完成的习惯数量 <= 2 个时，使用 Row 布局（一行显示），习惯点大小固定为 12.0 x 12.0
+// 2. 当某天完成的习惯数量 > 2 个时，使用 GridView.builder 布局（多行显示，每行2个），习惯点大小由GridView自动计算
+// 3. 这导致了超过一行后习惯点变大的现象，因为GridView的习惯点大小没有明确设置为与Row布局相同的尺寸
 
 class CalendarViewWidget extends StatelessWidget {
   final List<Habit> habits;
@@ -21,52 +28,74 @@ class CalendarViewWidget extends StatelessWidget {
     final startDate = DateTime(selectedYear, selectedMonth, 1);
     final endDate = DateTime(selectedYear, selectedMonth + 1, 0);
     final daysInMonth = endDate.day;
+    final today = DateTime.now();
+    final isTodayInCurrentMonth = today.year == selectedYear && today.month == selectedMonth;
 
-    // 计算日历所需高度
-    final screenHeight = MediaQuery.of(context).size.height;
-    final calendarHeight = screenHeight * 0.6; // 占屏幕高度的60%
+    // 计算月份的第一天是星期几（0-6，对应周日到周六）
+    final firstDayOfMonthWeekday = startDate.weekday % 7;
+    
+    // 计算需要显示的行数
+    final weeksInMonth = (daysInMonth + firstDayOfMonthWeekday - 1) ~/ 7 + 1;
+    final daysToDisplay = weeksInMonth * 7;
 
-    // 动态调整单元格宽高比
-    double cellAspectRatio = 1.0;
-    if (habits.length > 3) {
-      // 如果习惯数量较多，减少宽高比以增加单元格高度
-      cellAspectRatio = 0.8;
+    // 动态调整单元格宽高比，增加高度以便显示更多习惯
+    double cellAspectRatio = 0.7; 
+    if (habits.isEmpty) {
+      // 如果没有习惯，可以使用更小的高度
+      cellAspectRatio = 0.9;
     }
 
-    return Container(
-      height: calendarHeight,
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 7, // 7列，对应星期
-          childAspectRatio: cellAspectRatio,
-          crossAxisSpacing: 4.0,
-          mainAxisSpacing: 4.0,
-        ),
-        itemCount: 7 + daysInMonth, // 7天标题 + 当月天数
-        itemBuilder: (context, index) {
-          // 星期标题
-          if (index < 7) {
-            final weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-            return Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                border: Border.all(color: Colors.grey.shade300),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7, // 7列，对应星期
+        childAspectRatio: cellAspectRatio,
+        crossAxisSpacing: 2.0, // 减小间距，使布局更紧凑
+        mainAxisSpacing: 2.0,
+      ),
+      itemCount: 7 + daysToDisplay, // 7天标题 + 显示的日期数量
+      itemBuilder: (context, index) {
+        // 星期标题
+        if (index < 7) {
+          final weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+          final isWeekend = index == 0 || index == 6;
+          
+          return Container(
+            alignment: Alignment.center,
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Text(
+              weekDays[index], 
+              style: TextStyle(
+                fontWeight: FontWeight.w600, 
+                color: isWeekend 
+                  ? ThemeHelper.error(context) 
+                  : ThemeHelper.onSurface(context),
+                fontSize: 13,
               ),
-              child: Text(weekDays[index], style: TextStyle(fontWeight: FontWeight.bold)),
-            );
-          }
+            ),
+          );
+        }
 
-          // 日期单元格
-          final day = index - 6; // 调整为从1开始的日期
-          if (day > daysInMonth) return Container();
+        // 日期单元格
+        final displayIndex = index - 7;
+        final dayOffset = displayIndex - firstDayOfMonthWeekday + 1;
+        
+        // 当前月份的日期
+        final isCurrentMonthDate = dayOffset > 0 && dayOffset <= daysInMonth;
+        final day = isCurrentMonthDate ? dayOffset : 0;
+        
+        // 今天的日期
+        final isToday = isTodayInCurrentMonth && isCurrentMonthDate && day == today.day;
+        final weekday = isCurrentMonthDate ? DateTime(selectedYear, selectedMonth, day).weekday % 7 : 0;
+        final isWeekend = weekday == 0 || weekday == 6;
 
+        // 检查哪些习惯在当天完成
+        List<int> completedHabitIndices = [];
+        if (isCurrentMonthDate) {
           final date = DateTime(selectedYear, selectedMonth, day);
           final dateOnly = DateTime(date.year, date.month, date.day);
-          final weekday = date.weekday % 7; // 0-6，对应周日到周六
-
-          // 检查哪些习惯在当天完成
-          List<int> completedHabitIndices = [];
+          
           for (int i = 0; i < habits.length; i++) {
             final habit = habits[i];
             if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
@@ -74,70 +103,90 @@ class CalendarViewWidget extends StatelessWidget {
               completedHabitIndices.add(i);
             }
           }
+        }
 
-          // 构建单元格内容
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 日期
-                Container(
+        // 构建单元格内容
+        return Container(
+          decoration: BoxDecoration(
+            color: isToday 
+              ? ThemeHelper.primary(context).withOpacity(0.1) // 今天的特殊背景色
+              : isCurrentMonthDate 
+                ? ThemeHelper.surface(context) 
+                : Colors.transparent, // 非当前月份不显示背景
+            borderRadius: BorderRadius.circular(12.0), // 圆角更美观
+            border: isToday 
+              ? Border.all(color: ThemeHelper.primary(context), width: 2.0) // 今天边框高亮
+              : null,
+            boxShadow: isToday 
+              ? [
+                  BoxShadow(
+                    color: ThemeHelper.primary(context).withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ] 
+              : null,
+          ),
+          child: Stack(
+            children: [
+              // 日期
+              if (isCurrentMonthDate)
+                Align(
                   alignment: Alignment.topRight,
-                  padding: EdgeInsets.all(4.0),
-                  child: Text(
-                    '$day',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: weekday == 0 || weekday == 6 ? Colors.red : Colors.black,
+                  child: Padding(
+                    padding: EdgeInsets.all(6.0),
+                    child: Text(
+                      '$day',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                        color: isToday 
+                          ? ThemeHelper.primary(context) // 今天日期特殊颜色
+                          : isWeekend 
+                            ? ThemeHelper.error(context)
+                            : ThemeHelper.onSurface(context),
+                      ),
                     ),
                   ),
                 ),
-                // 习惯完成标记
-                Expanded(
-                  child: completedHabitIndices.isEmpty
-                      ? Container()
-                      : GridView.builder(
-                          shrinkWrap: true,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: completedHabitIndices.length > 3 ? 2 : 1,
-                            childAspectRatio: 3.0,
+              
+              // 习惯完成标记 - 统一使用GridView来确保大小一致
+              if (isCurrentMonthDate && completedHabitIndices.isNotEmpty)
+                Positioned(
+                  bottom: 4.0,
+                  left: 4.0,
+                  right: 4.0,
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, // 总是使用2列，确保单个习惯点大小与两个习惯点时的大小对齐
+                      mainAxisSpacing: 2.0,
+                      crossAxisSpacing: 2.0,
+                    ),
+                    itemCount: completedHabitIndices.length,
+                    itemBuilder: (context, i) {
+                      final habitIndex = completedHabitIndices[i];
+                      final color = habitColors[habits[habitIndex].name] ?? Colors.grey;
+                      return Container(
+                        width: 12.0,
+                        height: 12.0,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: ThemeHelper.surface(context),
+                            width: 1.0,
                           ),
-                          itemCount: completedHabitIndices.length,
-                          itemBuilder: (context, i) {
-                            final habitIndex = completedHabitIndices[i];
-                            final color = habitColors[habits[habitIndex].name] ?? Colors.grey;
-                            return Container(
-                              margin: EdgeInsets.all(2.0),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(4.0),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                habits[habitIndex].name.length > 4
-                                    ? habits[habitIndex].name.substring(0, 4) + '...'
-                                    : habits[habitIndex].name,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          },
                         ),
+                      );
+                    },
+                  ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

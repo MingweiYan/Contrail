@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 背景层 - 使用透明背景 -->
+    <background android:drawable="@android:color/transparent" />
+    
+    <!-- 前景层 - 使用标准命名的图标资源 -->
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

@@ -1,0 +1,17 @@
+# flutter_native_splash 配置文件
+flutter_native_splash:
+  # 背景色设置
+  color: "#ffffff" # 白色背景，与原配置保持一致
+  
+  # 闪屏页图片设置
+  image: assets/images/cover.png
+  
+  # 图片居中显示
+  android: true
+  ios: false # 暂时只配置Android
+  
+  # 为Android 12设置完整的闪屏图片，不使用icon_background模式
+  android_12:
+    image: assets/images/cover.png
+    color: "#ffffff"
+    branding_mode: "none" # 不显示品牌图标，直接显示完整图片

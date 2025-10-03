@@ -19,7 +19,7 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   fl_chart: ^0.68.0
-  calendar_view: ^1.2.0
+  flutter_neat_and_clean_calendar: ^0.4.16
   flutter_echarts: ^2.0.0
   flutter_local_notifications: ^17.0.0
   workmanager: ^0.9.0+2
@@ -27,7 +27,12 @@ dependencies:
   shared_preferences: ^2.2.2
   uuid: ^4.4.0
   intl: ^0.19.0
+  file_picker: ^8.0.0
   cupertino_icons: ^1.0.8
+  timezone: ^0.9.2
+  analog_clock: ^0.1.0
+  flip_panel_plus: ^1.0.0
+  timelines: ^0.1.0
 
 dev_dependencies:
   flutter_test:
@@ -37,6 +42,21 @@ dev_dependencies:
   build_runner: ^2.4.6
   mocktail: ^1.0.3
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.3.1
 
 flutter:
   uses-material-design: true
+  # 已移除不存在的资源声明，因为这些文件实际上不存在于项目中
+  
+  # 应用资源配置
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/patterns/
+  
+  # 应用图标配置
+  # Android应用图标
+  # 注意：对于Android的自适应图标，我们需要在android/app/src/main/res/目录下配置
+  # 这里我们简单配置基础图标
+  # icon: assets/icons/icon.png
+  # iOS应用图标已在Xcode中配置
