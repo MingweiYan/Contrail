@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/models/habit.dart' show Habit, TrackingMode;
+import 'package:contrail/shared/services/notification_service.dart';
+import 'package:contrail/shared/utils/logger.dart';
 
 // 专注状态管理类
 class FocusState {
@@ -8,7 +10,15 @@ class FocusState {
   factory FocusState() => _instance;
   
   // 私有构造函数
-  FocusState._internal();
+  FocusState._internal() {
+    _notificationService = NotificationService();
+  }
+  
+  // 通知服务实例
+  late NotificationService _notificationService;
+  
+  // 前台通知定时器
+  Timer? _foregroundNotificationTimer;
   
   // 当前专注的习惯
   Habit? _currentFocusHabit;
@@ -79,6 +89,45 @@ class FocusState {
     
     // 通知监听器
     _notifyListeners(true);
+    
+    // 启动前台通知服务（异步执行，不阻塞主线程）
+    _startForegroundNotification();
+  }
+  
+  // 启动前台通知
+  Future<void> _startForegroundNotification() async {
+    try {
+      logger.debug('开始启动前台通知服务...');
+      
+      if (_currentFocusHabit == null) {
+        logger.warning('当前没有专注习惯，无法启动前台通知服务');
+        return;
+      }
+      
+      logger.debug('调用notificationService.startForegroundService，习惯名称: ${_currentFocusHabit!.name}');
+      // 启动前台服务通知
+      await _notificationService.startForegroundService(
+        habit: _currentFocusHabit!,
+        duration: _elapsedTime,
+      );
+      
+      logger.debug('前台通知服务启动成功');
+      
+      // 启动定期更新通知的定时器（每10秒更新一次）
+      _foregroundNotificationTimer?.cancel();
+      _foregroundNotificationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (_currentFocusHabit != null) {
+          _notificationService.updateForegroundService(
+            habit: _currentFocusHabit!,
+            duration: _elapsedTime,
+          );
+        }
+      });
+      
+      logger.debug('前台通知更新定时器已启动');
+    } catch (e, stackTrace) {
+      logger.error('启动前台通知服务失败', e, stackTrace);
+    }
   }
   
   // 暂停专注
@@ -115,6 +164,10 @@ class FocusState {
   // 结束专注
   void endFocus() {
     _timer?.cancel();
+    
+    // 停止前台通知服务
+    _stopForegroundNotification();
+    
     _currentFocusHabit = null;
     _focusStartTime = null;
     _focusMode = null;
@@ -122,6 +175,12 @@ class FocusState {
     
     // 通知监听器
     _notifyListeners(false);
+  }
+  
+  // 停止前台通知
+  void _stopForegroundNotification() async {
+    _foregroundNotificationTimer?.cancel();
+    await _notificationService.stopForegroundService();
   }
   
   // 添加状态变化监听器

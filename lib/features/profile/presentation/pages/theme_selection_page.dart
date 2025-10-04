@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/shared/models/theme_model.dart' as app_theme;
 
-class ThemeSelectionPage extends StatelessWidget {
+class ThemeSelectionPage extends StatefulWidget {
   const ThemeSelectionPage({super.key});
+
+  @override
+  _ThemeSelectionPageState createState() => _ThemeSelectionPageState();
+}
+
+class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +48,9 @@ class ThemeSelectionPage extends StatelessWidget {
                   mainAxisSpacing: 16,
                   childAspectRatio: 2.0 / 1, // 增加宽高比，让卡片更宽一些
                 ),
-                itemCount: themeProvider.availableThemes.length,
+                itemCount: themeProvider.availableThemes.length, // 仅显示可用主题
                 itemBuilder: (context, index) {
+                  // 普通主题选项
                   final theme = themeProvider.availableThemes[index];
                   final isSelected = theme.name == currentThemeName;
                   
@@ -65,24 +73,23 @@ class ThemeSelectionPage extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
-                        children:
-                          [
-                            Text(
-                              theme.name,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                              textAlign: TextAlign.center,
+                        children: [
+                          Text(
+                            theme.name,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
-                            if (isSelected)
-                              const SizedBox(height: 8),
-                            if (isSelected)
-                              Icon(
-                                Icons.check,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              ),
-                          ],
+                            textAlign: TextAlign.center,
+                          ),
+                          if (isSelected)
+                            const SizedBox(height: 8),
+                          if (isSelected)
+                            Icon(
+                              Icons.check,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
+                        ],
                       ),
                     ),
                   );

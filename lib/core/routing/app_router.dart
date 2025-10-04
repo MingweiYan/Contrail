@@ -4,6 +4,7 @@ import 'package:contrail/features/habit/presentation/routes/habit_routes.dart';
 import 'package:contrail/features/statistics/presentation/routes/statistics_routes.dart';
 import 'package:contrail/features/profile/presentation/routes/profile_routes.dart';
 import 'package:contrail/features/focus/presentation/routes/focus_routes.dart';
+import 'package:contrail/features/notification_test/notification_test_page.dart';
 import 'package:contrail/navigation/main_tab_page.dart';
 
 class AppRouter {
@@ -18,6 +19,11 @@ class AppRouter {
           ...ProfileRoutes.routes,
           ...FocusRoutes.routes,
         ],
+      ),
+      // 通知测试页面路由
+      GoRoute(
+        path: '/notification-test',
+        builder: (context, state) => const NotificationTestPage(),
       ),
     ],
   );

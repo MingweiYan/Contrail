@@ -91,7 +91,7 @@ class ClockWidget extends StatefulWidget {
 
 class _ClockWidgetState extends State<ClockWidget> {
   late Duration _currentDuration;
-  bool _isDragging = false;
+  final bool _isDragging = false;
   double _rotationProgress = 0.0;
   Timer? _rotationTimer;
 
@@ -190,8 +190,6 @@ class _ClockWidgetState extends State<ClockWidget> {
         final size = min(constraints.maxWidth, constraints.maxHeight);
         final primaryColor = ThemeHelper.primary(context);
         final onPrimaryColor = ThemeHelper.onPrimary(context);
-        final backgroundColor = ThemeHelper.background(context);
-        final surfaceColor = ThemeHelper.surface(context);
         
         return GestureDetector(
           onVerticalDragUpdate: _handleVerticalDrag,
@@ -229,10 +227,8 @@ class _ClockWidgetState extends State<ClockWidget> {
                       : (widget.isCountdown 
                           ? 1.0 - (_currentDuration.inSeconds / (widget.duration.inSeconds > 0 ? widget.duration.inSeconds : 1)) 
                           : 0.0),
-                    strokeWidth: 14, // 圆环的粗细
-                    // 使用主题颜色的半透明版本作为背景色
+                    strokeWidth: 14, // 添加必要的strokeWidth参数
                     backgroundColor: onPrimaryColor.withOpacity(0.1),
-                    // 使用主题的对比色作为进度条颜色
                     valueColor: onPrimaryColor,
                     isClockwise: true,
                   ),

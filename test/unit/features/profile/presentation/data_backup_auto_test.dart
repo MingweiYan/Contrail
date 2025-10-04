@@ -124,6 +124,7 @@ void main() {
       )).thenAnswer((_) async {
         testHelper.zonedScheduleCalled = true;
         return null;
+        return null;
       });
       
       // 创建模拟的习惯数据
@@ -303,7 +304,7 @@ void main() {
     });
 
     test('没有上次备份时间时显示提示', () {
-      // 准备
+      DateTime? lastBackupTime = null;
       DateTime? lastBackupTime = null;
       const backupFrequency = 7;
       

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'dart:convert';
+import 'package:contrail/features/habit/presentation/pages/full_editor_page.dart';
 
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
@@ -8,8 +11,11 @@ import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:contrail/features/habit/presentation/pages/icon_selector_page.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
+import 'package:contrail/shared/utils/color_helper.dart';
+import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/core/state/theme_provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class AddHabitPage extends StatefulWidget {
   final Habit? habitToEdit;
@@ -23,7 +29,7 @@ class AddHabitPage extends StatefulWidget {
 class _AddHabitPageState extends State<AddHabitPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
+  late String? _descriptionJson; // 存储富文本JSON
   late GoalType _goalType;
   late String? _selectedIcon;
   late Color _selectedColor; // 添加颜色变量定义
@@ -35,6 +41,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
   late bool _trackTime;
   late int _targetTimeMinutes;
 
+  // 存储所有颜色选项（预定义颜色 + 自定义颜色）
+  List<Color> _colorOptions = [];
+
   @override
   void initState() {
     super.initState();
@@ -43,7 +52,11 @@ class _AddHabitPageState extends State<AddHabitPage> {
     if (widget.habitToEdit != null) {
       // 编辑模式
       _nameController = TextEditingController(text: widget.habitToEdit!.name);
-      _descriptionController = TextEditingController(text: '');
+      
+      // 存储富文本JSON
+      _descriptionJson = widget.habitToEdit!.descriptionJson;
+      
+      // 不再需要_descriptionController
       _goalType = widget.habitToEdit!.goalType;
       _selectedIcon = widget.habitToEdit!.icon;
       _isSetGoal = widget.habitToEdit!.cycleType != null;
@@ -58,42 +71,75 @@ class _AddHabitPageState extends State<AddHabitPage> {
       _targetTimeMinutes = _targetDays * 60; // 使用修正后的_targetDays计算目标时间
       _selectedColor = widget.habitToEdit!.color; // 从现有习惯加载颜色
     } else {
-      // 添加模式
-      _nameController = TextEditingController();
-      _descriptionController = TextEditingController();
-      _goalType = GoalType.positive;
-      _selectedIcon = 'book'; // 默认图标
-      _isSetGoal = false; // 默认不设置目标
-      _cycleType = CycleType.monthly; // 默认无周期类型
-      _targetDays = 1;
-      _trackTime = false; // 默认不追踪目标
-      _targetTimeMinutes = 60; // 默认值为1小时
-      _selectedColor = Colors.blue; // 默认蓝色
-    }
+        // 添加模式
+        _nameController = TextEditingController();
+        _descriptionJson = null; // 初始化富文本JSON为空
+        _goalType = GoalType.positive;
+        _selectedIcon = 'book'; // 默认图标
+        _isSetGoal = false; // 默认不设置目标
+        _cycleType = CycleType.monthly; // 默认无周期类型
+        _targetDays = 1;
+        _trackTime = false; // 默认不追踪目标
+        _targetTimeMinutes = 60; // 默认值为1小时
+        _selectedColor = Colors.blue; // 默认蓝色
+      }
+    
+    // 加载所有颜色
+    _loadAllColors();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     super.dispose();
   }
 
-  // 预定义的颜色选项
-  final List<Color> _colorOptions = [
-    Colors.blue,
-    Colors.red,
-    Colors.green,
-    Colors.purple,
-    Colors.orange,
-    Colors.teal,
-    Colors.pink,
-    Colors.amber,
-    Colors.deepPurple,
-    Colors.indigo,
-    Colors.lime,
-    Colors.cyan,
-  ];
+  // 打开完整编辑页面
+  Future<void> _openFullEditor() async {
+    logger.debug('打开完整编辑页面，当前JSON: $_descriptionJson');
+    
+    // 跳转到完整编辑页面
+    final result = await Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => FullEditorPage(
+          initialContent: _descriptionJson,
+          placeholder: '写一句专注时提醒自己的话吧',
+        ),
+      ),
+    );
+    
+    // 处理返回结果
+    if (result != null && result is String) {
+      logger.debug('从完整编辑页面返回，结果: $result');
+      _descriptionJson = result;
+      setState(() {}); // 刷新UI以显示新的富文本内容
+    }
+  }
+
+  // 加载所有颜色
+  Future<void> _loadAllColors() async {
+    try {
+      final colors = await ColorHelper.getAllColors();
+      setState(() {
+        _colorOptions = colors;
+      });
+    } catch (e) {
+      // Fallback to default colors if there's an error
+      setState(() {
+        _colorOptions = [
+          Colors.blue,
+          Colors.red,
+          Colors.green,
+          Colors.purple,
+          Colors.orange,
+          Colors.teal,
+          Colors.pink,
+          Colors.amber
+        ];
+      });
+    }
+  }
 
   // 选择颜色
   void _selectColor(Color color) {
@@ -101,23 +147,128 @@ class _AddHabitPageState extends State<AddHabitPage> {
       _selectedColor = color;
     });
   }
+  
+  // 打开自定义颜色选择器
+  Future<void> _openCustomColorPicker() async {
+    Color tempColor = _selectedColor;
+    
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('选择自定义颜色'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: tempColor,
+              onColorChanged: (color) {
+                tempColor = color;
+              },
+              showLabel: true,
+              pickerAreaHeightPercent: 0.8,
+              enableAlpha: false, // 不启用透明度选择
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('取消'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('确定'),
+              onPressed: () async {
+                // 添加到自定义颜色列表
+                await ColorHelper.addCustomColor(tempColor);
+                
+                // 重新加载所有颜色
+                await _loadAllColors();
+                
+                // 更新选中的颜色
+                setState(() {
+                  _selectedColor = tempColor;
+                });
+                
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  // 删除自定义颜色
+  void _deleteCustomColor(Color color) async {
+    // 检查是否是预定义颜色
+    if (ColorHelper.isPredefinedColor(color)) {
+      // 不能删除预定义颜色，显示提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('不能删除预定义颜色')),
+      );
+      return;
+    }
+    
+    // 显示确认对话框
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('确认删除'),
+          content: const Text('确定要删除这个自定义颜色吗？'),
+          actions: [
+            TextButton(
+              child: const Text('取消'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('删除'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+    
+    if (shouldDelete) {
+      // 删除自定义颜色
+      await ColorHelper.removeCustomColor(color);
+      
+      // 重新加载所有颜色
+      await _loadAllColors();
+      
+      // 如果删除的是当前选中的颜色，选择第一个颜色
+      if (_selectedColor.value == color.value && _colorOptions.isNotEmpty) {
+        setState(() {
+          _selectedColor = _colorOptions[0];
+        });
+      }
+    }
+  }
 
   // 打开图标选择器
   Future<void> _openIconSelector() async {
-    print('DEBUG: 打开图标选择器，当前选中图标: $_selectedIcon');
+    logger.debug('打开图标选择器，当前选中图标: $_selectedIcon');
     final result = await Navigator.push(
       context, 
       MaterialPageRoute(builder: (context) => IconSelectorPage(selectedIcon: _selectedIcon)),
     );
     
-    print('DEBUG: 图标选择器返回结果: $result');
+    logger.debug('图标选择器返回结果: $result');
     if (result is String) {
-      print('DEBUG: 更新选中图标为: $result');
+      logger.debug('更新选中图标为: $result');
       setState(() {
         _selectedIcon = result;
       });
     } else {
-      print('DEBUG: 未选择任何图标或返回结果类型错误');
+      logger.debug('未选择任何图标或返回结果类型错误');
     }
   }
 
@@ -129,7 +280,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
 
   // 根据周期类型获取最大天数限制
   int _getMaxDaysForCycleType() {
-    if (_cycleType == CycleType.weekly) {
+    if (_cycleType == CycleType.daily) {
+      return 31; // 每日习惯，每月最多31天
+    } else if (_cycleType == CycleType.weekly) {
       return 7; // 每周最大7天
     } else if (_cycleType == CycleType.monthly) {
       return 31; // 每月最大31天
@@ -171,21 +324,26 @@ class _AddHabitPageState extends State<AddHabitPage> {
         
         final habitProvider = Provider.of<HabitProvider>(context, listen: false);
         
-        // 创建习惯对象
-        final habit = Habit(
-          id: widget.habitToEdit?.id ?? const Uuid().v4(),
-          name: _nameController.text.trim(),
-          targetDays: _targetDays,
-          goalType: _goalType,
-          icon: _selectedIcon,
-          cycleType: _isSetGoal ? _cycleType : null,
-          trackTime: _trackTime,
-          colorValue: _selectedColor.value, // 保存颜色值
-          currentDays: widget.habitToEdit?.currentDays ?? 0,
-          totalDuration: widget.habitToEdit?.totalDuration ?? Duration.zero,
-          trackingDurations: widget.habitToEdit?.trackingDurations ?? {},
-          dailyCompletionStatus: widget.habitToEdit?.dailyCompletionStatus ?? {},
-        );
+        // 使用已有的富文本JSON数据
+          final descriptionJson = _descriptionJson;
+          logger.debug('保存习惯描述JSON: $descriptionJson');
+          
+          // 创建习惯对象
+            final habit = Habit(
+              id: widget.habitToEdit?.id ?? const Uuid().v4(),
+              name: _nameController.text.trim(),
+              targetDays: _targetDays,
+              goalType: _goalType,
+              icon: _selectedIcon,
+              descriptionJson: descriptionJson,
+              cycleType: _isSetGoal ? _cycleType : null,
+              trackTime: _trackTime,
+              colorValue: _selectedColor.value, // 保存颜色值
+              currentDays: widget.habitToEdit?.currentDays ?? 0,
+              totalDuration: widget.habitToEdit?.totalDuration ?? Duration.zero,
+              trackingDurations: widget.habitToEdit?.trackingDurations ?? {},
+              dailyCompletionStatus: widget.habitToEdit?.dailyCompletionStatus ?? {},
+            );
         
         // 保存习惯
         if (widget.habitToEdit != null) {
@@ -312,8 +470,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Theme.of(context).colorScheme.primary,
-                                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                                      _selectedColor,
+                                      _selectedColor.withOpacity(0.8),
                                     ],
                                   ),
                                 ),
@@ -348,12 +506,17 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             child: TextFormField(
                               controller: _nameController,
                               decoration: InputDecoration(
-                                labelText: '习惯名称',
+                                hintText: '习惯名称',
                                 border: InputBorder.none,
-                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                                hintStyle: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.normal,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                ),
                               ),
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
                               validator: (value) {
@@ -367,7 +530,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                         ),
                         const SizedBox(height: 16),
                         
-                        // 习惯描述
+                        // 习惯描述（富文本显示 + 完整编辑按钮）
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(
@@ -375,18 +538,63 @@ class _AddHabitPageState extends State<AddHabitPage> {
                           ),
                           child: Container(
                             padding: const EdgeInsets.all(16),
-                            child: TextFormField(
-                              controller: _descriptionController,
-                              decoration: InputDecoration(
-                                labelText: '习惯描述 (可选)',
-                                border: InputBorder.none,
-                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
-                              ),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              maxLines: 3,
+                            child: Column(
+                              children: [
+                                // 富文本显示区域
+                                if (_descriptionJson != null && _descriptionJson!.isNotEmpty) ...[
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: 120, maxHeight: 240), // 设置最小高度为120，最大高度为240
+                                    child: QuillEditor.basic(
+                                      controller: QuillController(
+                                        document: Document.fromJson(jsonDecode(_descriptionJson!)),
+                                        selection: const TextSelection.collapsed(offset: 0),
+                                      )..readOnly = true,
+                                      config: const QuillEditorConfig(
+                                        padding: EdgeInsets.zero,
+                                        autoFocus: false,
+                                        expands: false,
+                                        scrollable: true,
+                                        showCursor: false,
+                                        placeholder: '',
+                                      ),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  // 没有富文本时显示提示
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: 120, maxHeight: 240), // 设置最小高度为120，最大高度为240
+                                    child: Center(
+                                      child: Text(
+                                        '暂无描述内容',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                // 编辑按钮
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: _openFullEditor,
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Theme.of(context).colorScheme.primary,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.edit, size: 16),
+                                          const SizedBox(width: 4),
+                                          Text('编辑描述'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -407,12 +615,38 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               ),
                               shrinkWrap: true,
                               physics: NeverScrollableScrollPhysics(),
-                              itemCount: _colorOptions.length,
+                              itemCount: _colorOptions.length + 1, // 增加一个加号按钮
                               itemBuilder: (context, index) {
+                                // 如果是最后一个元素，显示加号按钮
+                                if (index == _colorOptions.length) {
+                                  return GestureDetector(
+                                    onTap: _openCustomColorPicker,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Theme.of(context).colorScheme.surface,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.add,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                
+                                // 普通颜色选项
                                 final color = _colorOptions[index];
-                                final isSelected = color == _selectedColor;
+                                final isSelected = color.value == _selectedColor.value;
                                 return GestureDetector(
                                   onTap: () => _selectColor(color),
+                                  onLongPress: () => _deleteCustomColor(color),
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
@@ -553,7 +787,6 @@ class _AddHabitPageState extends State<AddHabitPage> {
                         
                         // 如果选择了设置目标，显示目标选项
                         if (_isSetGoal) ...[
-                          // 周期类型选择
                           Card(
                             elevation: 2,
                             shape: RoundedRectangleBorder(
@@ -573,12 +806,37 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
+                                  // 周期类型选择
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                                     children: [
                                       Expanded(
                                         child: RadioListTile<CycleType>(
-                                          title: Text('每周', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                                          title: Text('每日', style: TextStyle(
+                                            color: _cycleType == CycleType.daily 
+                                              ? Theme.of(context).colorScheme.primary 
+                                              : Theme.of(context).colorScheme.onSurface
+                                          )),
+                                          value: CycleType.daily,
+                                          groupValue: _cycleType,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _cycleType = value;
+                                              // 当选择周期类型时，重置目标天数和目标时间
+                                              _targetDays = 1;
+                                              _updateTargetTimeMinutes();
+                                            });
+                                          },
+                                          activeColor: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: RadioListTile<CycleType>(
+                                          title: Text('每周', style: TextStyle(
+                                            color: _cycleType == CycleType.weekly 
+                                              ? Theme.of(context).colorScheme.primary 
+                                              : Theme.of(context).colorScheme.onSurface
+                                          )),
                                           value: CycleType.weekly,
                                           groupValue: _cycleType,
                                           onChanged: (value) {
@@ -594,7 +852,11 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                       ),
                                       Expanded(
                                         child: RadioListTile<CycleType>(
-                                          title: Text('每月', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                                          title: Text('每月', style: TextStyle(
+                                            color: _cycleType == CycleType.monthly 
+                                              ? Theme.of(context).colorScheme.primary 
+                                              : Theme.of(context).colorScheme.onSurface
+                                          )),
                                           value: CycleType.monthly,
                                           groupValue: _cycleType,
                                           onChanged: (value) {

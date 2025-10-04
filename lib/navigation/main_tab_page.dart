@@ -30,29 +30,12 @@ class MainTabPage extends StatefulWidget {
 
 class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
-  bool _showFocusNotification = false;
 
   // 更新标签索引的方法
   void updateTabIndex(int index) {
     setState(() {
       _selectedIndex = index;
     });
-  }
-  
-  // 处理专注状态变化
-  void _onFocusStateChanged(bool isFocusing) {
-    setState(() {
-      _showFocusNotification = isFocusing;
-    });
-  }
-  
-  // 返回专注页面
-  void _returnToFocusPage() {
-    final focusState = FocusState();
-    if (focusState.currentFocusHabit != null) {
-      // 使用GoRouter进行导航，避免与应用的路由管理系统冲突
-      GoRouter.of(context).go('/habits/tracking', extra: focusState.currentFocusHabit!);
-    }
   }
 
   static final List<Widget> _pages = <Widget>[
@@ -66,10 +49,6 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkNotificationState();
-    
-    // 添加专注状态监听器
-    final focusState = FocusState();
-    focusState.addListener(_onFocusStateChanged);
   }
 
   @override
@@ -85,10 +64,6 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     
-    // 移除专注状态监听器
-    final focusState = FocusState();
-    focusState.removeListener(_onFocusStateChanged);
-    
     super.dispose();
   }
   
@@ -103,10 +78,6 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
       final focusState = FocusState();
       // 调用appResumed方法更新后台流逝的时间
       focusState.appResumed();
-      
-      setState(() {
-        _showFocusNotification = focusState.isFocusing;
-      });
     }
   }
 
@@ -183,44 +154,6 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
             decoration: decoration,
             child: _pages.elementAt(_selectedIndex),
           ),
-          // 专注提示按钮 - 固定在右下角，与添加习惯按钮对齐
-          if (_showFocusNotification)
-            Positioned(
-              bottom: 20, // 位于添加习惯按钮上方
-              left: 16,
-              child: SizedBox(
-                width: 180,
-                child: ElevatedButton(
-                  onPressed: _returnToFocusPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.timer,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        size: 18,
-                      ),
-                      SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '有正在进行的专注',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

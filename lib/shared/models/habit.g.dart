@@ -26,6 +26,7 @@ class HabitAdapter extends TypeAdapter<Habit> {
       imagePath: fields[9] as String?,
       cycleType: fields[10] as CycleType?,
       icon: fields[15] as String?,
+      descriptionJson: fields[16] as String?,
       trackTime: fields[11] as bool,
       colorValue: fields[8] as int?,
       trackingDurations: (fields[13] as Map?)?.map((dynamic k, dynamic v) =>
@@ -37,7 +38,7 @@ class HabitAdapter extends TypeAdapter<Habit> {
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -48,6 +49,8 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..write(obj.cycleType)
       ..writeByte(15)
       ..write(obj.icon)
+      ..writeByte(16)
+      ..write(obj.descriptionJson)
       ..writeByte(11)
       ..write(obj.trackTime)
       ..writeByte(3)

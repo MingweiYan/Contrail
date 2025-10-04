@@ -55,6 +55,56 @@ class MockPathProviderPlatform extends PlatformInterface
   @override
   Future<String?> getLibraryPath() async => Directory.systemTemp.path;
 }
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+
+// 模拟path_provider平台接口
+class MockPathProviderPlatform extends PlatformInterface
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {
+  MockPathProviderPlatform() : super(token: _token);
+
+  static final Object _token = Object();
+
+  @override
+  Future<String?> getApplicationDocumentsPath() async {
+    // 返回系统临时目录，确保可写
+    return Directory.systemTemp.path;
+  print('Debug: After initAndCheck(), AppLogger registered: $appLoggerRegistered');
+  print('Debug: After initAndCheck(), AppStateManager registered: $stateManagerRegistered');
+
+  }
+
+  // 实现其他必需的方法
+  @override
+  // 在测试前设置模拟的path_provider平台实现
+  setUpAll(() {
+    PathProviderPlatform.instance = MockPathProviderPlatform();
+  });
+
+  @override
+  Future<String?> getApplicationSupportPath() async => Directory.systemTemp.path;
+
+  @override
+  Future<String?> getDownloadsPath() async => Directory.systemTemp.path;
+
+  @override
+  Future<List<String>?> getExternalCachePaths({bool? includeExtendedCacheDirs}) async => [Directory.systemTemp.path];
+
+  @override
+  Future<String?> getExternalStoragePath() async => Directory.systemTemp.path;
+
+  @override
+  Future<List<String>?> getExternalStoragePaths({StorageDirectory? type}) async => [Directory.systemTemp.path];
+
+  @override
+  Future<String?> getTemporaryPath() async => Directory.systemTemp.path;
+
+  @override
+  Future<String?> getLibraryPath() async => Directory.systemTemp.path;
+}
 
 // 辅助方法：初始化依赖注入并返回是否成功
 Future<bool> initAndCheck() async {

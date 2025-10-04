@@ -798,7 +798,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
               ),
               SizedBox(height: 8),
               Text(
-                '记录你每一次的努力',
+                '从新增一个习惯出发吧！',
                 style: ThemeHelper.textStyleWithTheme(
                   context,
                   fontSize: 16,
@@ -848,37 +848,60 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                     ),
                   ),
                   
-                  // 第二个按钮：使用天数 - 直接显示天数，不显示文字
+                  // 第二个按钮：查看专注
                   Card(
                     elevation: 3,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '$_daysUsed', // 显示实际的用户使用天数
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                    child: InkWell(
+                      onTap: () {
+                        // 检查是否有正在进行中的专注
+                        final focusState = FocusState();
+                        if (focusState.isFocusing && focusState.currentFocusHabit != null) {
+                          // 如果有正在进行中的专注，直接进入专注页面
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HabitTrackingPage(habit: focusState.currentFocusHabit!),
+                            ),
+                          ).then((_) {
+                            // 从专注页面返回后刷新UI
+                            setState(() {
+                              _loadHabits();
+                            });
+                          });
+                        } else {
+                          // 如果没有正在进行中的专注，提示用户
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('没有正在进行中的专注')),
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.timer,
+                              size: 28,
                               color: Colors.black,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '已经使用',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black,
+                            const SizedBox(height: 4),
+                            Text(
+                              '查看专注',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1046,9 +1069,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   // 获取习惯图标
   Widget _getHabitIcon(Habit habit) {
     // 使用共享的IconHelper类获取图标
+    // 设置logError为false以避免在正常流程中记录过多日志
     return ThemeHelper.iconWithBackground(
       context,
-      IconHelper.getIconData(habit.icon ?? ''),
+      IconHelper.getIconData(habit.icon ?? '', logError: false),
       size: 32,
       backgroundSize: 64,
       iconColor: Colors.white, // 图标颜色始终为白色，确保在任何背景下都清晰可见

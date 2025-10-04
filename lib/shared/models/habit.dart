@@ -39,6 +39,9 @@ class Habit extends HiveObject {
   @HiveField(15)
   String? icon; // 习惯图标路径或标识符
 
+  @HiveField(16)
+  String? descriptionJson; // 富文本描述的JSON字符串
+
   @HiveField(11)
   final bool trackTime;
 
@@ -82,6 +85,7 @@ class Habit extends HiveObject {
     this.imagePath,
     this.cycleType,
     this.icon,
+    this.descriptionJson,
     this.trackTime = false,
     int? colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,
@@ -102,6 +106,7 @@ class Habit extends HiveObject {
     this.imagePath,
     this.cycleType,
     this.icon,
+    this.descriptionJson,
     required this.trackTime,
     required this.colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,

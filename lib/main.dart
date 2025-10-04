@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 import 'shared/models/habit.dart';
 import 'shared/models/goal_type.dart';
@@ -26,6 +28,7 @@ import 'shared/services/notification_service.dart';
 import 'shared/services/task_scheduler.dart';
 import 'shared/services/habit_statistics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/state/focus_state.dart';
 
 // 全局变量，用于跟踪通知点击状态
 bool isNotificationClicked = false;
@@ -91,6 +94,10 @@ void main() async {
             isNotificationClicked = true;
             statsReportType = payload; // 保存具体的报告类型
             logger.debug('✅  更新全局变量: isStatsReportNotification=true, isNotificationClicked=true, statsReportType=$payload');
+            
+            // 导航到统计页面
+            logger.debug('🚀  导航到统计页面');
+            router.go('/statistics');
           } else if (payload == 'stats_report') {
             // 兼容旧版本的payload
             logger.debug('📊  检测到旧版本统计报告通知');
@@ -98,18 +105,58 @@ void main() async {
             isNotificationClicked = true;
             statsReportType = 'weekly_report'; // 默认设为周报告
             logger.debug('✅  更新全局变量: isStatsReportNotification=true, isNotificationClicked=true, statsReportType=weekly_report');
-          } else {
-            // 普通通知，设置普通通知标志
-            logger.debug('💬  检测到普通通知: $payload');
+            
+            // 导航到统计页面
+            logger.debug('🚀  导航到统计页面');
+            router.go('/statistics');
+          } else if (payload != null && payload.isNotEmpty) {
+            // 专注会话通知，payload是habit.id
+            logger.debug('⏱️  检测到专注会话通知，habit.id: $payload');
             isNotificationClicked = true;
             isStatsReportNotification = false;
             statsReportType = null;
             logger.debug('✅  更新全局变量: isNotificationClicked=true, isStatsReportNotification=false, statsReportType=null');
+            
+            // 直接导航到专注页面
+            logger.debug('🚀  直接导航到专注页面，habit.id: $payload');
+            try {
+              // 尝试从数据库中获取habit对象
+              final habitBox = sl<Box<Habit>>();
+              final habit = habitBox.get(payload);
+              if (habit != null) {
+                // 如果能找到habit对象，直接导航到专注页面
+                router.go('/habits/tracking', extra: habit);
+              } else {
+                // 如果找不到habit对象，先导航到主页，然后再尝试进入专注页面
+                logger.warning('⚠️  未找到habit对象，先导航到主页');
+                router.go('/');
+              }
+            } catch (e) {
+              logger.error('导航到专注页面失败: $e');
+              // 如果出错，导航到主页
+              router.go('/');
+            }
+          } else {
+            // 其他通知，导航到主页
+            logger.debug('💬  检测到其他通知');
+            isNotificationClicked = true;
+            isStatsReportNotification = false;
+            statsReportType = null;
+            logger.debug('✅  更新全局变量: isNotificationClicked=true, isStatsReportNotification=false, statsReportType=null');
+            router.go('/');
           }
           
-          // 直接导航到主页，这会触发MainTabPage的重建和状态检查
-          logger.debug('🚀  导航到主页，触发MainTabPage重建和状态检查');
-          router.go('/');
+          // 如果是专注会话通知，重新显示前台通知以确保它保持常驻
+          if (payload != null && payload != 'weekly_report' && payload != 'monthly_report' && payload != 'stats_report') {
+            final focusState = FocusState();
+            if (focusState.isFocusing && focusState.currentFocusHabit != null) {
+              logger.debug('🔄  重新显示前台通知，确保专注会话通知保持常驻');
+              notificationService.updateForegroundService(
+                habit: focusState.currentFocusHabit!,
+                duration: focusState.elapsedTime
+              );
+            }
+          }
         });
       });
     
@@ -168,6 +215,18 @@ class ContrailApp extends StatelessWidget {
             darkTheme: themeProvider.currentTheme.darkTheme,
             themeMode: flutterThemeMode,
             routerConfig: AppRouter.router,
+            // 添加本地化代理，包括flutter_quill所需的代理
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              FlutterQuillLocalizations.delegate,
+            ],
+            // 支持的语言
+            supportedLocales: const [
+              Locale('zh', 'CN'), // 中文
+              Locale('en', 'US'), // 英文
+            ],
           );
         },
       ),

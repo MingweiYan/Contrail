@@ -160,7 +160,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '个人设置中心',
+                    '设置中心',
                     style: ThemeHelper.textStyleWithTheme(
                       context,
                       fontSize: 16,

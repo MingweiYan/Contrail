@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/utils/logger.dart';
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = 
       FlutterLocalNotificationsPlugin();
@@ -53,7 +57,7 @@ class NotificationService {
         },
       );
     } catch (e) {
-      print('通知初始化失败: $e');
+      logger.error('通知初始化失败', e);
       rethrow;
     }
   }
@@ -73,7 +77,7 @@ class NotificationService {
       
       return hasPermission;
     } catch (e) {
-      print('权限检查失败: $e');
+      logger.error('权限检查失败', e);
       return false;
     }
   }
@@ -112,7 +116,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      print('显示通知失败: $e');
+      logger.error('显示通知失败', e);
     }
   }
 
@@ -158,7 +162,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      print('调度定期通知失败: $e');
+      logger.error('调度定期通知失败', e);
     }
   }
 
@@ -167,12 +171,141 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.cancel(id);
   }
 
+  // 创建前台通知服务（Android特有）
+  Future<void> startForegroundService({required Habit habit, required Duration duration}) async {
+    try {
+      logger.debug('尝试启动前台通知服务...');
+      // 只在Android平台上创建前台服务
+      final androidImplementation = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
+      if (androidImplementation == null) {
+        logger.warning('无法获取Android平台特定实现');
+        return;
+      }
+      
+      logger.debug('获取到Android平台特定实现');
+      // 首先检查权限
+      final hasPermission = await checkNotificationPermission();
+      
+      if (!hasPermission) {
+        logger.warning('未获得通知权限，无法启动前台服务');
+        // 尝试再次请求权限
+        final newPermission = await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission() ?? false;
+        logger.debug('再次请求权限结果: $newPermission');
+        if (!newPermission) return;
+      }
+      
+      logger.debug('已获得通知权限，准备显示前台通知');
+
+      // 显示前台通知
+      logger.debug('构建通知详情...');
+      const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+          'focus_session_channel',
+          '专注会话',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+          channelDescription: '用于显示正在进行的专注会话',
+          ongoing: true, // 标记为持续通知，用户不能轻易关闭
+          enableVibration: false,
+          enableLights: true,
+          playSound: false,
+        );
+      
+      logger.debug('调用startForegroundService方法启动前台服务...');
+      await androidImplementation.startForegroundService(
+        100,
+        '专注进行中',
+        '正在专注于 ${habit.name}',
+        notificationDetails: androidPlatformChannelSpecifics,
+        payload: habit.id,
+      );
+      
+      logger.debug('前台通知服务启动成功');
+    } catch (e, stackTrace) {
+      logger.error('启动前台服务失败', e, stackTrace);
+    }
+  }
+
+  // 更新前台通知
+  Future<void> updateForegroundService({required Habit habit, required Duration duration}) async {
+    try {
+      // 只在Android平台上更新前台服务
+      final androidImplementation = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImplementation != null) {
+        // 格式化持续时间
+        final hours = duration.inHours;
+        final minutes = duration.inMinutes.remainder(60);
+        final seconds = duration.inSeconds.remainder(60);
+        String formattedDuration;
+        
+        if (hours > 0) {
+          formattedDuration = '$hours时$minutes分$seconds秒';
+        } else if (minutes > 0) {
+          formattedDuration = '$minutes分$seconds秒';
+        } else {
+          formattedDuration = '$seconds秒';
+        }
+
+        // 构建通知内容
+        final String content = '已专注 $formattedDuration';
+
+        // 更新前台通知
+        await flutterLocalNotificationsPlugin.show(
+          100,
+          '专注进行中',
+          content,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'focus_session_channel',
+              '专注会话',
+              importance: Importance.max,
+              priority: Priority.high,
+              showWhen: false,
+              channelDescription: '用于显示正在进行的专注会话',
+              ongoing: true, // 标记为持续通知，用户不能轻易关闭
+              enableVibration: false,
+              enableLights: true,
+              playSound: false,
+              actions: [
+                // 返回应用的动作按钮
+                const AndroidNotificationAction(
+                  'return_to_app',
+                  '返回应用',
+                  showsUserInterface: true,
+                ),
+              ],
+            ),
+          ),
+          payload: habit.id,
+        );
+      }
+    } catch (e) {
+        logger.error('更新前台服务失败', e);
+      }
+  }
+
+  // 停止前台服务
+  Future<void> stopForegroundService() async {
+    try {
+      // 只在Android平台上停止前台服务
+      final androidImplementation = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImplementation != null) {
+        await androidImplementation.stopForegroundService();
+        await cancelNotification(100); // 取消前台服务通知
+      }
+    } catch (e) {
+      logger.error('停止前台服务失败', e);
+    }
+  }
+
   // 取消所有通知
   Future<void> cancelAllNotifications() async {
     try {
       await flutterLocalNotificationsPlugin.cancelAll();
     } catch (e) {
-      print('取消所有通知失败: $e');
+      logger.error('取消所有通知失败', e);
     }
   }
 
@@ -231,7 +364,7 @@ class NotificationService {
         await cancelAllNotifications();
       }
     } catch (e) {
-      print('更新通知设置失败: $e');
+      logger.error('更新通知设置失败', e);
     }
   }
 
@@ -248,8 +381,8 @@ class NotificationService {
         payload: 'weekly_report',
       );
     } catch (e) {
-      print('调度每周报告通知失败: $e');
-    }
+        logger.error('调度每周报告通知失败', e);
+      }
   }
 
   // 调度每月报告通知
@@ -265,7 +398,7 @@ class NotificationService {
         payload: 'monthly_report',
       );
     } catch (e) {
-      print('调度每月报告通知失败: $e');
-    }
+        logger.error('调度每月报告通知失败', e);
+      }
   }
 }

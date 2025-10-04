@@ -1,7 +1,8 @@
+import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:async';
-import 'dart:math';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/models/habit.dart' show Habit, TrackingMode;
 import '../providers/habit_provider.dart';
 import 'package:contrail/shared/widgets/clock_widget.dart' show ClockWidget;
@@ -13,1032 +14,666 @@ import 'package:contrail/core/state/theme_provider.dart';
 class HabitTrackingPage extends StatefulWidget {
   final Habit habit;
 
-  const HabitTrackingPage({
-    super.key,
-    required this.habit,
-  });
+  const HabitTrackingPage({super.key, required this.habit});
 
   @override
   State<HabitTrackingPage> createState() => _HabitTrackingPageState();
 }
 
 class _HabitTrackingPageState extends State<HabitTrackingPage> {
-  Habit? _selectedHabit;
-  TrackingMode _selectedMode = TrackingMode.stopwatch;
-  Timer? _timer;
-  Duration _elapsedTime = Duration.zero;
+  final AppLogger logger = AppLogger();
+  bool _showSettings = true;
   bool _isTracking = false;
-  int _timerDuration = 30; // 默认30分钟
-  int _shortBreakDuration = 5; // 默认5分钟短休息
-  int _longBreakDuration = 15; // 默认15分钟长休息
-  int _pomodoroRounds = 4; // 默认4轮
-  int _currentRound = 1; // 当前轮数
-  bool _isBreakTime = false; // 是否休息时间
-  bool _showSettings = true; // 是否显示设置界面
-  List<Duration> _workPeriodDurations = []; // 存储每个工作时段的持续时间
-  
-  // 添加随机数生成器和鼓励话语列表
-  final Random _random = Random();
-  final List<String> _encouragementQuotes = [
-    "每一次坚持都是成长的积累",
-    "专注当下，成就未来",
-    "你正在变得更好",
-    "坚持就是胜利",
-    "时间是最宝贵的财富",
-    "今天的努力，明天的收获",
-    "专注是成功的关键",
-    "相信自己，你能做到",
-    "小步前进，终将到达",
-    "每一天都是新的开始"
-  ];
-  
-  // 当前显示的激励语句，用于实现"第一次打开时变化，其余时候不变"的需求
-  String? _currentEncouragementQuote;
+  bool _isBreakTime = false;
+  Duration _elapsedTime = Duration.zero;
+  int _timerDuration = 25; // 默认25分钟
+  TrackingMode _selectedMode = TrackingMode.pomodoro;
+
+  // 番茄钟相关设置
+  int _pomodoroRounds = 4;
+  int _currentRound = 1;
+  int _workDuration = 25;
+  int _shortBreakDuration = 5;
+  int _longBreakDuration = 15;
+
+  // 用于显示富文本描述的控制器
+  QuillController? descriptionController;
 
   @override
   void initState() {
     super.initState();
-    _selectedHabit = widget.habit;
-    
-    // 页面第一次打开时，随机选择一条激励语句
-    _currentEncouragementQuote = _encouragementQuotes[_random.nextInt(_encouragementQuotes.length)];
-    print('第一次打开页面，选择的激励语句: $_currentEncouragementQuote');
-    
-    // 使用addPostFrameCallback延迟恢复状态的操作，避免Navigator锁定问题
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 检查是否有正在进行的专注会话
-      final focusState = FocusState();
-      if (focusState.isFocusing && focusState.currentFocusHabit != null) {
-        // 如果传入的习惯与当前专注的习惯相同，则恢复专注状态
-        if (focusState.currentFocusHabit!.id == widget.habit.id) {
-          setState(() {
-            _selectedHabit = focusState.currentFocusHabit!;
-            _selectedMode = focusState.focusMode!;
-            _elapsedTime = focusState.elapsedTime;
-            _isTracking = true;
-            _showSettings = false;
-          });
-          
-          // 恢复计时
-          if (_selectedMode == TrackingMode.stopwatch || _selectedMode == TrackingMode.countdown) {
-            _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-              setState(() {
-                if (_selectedMode == TrackingMode.stopwatch) {
-                  _elapsedTime += const Duration(seconds: 1);
-                } else if (_selectedMode == TrackingMode.countdown) {
-                  if (_elapsedTime.inSeconds > 0) {
-                    _elapsedTime -= const Duration(seconds: 1);
-                  } else {
-                    _timer?.cancel();
-                    _showConfirmationDialog();
-                  }
-                }
-              });
-            });
-          } else if (_selectedMode == TrackingMode.pomodoro) {
-            // 番茄钟模式需要特殊处理，暂时先不实现
-          }
-        }
-      }
-    });
+    logger.debug('HabitTrackingPage初始化，习惯名称: ${widget.habit.name}');
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     super.dispose();
   }
 
-  // 向上取整时间到分钟
-  Duration _roundUpDuration(Duration duration) {
-    if (duration.inSeconds % 60 == 0) {
-      return duration;
-    } else {
-      return Duration(minutes: duration.inMinutes + 1);
-    }
-  }
-
-  // 控制计时状态 (开始/暂停)
+  // 切换计时器的运行状态
   void _toggleTimer() {
-    final focusState = FocusState();
-    
-    if (_isTracking) {
-      // 暂停计时
-      _timer?.cancel();
-      focusState.pauseFocus();
-    } else {
-      // 检查是否已经有专注正在进行
-      if (focusState.isFocusing && focusState.currentFocusHabit != null) {
-        // 如果正在专注的习惯与当前选择的习惯不同，显示提示
-        if (focusState.currentFocusHabit!.id != widget.habit.id) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('已有专注正在进行中，请先结束当前专注')),
-          );
-          return; // 不开始新的专注
-        }
-      }
-      
-      // 继续计时
-      if (_selectedMode == TrackingMode.stopwatch || _selectedMode == TrackingMode.countdown) {
-        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          setState(() {
-            if (_selectedMode == TrackingMode.stopwatch) {
-              _elapsedTime += const Duration(seconds: 1);
-            } else if (_selectedMode == TrackingMode.countdown) {
-              if (_elapsedTime.inSeconds > 0) {
-                _elapsedTime -= const Duration(seconds: 1);
-              } else {
-                _timer?.cancel();
-                _showConfirmationDialog();
-              }
-            }
-          });
-        });
-      } else if (_selectedMode == TrackingMode.pomodoro) {
-        // 确保番茄钟模式下重置相关状态
-        if (_currentRound == 0 || _currentRound > _pomodoroRounds) {
-          _currentRound = 1;
-          _isBreakTime = false;
-        }
-        // 确保_elapsedTime不为0
-        if (_elapsedTime.inSeconds <= 0) {
-          if (_isBreakTime) {
-            int breakDuration = _currentRound % _pomodoroRounds == 0 ? _longBreakDuration : _shortBreakDuration;
-            _elapsedTime = Duration(minutes: breakDuration);
-          } else {
-            _elapsedTime = Duration(minutes: _timerDuration);
-          }
-        }
-        _startPomodoro();
-      }
-      
-      // 开始专注时更新全局状态
-      if (_selectedHabit != null) {
-        focusState.startFocus(_selectedHabit!, _selectedMode, _elapsedTime);
-      }
-    }
-    
     setState(() {
       _isTracking = !_isTracking;
-    });
-  }
-
-  // 开始番茄钟
-  void _startPomodoro() {
-    // 确保_elapsedTime不为0
-    if (_elapsedTime.inSeconds <= 0) {
-      if (_isBreakTime) {
-        // 开始休息
-        int breakDuration = _currentRound % _pomodoroRounds == 0 ? _longBreakDuration : _shortBreakDuration;
-        _elapsedTime = Duration(minutes: breakDuration);
-      } else {
-        // 开始工作时段
-        _elapsedTime = Duration(minutes: _timerDuration);
-      }
-    }
-    
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_elapsedTime.inSeconds > 0) {
-          _elapsedTime -= const Duration(seconds: 1);
-        } else {
-          _timer?.cancel();
-          if (_isBreakTime) {
-            // 休息结束，开始下一个工作时段
-            _isBreakTime = false;
-            _currentRound++;
-            _startPomodoro();
-          } else {
-            // 工作时段结束，记录时长并开始休息
-            _workPeriodDurations.add(Duration(minutes: _timerDuration));
-            _isBreakTime = true;
-            _showConfirmationDialog();
-          }
-        }
-      });
+      logger.debug('切换计时器状态: $_isTracking');
     });
   }
 
   // 重置计时器
   void _resetTimer() {
     setState(() {
-      _timer?.cancel();
-      _isTracking = false;
-      // 根据不同模式设置不同的初始值
-      if (_selectedMode == TrackingMode.stopwatch) {
-        _elapsedTime = Duration.zero; // 正计时初始值为0
-      } else {
-        _elapsedTime = Duration(minutes: _timerDuration); // 倒计时和番茄钟使用_timerDuration的值
-      }
-      if (_selectedMode == TrackingMode.pomodoro) {
-        _currentRound = 1;
-        _isBreakTime = false;
-        _workPeriodDurations.clear();
-      }
-      _showSettings = true;
+      _elapsedTime = _selectedMode == TrackingMode.stopwatch 
+          ? Duration.zero 
+          : Duration(minutes: _timerDuration);
+      logger.debug('重置计时器');
     });
   }
 
-  // 显示完成确认对话框
-  Future<void> _showConfirmationDialog() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ThemeHelper.background(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: ThemeHelper.outline(context), width: 1),
-        ),
-        title: Text(
-          _selectedMode == TrackingMode.pomodoro && !_isBreakTime ? '工作时段完成！' : '计时完成！',
-          style: ThemeHelper.textStyleWithTheme(
-            context,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            _selectedMode == TrackingMode.pomodoro && !_isBreakTime
-                ? '是否开始休息？' 
-                : '是否记录此次时长？',
-            style: ThemeHelper.textStyleWithTheme(
-              context,
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        actions: [
-          // 按钮顺序：放弃 -> 不保存 -> 确认
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // 取消按钮功能：放弃这次操作（保持当前状态不变）
-            },
-            style: ThemeHelper.textButtonStyle(
-              context,
-              foregroundColor: ThemeHelper.onSurface(context),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            ),
-            child: Text(
-              '取消',
-              style: ThemeHelper.textStyleWithTheme(
-                context,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // 不保存结果但是结束专注
-              _resetTimer();
-              
-              // 结束全局专注状态
-              final focusState = FocusState();
-              focusState.endFocus();
-            },
-            style: ThemeHelper.textButtonStyle(
-              context,
-              foregroundColor: ThemeHelper.onSurface(context),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            ),
-            child: Text(
-              '不保存',
-              style: ThemeHelper.textStyleWithTheme(
-                context,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              if (_selectedMode == TrackingMode.pomodoro && !_isBreakTime) {
-                _startPomodoro(); // 开始休息
-              } else {
-                await _saveTrackingSession();
-              }
-            },
-            style: ThemeHelper.elevatedButtonStyle(
-              context,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            ),
-            child: Text(
-              _selectedMode == TrackingMode.pomodoro && !_isBreakTime ? '开始休息' : '确认',
-              style: ThemeHelper.textStyleWithTheme(
-                context,
-                fontSize: 16,
-                color: ThemeHelper.onPrimary(context),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 保存追踪会话
-  Future<void> _saveTrackingSession() async {
-    if (_selectedHabit != null) {
-      try {
-        final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-        final totalDuration = _workPeriodDurations.fold(
-          Duration.zero,
-          (sum, duration) => sum + duration,
-        );
-        
-        // 如果是单次计时模式，使用_elapsedTime
-        if (_selectedMode != TrackingMode.pomodoro) {
-          final duration = _roundUpDuration(_elapsedTime);
-          await habitProvider.stopTracking(
-            _selectedHabit!.id,
-            duration,
-          );
-          
-          // 结束全局专注状态
-          final focusState = FocusState();
-          focusState.endFocus();
-          
-          // 返回习惯详情页面
-          Navigator.pop(context);
-        } else if (_workPeriodDurations.isNotEmpty) {
-          // 如果是番茄钟模式，使用累积的工作时长
-          final duration = _roundUpDuration(totalDuration);
-          await habitProvider.stopTracking(
-            _selectedHabit!.id,
-            duration,
-          );
-          
-          // 结束全局专注状态
-          final focusState = FocusState();
-          focusState.endFocus();
-          
-          // 返回习惯详情页面
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        logger.error('保存追踪记录失败: $e');
-        // 显示保存失败提示
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存追踪记录失败，请重试')),
-        );
-      }
-    } else {
-      logger.warning('⚠️  无法保存追踪记录，未选择习惯');
-    }
-  }
-
-  // 切换模式
-  void _switchMode(TrackingMode mode) {
-    setState(() {
-      _selectedMode = mode;
-      _resetTimer();
-    });
-  }
-
-  // 增加/减少计时器时长
-  void _adjustTimerDuration(int minutes) {
-    print('调整工作时长: $minutes，当前时长: $_timerDuration');
-    setState(() {
-      // 确保工作时长在5-120分钟范围内
-      _timerDuration = (_timerDuration + minutes).clamp(5, 120);
-      print('调整后工作时长: $_timerDuration');
-    });
-  }
-
-  // 调整休息时长
-  void _adjustBreakDuration(String type, int minutes) {
-    print('调整${type == 'short' ? '短' : '长'}休息时长: $minutes，当前时长: ${type == 'short' ? _shortBreakDuration : _longBreakDuration}');
-    setState(() {
-      if (type == 'short') {
-        // 确保短休息时长在1-30分钟范围内
-        _shortBreakDuration = (_shortBreakDuration + minutes).clamp(1, 30);
-        print('调整后短休息时长: $_shortBreakDuration');
-      } else if (type == 'long') {
-        // 确保长休息时长在5-60分钟范围内
-        _longBreakDuration = (_longBreakDuration + minutes).clamp(5, 60);
-        print('调整后长休息时长: $_longBreakDuration');
-      }
-    });
-  }
-
-  // 调整番茄钟轮数
-  void _adjustPomodoroRounds(int rounds) {
-    print('调整番茄钟轮数: $rounds，当前轮数: $_pomodoroRounds');
-    setState(() {
-      // 确保番茄钟轮数在1-10轮范围内
-      _pomodoroRounds = (_pomodoroRounds + rounds).clamp(1, 10);
-      print('调整后番茄钟轮数: $_pomodoroRounds');
-    });
-  }
-
-  // 构建模式按钮 - 优化为更小的按钮，移除白色背景块
-  Widget _buildModeButton(TrackingMode mode, String label, IconData icon) {
-    final isSelected = _selectedMode == mode;
-    return GestureDetector(
-      onTap: () => _switchMode(mode),
-      child: Container(
-        padding: const EdgeInsets.all(10), // 减小按钮大小
-        decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent, // 移除白色背景
-          borderRadius: BorderRadius.circular(12),
-          border: isSelected ? null : Border.all(color: Theme.of(context).colorScheme.outline), // 添加边框
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ] : [],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon, 
-              size: 24, // 减小图标大小
-              color: isSelected ? ThemeHelper.onPrimary(context) : ThemeHelper.onSurface(context)
-            ),
-            const SizedBox(height: 4), // 减小间距
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? ThemeHelper.onPrimary(context) : ThemeHelper.onSurface(context),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 12, // 减小字体大小
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  // 显示番茄钟设置弹窗
-  void _showPomodoroSettingsDialog() {
-    print('显示番茄钟设置弹窗');
+  // 显示确认对话框
+  void _showConfirmationDialog() {
     showDialog(
       context: context,
       builder: (context) {
-        // 使用StatefulBuilder来确保弹窗内的UI能够响应状态变化
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: ThemeHelper.background(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: ThemeHelper.outline(context), width: 1),
-              ),
-              title: Text(
-                '番茄钟设置',
-                style: ThemeHelper.textStyleWithTheme(
-                  context,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              content: SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 工作时长设置
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '工作时长',
-                              style: ThemeHelper.textStyleWithTheme(
-                                context,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    print('点击工作时长减号按钮');
-                                    _adjustTimerDuration(-5);
-                                    // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.remove),
-                                  color: ThemeHelper.onSurface(context),
-                                  iconSize: 16,
-                                ),
-                                Text(
-                                  '$_timerDuration 分钟',
-                                  style: ThemeHelper.textStyleWithTheme(
-                                    context,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    print('点击工作时长加号按钮');
-                                    _adjustTimerDuration(5);
-                                    // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  color: ThemeHelper.onSurface(context),
-                                  iconSize: 16,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      // 短休息时长设置
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '短休息时长',
-                              style: ThemeHelper.textStyleWithTheme(
-                                context,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    print('点击短休息时长减号按钮');
-                                    _adjustBreakDuration('short', -1);
-                                    // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.remove),
-                                  color: ThemeHelper.onSurface(context),
-                                  iconSize: 16,
-                                ),
-                                Text(
-                                  '$_shortBreakDuration 分钟',
-                                  style: ThemeHelper.textStyleWithTheme(
-                                    context,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    print('点击短休息时长加号按钮');
-                                    _adjustBreakDuration('short', 1);
-                                    // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  color: ThemeHelper.onSurface(context),
-                                  iconSize: 16,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      // 长休息时长设置
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '长休息时长',
-                              style: ThemeHelper.textStyleWithTheme(
-                                context,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    print('点击长休息时长减号按钮');
-                                    _adjustBreakDuration('long', -5);
-                                    // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.remove),
-                                  color: ThemeHelper.onSurface(context),
-                                  iconSize: 16,
-                                ),
-                                Text(
-                                  '$_longBreakDuration 分钟',
-                                  style: ThemeHelper.textStyleWithTheme(
-                                    context,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    print('点击长休息时长加号按钮');
-                                    _adjustBreakDuration('long', 5);
-                                    // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                    setState(() {});
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  color: ThemeHelper.onSurface(context),
-                                  iconSize: 16,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      // 番茄钟轮数设置
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '番茄钟轮数',
-                            style: ThemeHelper.textStyleWithTheme(
-                              context,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  print('点击番茄钟轮数减号按钮');
-                                  _adjustPomodoroRounds(-1);
-                                  // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                  setState(() {});
-                                },
-                                icon: const Icon(Icons.remove),
-                                color: ThemeHelper.onSurface(context),
-                                iconSize: 16,
-                              ),
-                              Text(
-                                '$_pomodoroRounds 轮',
-                                style: ThemeHelper.textStyleWithTheme(
-                                  context,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  print('点击番茄钟轮数加号按钮');
-                                  _adjustPomodoroRounds(1);
-                                  // 调用StatefulBuilder的setState来更新弹窗内的UI
-                                  setState(() {});
-                                },
-                                icon: const Icon(Icons.add),
-                                color: ThemeHelper.onSurface(context),
-                                iconSize: 16,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: ThemeHelper.textButtonStyle(
-                    context,
-                    foregroundColor: ThemeHelper.onSurface(context),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  ),
-                  child: Text(
-                    '确定',
-                    style: ThemeHelper.textStyleWithTheme(
-                      context,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
+        return AlertDialog(
+          title: const Text('确认停止'),
+          content: const Text('确定要停止当前的计时吗？'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isTracking = false;
+                  _showSettings = true;
+                  logger.debug('用户确认停止计时');
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('确定'),
+            ),
+          ],
         );
       },
     );
   }
 
-  // 获取习惯描述或随机鼓励话语
-  String _getDisplayText() {
-    // 假设Habit类有description属性，如果没有则使用随机鼓励话语
-    try {
-      // 由于我们不确定Habit类是否有description属性，我们使用name属性并添加随机鼓励话语
-      final name = _selectedHabit?.name ?? '';
-      // 返回当前的激励语句，实现"第一次打开时变化，其余时候不变"的需求
-      print('获取显示文本，使用当前激励语句: $_currentEncouragementQuote');
-      return _currentEncouragementQuote ?? '';
-    } catch (e) {
-      // 如果有任何异常，返回当前的激励语句，如果还没有初始化，则随机选择一条
-      print('获取显示文本时出错: $e，使用当前激励语句或随机选择');
-      return _currentEncouragementQuote ?? _encouragementQuotes[_random.nextInt(_encouragementQuotes.length)];
-    }
-  }
-
-  // 构建计时器控件 - 重构为三部分布局
-  Widget _buildTimerControls() {
-    // 获取习惯描述或随机鼓励话语
-    String displayText = _getDisplayText();
-
-    return Column(
-      children: [
-        // 第一部分：习惯描述或鼓励话语
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            displayText,
-            style: ThemeHelper.textStyleWithTheme(
-              context,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: ThemeHelper.onBackground(context),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-
-        // 第二部分：时钟部分 - 占据整个页面的最中央，是主题部分
-        if (!_showSettings) ...[
-          // 计时界面的时钟显示
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // 时钟背景装饰 - 添加科技感元素
-              Container(
-                width: double.infinity,
-                height: MediaQuery.of(context).size.width * 0.85,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                      Theme.of(context).colorScheme.primary.withOpacity(0.0),
-                    ],
-                    radius: 0.7,
-                  ),
-                ),
-              ),
-              
-              // 时钟控件
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.75,
-                height: MediaQuery.of(context).size.width * 0.75,
-                child: ClockWidget(
-                  duration: _elapsedTime,
-                  isRunning: _isTracking,
-                  onDurationChanged: (duration) {
-                    setState(() {
-                      _elapsedTime = duration;
-                    });
-                  },
-                  isCountdown: _selectedMode == TrackingMode.countdown ||
-                              (_selectedMode == TrackingMode.pomodoro && !_isBreakTime),
-                  isSettingsMode: false, // 专注进行时不是设置模式
-                ),
-              ),
-            ],
-          ),
-        ] else ...[ 
-          // 设置界面的时钟显示
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 时钟部分 - 直接居中显示
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.65,
-                  height: MediaQuery.of(context).size.width * 0.65,
-                  child: ClockWidget(
-                    // 根据当前模式设置不同的初始值
-                    duration: _selectedMode == TrackingMode.stopwatch ? Duration.zero : Duration(minutes: _timerDuration),
-                    isRunning: false,
-                    onDurationChanged: (duration) {
-                      setState(() {
-                        _timerDuration = duration.inMinutes;
-                      });
-                    },
-                    isCountdown: _selectedMode == TrackingMode.countdown ||
-                                _selectedMode == TrackingMode.pomodoro,
-                    isSettingsMode: true, // 设置界面启用旋转动画
-                    rotationSpeed: 6.0, // 再快两倍，现在是每分钟六圈
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-
-        const SizedBox(height: 32),
-
-        // 第三部分：模式选择 - 按钮更小，移除白色背景块
-        if (_showSettings) ...[
-          // 模式选择
-          Container(
-            padding: const EdgeInsets.all(16),
+  // 显示番茄钟设置对话框
+  void _showPomodoroSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('番茄钟设置'),
+          content: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '选择计时模式',
-                  style: ThemeHelper.textStyleWithTheme(
-                    context,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildModeButton(TrackingMode.stopwatch, '正计时', Icons.timer),
-                    _buildModeButton(TrackingMode.countdown, '倒计时', Icons.timer_off),
-                    _buildModeButton(TrackingMode.pomodoro, '番茄钟', Icons.timer_10_select),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          // 番茄钟设置按钮
-          if (_selectedMode == TrackingMode.pomodoro) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Center(
-                child: TextButton(
-                  onPressed: _showPomodoroSettingsDialog,
-                  style: TextButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Row(
+                ListTile(
+                  title: Text('工作时长 (${_workDuration}分钟)'),
+                  trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        '番茄钟设置',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          setState(() {
+                            if (_workDuration > 5) {
+                              _workDuration--;
+                            }
+                          });
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          setState(() {
+                            _workDuration++;
+                          });
+                        },
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
-          ],
-
-          // 开始按钮
-          Padding(
-            padding: const EdgeInsets.only(top: 24, bottom: 40),
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _showSettings = false;
-                  // 根据不同模式设置不同的初始值
-                  if (_selectedMode == TrackingMode.stopwatch) {
-                    _elapsedTime = Duration.zero; // 正计时初始值为0
-                  } else if (_selectedMode == TrackingMode.countdown || _selectedMode == TrackingMode.pomodoro) {
-                    _elapsedTime = Duration(minutes: _timerDuration); // 倒计时和番茄钟使用_timerDuration的值
-                  }
-                  // 自动开始计时
-                  if (!_isTracking) {
-                    _toggleTimer();
-                  }
-                });
-              },
-              style: ThemeHelper.elevatedButtonStyle(
-                context,
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-              ),
-              child: Text(
-                '开始计时',
-                style: ThemeHelper.textStyleWithTheme(
-                  context,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onPrimary(context),
-                ),
-              ),
-            ),
-          ),
-        ] else ...[
-          // 显示习惯信息
-          if (_selectedHabit != null) 
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                '正在追踪: ${_selectedHabit!.name}',
-                style: ThemeHelper.textStyleWithTheme(
-                  context,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          
-          // 显示番茄钟信息
-          if (_selectedMode == TrackingMode.pomodoro) ...[
-            Text(
-              _isBreakTime 
-                ? (_currentRound % _pomodoroRounds == 0 ? '长休息' : '短休息')
-                : '工作时段 ${_currentRound.toString().padLeft(2, '0')}/${_pomodoroRounds.toString().padLeft(2, '0')}',
-              style: ThemeHelper.textStyleWithTheme(
-                context,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-          ],
-          
-          // 控制按钮
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: _resetTimer,
-                  icon: const Icon(Icons.restart_alt),
-                  iconSize: 48,
-                  color: ThemeHelper.onSurface(context),
-                  tooltip: '重置',
-                ),
-                const SizedBox(width: 32),
-                ElevatedButton(
-                  onPressed: _toggleTimer,
-                  style: ThemeHelper.elevatedButtonStyle(
-                    context,
-                    padding: const EdgeInsets.all(24),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                  ),
-                  child: Icon(
-                    _isTracking ? Icons.pause : Icons.play_arrow,
-                    size: 32,
-                    color: ThemeHelper.onPrimary(context),
+                ListTile(
+                  title: Text('短休息时长 (${_shortBreakDuration}分钟)'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          setState(() {
+                            if (_shortBreakDuration > 1) {
+                              _shortBreakDuration--;
+                            }
+                          });
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          setState(() {
+                            _shortBreakDuration++;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 32),
-                // 停止按钮
-                ElevatedButton(
-                  onPressed: _showConfirmationDialog,
-                  style: ThemeHelper.elevatedButtonStyle(
-                    context,
-                    padding: const EdgeInsets.all(24),
-                    backgroundColor: Colors.red,
+                ListTile(
+                  title: Text('长休息时长 (${_longBreakDuration}分钟)'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          setState(() {
+                            if (_longBreakDuration > 5) {
+                              _longBreakDuration--;
+                            }
+                          });
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          setState(() {
+                            _longBreakDuration++;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.stop,
-                    size: 32,
-                    color: Colors.white,
+                ),
+                ListTile(
+                  title: Text('番茄钟轮数 (${_pomodoroRounds}轮)'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          setState(() {
+                            if (_pomodoroRounds > 1) {
+                              _pomodoroRounds--;
+                            }
+                          });
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          setState(() {
+                            _pomodoroRounds++;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ],
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ThemeHelper.textButtonStyle(
+                context,
+                foregroundColor: ThemeHelper.onSurface(context),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              ),
+              child: Text(
+                '确定',
+                style: ThemeHelper.textStyleWithTheme(
+                  context,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  // 构建模式选择按钮
+  Widget _buildModeButton(TrackingMode mode, String label, IconData icon) {
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          _selectedMode = mode;
+          // 根据不同模式设置默认时长
+          if (mode == TrackingMode.stopwatch) {
+            _timerDuration = 0;
+          } else if (mode == TrackingMode.countdown) {
+            _timerDuration = 25;
+          } else if (mode == TrackingMode.pomodoro) {
+            _timerDuration = _workDuration;
+          }
+          logger.debug('选择模式: $label');
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _selectedMode == mode
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.surface,
+        foregroundColor: _selectedMode == mode
+            ? ThemeHelper.onPrimary(context)
+            : ThemeHelper.onSurface(context),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
+  // 构建计时器控件
+  Widget _buildTimerControls() {
+    logger.debug('构建计时器控件，selectedHabit: ${widget.habit.name}, selectedHabit?.descriptionJson: ${widget.habit.descriptionJson}');
+    
+    // 恢复使用QuillController来显示富文本
+    QuillController? descriptionController;
+    
+    // 创建QuillController用于显示富文本内容
+    if (widget.habit.descriptionJson != null && widget.habit.descriptionJson!.isNotEmpty) {
+      try {
+        logger.debug('准备解析富文本描述: ${widget.habit.descriptionJson}');
+        final json = jsonDecode(widget.habit.descriptionJson!);
+        logger.debug('解析成功，JSON数据: $json');
+        // 创建文档
+        final document = Document.fromJson(json);
+        
+        // 创建只读的QuillController
+        descriptionController = QuillController(
+            document: document,
+            selection: const TextSelection.collapsed(offset: 0)
+          )..readOnly = true;
+        logger.debug('创建QuillController成功');
+      } catch (e) {
+        logger.warning('解析富文本描述失败: $e');
+        logger.warning('失败的JSON数据: ${widget.habit.descriptionJson}');
+      }
+    }
+
+    // 根据是否在设置模式返回不同的布局
+    if (_showSettings) {
+      // 设置模式：显示设置界面（时钟+底部模式选择和开始按钮）
+      return Stack(
+        children: [
+          // 时钟部分 - 始终保持在整个页面的最中央
+          Center(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.65,
+              height: MediaQuery.of(context).size.width * 0.65,
+              child: ClockWidget(
+                // 根据当前模式设置不同的初始值
+                duration: _selectedMode == TrackingMode.stopwatch ? Duration.zero : Duration(minutes: _timerDuration),
+                isRunning: false,
+                onDurationChanged: (duration) {
+                  setState(() {
+                    _timerDuration = duration.inMinutes;
+                  });
+                },
+                isCountdown: _selectedMode == TrackingMode.countdown ||
+                            _selectedMode == TrackingMode.pomodoro,
+                isSettingsMode: true, // 设置界面启用旋转动画
+                rotationSpeed: 6.0, // 再快两倍，现在是每分钟六圈
+              ),
+            ),
+          ),
+          
+          // 自定义消息块 - 固定在顶部区域
+          Column(
+            children: [
+              // 自定义消息块距离头部增加更多的占位块，使文本块起始点下降
+              const SizedBox(height: 16),
+              
+              // 显示用户自定义的富文本内容 - 使用QuillEditor
+              if (descriptionController != null) ...[
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16), // 精确控制内边距
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor,
+                      width: 1,
+                    ),
+                  ),
+                  // 设置固定高度以实现截断效果
+                  height: 240, // 固定高度，增加一倍
+                  child: QuillEditor.basic(
+                    controller: descriptionController,
+                    config: const QuillEditorConfig(
+                      padding: EdgeInsets.zero,
+                      autoFocus: false,
+                      expands: false,
+                      scrollable: true,
+                      showCursor: false,
+                    ),
+                  ),
+                ),
+                // 到固定中央的时钟最上方增加6个单位的占位块
+                const SizedBox(height: 12),
+              ],
+            ],
+          ),
+          
+          // 模式选择和开始按钮 - 放在时钟下方
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.only(bottom: 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 模式选择 - 按钮更小，移除白色背景块
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildModeButton(TrackingMode.stopwatch, '正计时', Icons.timer),
+                            _buildModeButton(TrackingMode.countdown, '倒计时', Icons.timer_off),
+                            _buildModeButton(TrackingMode.pomodoro, '番茄钟', Icons.timer_10_select),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // 番茄钟设置按钮 - 始终保留空间但只在番茄钟模式下可见
+                  Container(
+                    height: 56, // 固定高度，与显示时的按钮高度一致
+                    alignment: Alignment.center,
+                    child: Visibility(
+                      visible: _selectedMode == TrackingMode.pomodoro,
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      maintainState: true,
+                      child: TextButton(
+                        onPressed: _showPomodoroSettingsDialog,
+                        style: TextButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              '番茄钟设置',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 开始按钮 - 有间隔，在时钟下方
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _showSettings = false;
+                          // 根据不同模式设置不同的初始值
+                          if (_selectedMode == TrackingMode.stopwatch) {
+                            _elapsedTime = Duration.zero; // 正计时初始值为0
+                          } else if (_selectedMode == TrackingMode.countdown || _selectedMode == TrackingMode.pomodoro) {
+                            _elapsedTime = Duration(minutes: _timerDuration); // 倒计时和番茄钟使用_timerDuration的值
+                          }
+                          // 自动开始计时
+                          if (!_isTracking) {
+                            _toggleTimer();
+                          }
+                        });
+                      },
+                      style: ThemeHelper.elevatedButtonStyle(
+                        context,
+                        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                      child: Text(
+                        '开始计时',
+                        style: ThemeHelper.textStyleWithTheme(
+                          context,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeHelper.onPrimary(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // 非设置模式：显示专注界面（时钟+顶部文本块+底部控制按钮）
+      return Stack(
+        children: [
+          // 时钟部分 - 始终保持在整个页面的最中央
+          Center(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.75,
+              height: MediaQuery.of(context).size.width * 0.75,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // 时钟背景装饰 - 添加科技感元素
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                          Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                        ],
+                        radius: 0.7,
+                      ),
+                    ),
+                  ),
+                  
+                  // 时钟控件
+                  ClockWidget(
+                    duration: _elapsedTime,
+                    isRunning: _isTracking,
+                    onDurationChanged: (duration) {
+                      setState(() {
+                        _elapsedTime = duration;
+                      });
+                    },
+                    isCountdown: _selectedMode == TrackingMode.countdown ||
+                                (_selectedMode == TrackingMode.pomodoro && !_isBreakTime),
+                    isSettingsMode: false, // 专注进行时不是设置模式
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // 自定义消息块 - 固定在顶部区域
+          Column(
+            children: [
+              // 自定义消息块距离头部增加更多的占位块，使文本块起始点下降
+              const SizedBox(height: 16),
+              
+              // 显示用户自定义的富文本内容 - 使用QuillEditor
+              if (descriptionController != null) ...[
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16), // 精确控制内边距
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor,
+                      width: 1,
+                    ),
+                  ),
+                  // 设置固定高度以实现截断效果
+                  height: 240, // 固定高度，增加一倍
+                  child: QuillEditor.basic(
+                    controller: descriptionController,
+                    config: const QuillEditorConfig(
+                      padding: EdgeInsets.zero,
+                      autoFocus: false,
+                      expands: false,
+                      scrollable: true,
+                      showCursor: false,
+                      placeholder: '',
+                    ),
+                  ),
+                ),
+                // 到固定中央的时钟最上方增加6个单位的占位块
+                const SizedBox(height: 12),
+              ],
+            ],
+          ),
+          
+          // 底部内容 - 显示习惯信息和控制按钮
+          Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // 显示习惯信息
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  '正在追踪: ${widget.habit.name}',
+                  style: ThemeHelper.textStyleWithTheme(
+                    context,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              // 显示番茄钟信息
+              if (_selectedMode == TrackingMode.pomodoro) ...[
+                Text(
+                  _isBreakTime 
+                    ? (_currentRound % _pomodoroRounds == 0 ? '长休息' : '短休息')
+                    : '工作时段 ${_currentRound.toString().padLeft(2, '0')}/${_pomodoroRounds.toString().padLeft(2, '0')}',
+                  style: ThemeHelper.textStyleWithTheme(
+                    context,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+              ],
+              
+              // 控制按钮
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _resetTimer,
+                      style: ThemeHelper.elevatedButtonStyle(
+                        context,
+                        padding: const EdgeInsets.all(24),
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        foregroundColor: ThemeHelper.onSurface(context),
+                      ),
+                      child: Icon(
+                        Icons.restart_alt,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 32),
+                    ElevatedButton(
+                      onPressed: _toggleTimer,
+                      style: ThemeHelper.elevatedButtonStyle(
+                        context,
+                        padding: const EdgeInsets.all(24),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                      child: Icon(
+                        _isTracking ? Icons.pause : Icons.play_arrow,
+                        size: 32,
+                        color: ThemeHelper.onPrimary(context),
+                      ),
+                    ),
+                    const SizedBox(width: 32),
+                    // 停止按钮
+                    ElevatedButton(
+                      onPressed: _showConfirmationDialog,
+                      style: ThemeHelper.elevatedButtonStyle(
+                        context,
+                        padding: const EdgeInsets.all(24),
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Icon(
+                        Icons.stop,
+                        size: 32,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+  }
+
+  // 从JSON中提取纯文本内容的辅助方法
+  String _extractPlainTextFromJson(String jsonString) {
+    try {
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      String plainText = '';
+      
+      for (var item in jsonList) {
+        if (item.containsKey('insert') && item['insert'] is String) {
+          plainText += item['insert'];
+        }
+      }
+      
+      // 移除开头和结尾的空白字符
+      return plainText.trim();
+    } catch (e) {
+      logger.warning('提取纯文本失败: $e');
+      return '无法显示内容';
+    }
   }
 
   @override
@@ -1046,110 +681,22 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
 
-    return WillPopScope(
-      onWillPop: () async {
-        // 如果正在计时，弹出确认对话框
-        if (_isTracking) {
-          final shouldExit = await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: ThemeHelper.background(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: ThemeHelper.outline(context), width: 1),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('正在追踪习惯：' + widget.habit.name),
+      ),
+      body: Container(
+        decoration: decoration,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 主要内容 - 计时器控件
+              Expanded(
+                child: _buildTimerControls(),
               ),
-              title: const Text('确定要退出吗？'),
-              content: const Text('计时将会停止，是否保存此次记录？'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, false); // 取消退出
-                  },
-                  style: ThemeHelper.textButtonStyle(
-                    context,
-                    foregroundColor: ThemeHelper.onSurface(context),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  ),
-                  child: Text(
-                    '取消',
-                    style: ThemeHelper.textStyleWithTheme(
-                      context,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, true); // 不保存并退出
-                    _resetTimer();
-                  },
-                  style: ThemeHelper.textButtonStyle(
-                    context,
-                    foregroundColor: ThemeHelper.onSurface(context),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  ),
-                  child: Text(
-                    '不保存',
-                    style: ThemeHelper.textStyleWithTheme(
-                      context,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    await _saveTrackingSession();
-                    Navigator.pop(context, true); // 保存并退出
-                  },
-                  style: ThemeHelper.elevatedButtonStyle(
-                    context,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  ),
-                  child: Text(
-                    '保存',
-                    style: ThemeHelper.textStyleWithTheme(
-                      context,
-                      fontSize: 16,
-                      color: ThemeHelper.onPrimary(context),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-          return shouldExit ?? false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.habit.name),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                setState(() {
-                  _showSettings = true;
-                });
-              },
-            ),
-          ],
-        ),
-        body: Container(
-          decoration: decoration,
-          child: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // 顶部空白区域 - 使整体布局更加美观
-                const SizedBox(height: 16),
-                // 主要内容 - 计时器控件
-                _buildTimerControls(),
-                // 底部空白区域 - 使整体布局更加美观
-                const SizedBox(height: 16),
-              ],
-            ),
+              // 底部空间
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),

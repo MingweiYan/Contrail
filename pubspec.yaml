@@ -26,13 +26,15 @@ dependencies:
   dav: ^0.2.0
   shared_preferences: ^2.2.2
   uuid: ^4.4.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   file_picker: ^8.0.0
   cupertino_icons: ^1.0.8
   timezone: ^0.9.2
   analog_clock: ^0.1.0
   flip_panel_plus: ^1.0.0
   timelines: ^0.1.0
+  flutter_colorpicker: ^1.1.0
+  flutter_quill: ^11.4.2
 
 dev_dependencies:
   flutter_test:

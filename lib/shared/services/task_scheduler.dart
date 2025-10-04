@@ -9,6 +9,7 @@ import '../models/cycle_type.dart';
 import '../models/cycle_type_adapter.dart';
 import '../models/duration_adapter.dart';
 import 'notification_service.dart';
+import 'package:contrail/shared/utils/logger.dart';
 import 'habit_statistics_service.dart';
 
 class TaskScheduler {
@@ -186,7 +187,7 @@ void callbackDispatcher() {
       return Future.value(true);
     } catch (e) {
       // 记录错误，但仍然返回true表示任务执行完成
-      print('Error in background task: $e');
+      logger.error('Error in background task', e);
       return Future.value(true);
     }
   });
@@ -223,7 +224,7 @@ Future<List<Habit>> _loadAllHabits() async {
     
     return habits;
   } catch (e) {
-    print('Error loading habits in background: $e');
+    logger.error('Error loading habits in background', e);
     return [];
   }
 }

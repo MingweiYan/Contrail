@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http;
 
 // 导入被测代码
 import 'package:contrail/features/profile/presentation/pages/data_backup_page.dart';
@@ -14,6 +15,7 @@ import 'package:contrail/shared/models/cycle_type.dart';
 
 // Mock类
 class MockBox extends Mock implements Box<Habit> {} 
+class MockHttpClient extends Mock implements http.Client {} 
 class MockSharedPreferences extends Mock implements SharedPreferences {} 
 class MockHttpClient extends Mock implements http.Client {} 
 
@@ -22,6 +24,7 @@ class FakeHabit extends Fake implements Habit {}
 
 void main() {
   // Mock对象
+  late MockHttpClient mockHttpClient;
   late MockBox mockHabitBox;
   late MockSharedPreferences mockPrefs;
   late MockHttpClient mockHttpClient;
@@ -36,6 +39,7 @@ void main() {
     // 创建临时目录用于测试文件操作
     tempDir = Directory.systemTemp.createTempSync('backup_test_');
     
+    mockHttpClient = MockHttpClient();
     // 初始化mock对象
     mockHabitBox = MockBox();
     mockPrefs = MockSharedPreferences();
@@ -106,7 +110,8 @@ void main() {
         'goalType': habit.goalType.index,
         'imagePath': habit.imagePath,
         'cycleType': habit.cycleType?.index,
-        'icon': habit.icon,
+      // 添加调试信息
+      print('Serialized habits: $serializedHabits');
         'trackTime': habit.trackTime,
       }).toList();
       

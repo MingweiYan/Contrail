@@ -361,7 +361,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       ),
                       SizedBox(height: 8), // 添加标题与副标题间距
                       Text(
-                        '查看你的努力成果', // 添加副标题
+                        '每一次努力都会留下踪迹', // 添加副标题
                         style: ThemeHelper.textStyleWithTheme(
                           context,
                           fontSize: 16,

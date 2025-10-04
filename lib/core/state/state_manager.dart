@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/habit/domain/use_cases/get_habits_use_case.dart';
+import 'package:contrail/shared/utils/logger.dart';
 
 class AppStateManager with ChangeNotifier {
   // 单例实例
@@ -34,7 +35,7 @@ class AppStateManager with ChangeNotifier {
       _habits = await getHabitsUseCase.execute();
     } catch (e) {
       _errorMessage = '加载习惯数据失败: $e';
-      print(_errorMessage);
+      logger.error(_errorMessage ?? 'No error message');
     } finally {
       _isLoading = false;
       notifyListeners();

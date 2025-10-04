@@ -18,6 +18,7 @@ import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:contrail/shared/utils/logger.dart';
 
 class DataBackupPage extends StatefulWidget {
   const DataBackupPage({super.key});
@@ -184,7 +185,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
       _showBackupNotification();
     } catch (e) {
       // 记录错误但不显示UI反馈，因为这是后台操作
-      print('自动备份失败: $e');
+      logger.error('自动备份失败', e);
     }
   }
   

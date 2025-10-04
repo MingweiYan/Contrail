@@ -95,6 +95,44 @@ class ThemeProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  
+  // 添加自定义主题
+  Future<void> addCustomTheme(Color color) async {
+    // 生成一个唯一的主题名称
+    final themeName = '自定义主题_${color.value.toRadixString(16).substring(2)}';
+    
+    // 创建一个新的AppTheme对象
+    final customTheme = app_theme.AppTheme(
+      name: themeName,
+      lightTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: color),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: color,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      lightBackgroundStyle: app_theme.BackgroundStyle.gradient,
+      darkBackgroundStyle: app_theme.BackgroundStyle.gradient,
+      gradientColors: [
+        color.withOpacity(0.2),
+        color.withOpacity(0.1),
+      ],
+      iconStyle: app_theme.IconStyle.defaultStyle,
+    );
+    
+    // 检查是否已经存在相同的主题，如果存在则先移除
+    _availableThemes.removeWhere((theme) => theme.name == themeName);
+    
+    // 添加新的主题到可用主题列表
+    _availableThemes.add(customTheme);
+    
+    // 选择新添加的主题
+    await setThemeByName(themeName);
+  }
 
   // 获取Flutter的ThemeMode
   ThemeData getCurrentTheme(BuildContext context) {

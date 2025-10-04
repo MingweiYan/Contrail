@@ -37,7 +37,7 @@ class HabitProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 创建一个新的Habit对象，确保colorValue字段被正确复制
+      // 创建一个新的Habit对象，确保所有字段都被正确复制
       final newHabit = Habit(
         id: habit.id,
         name: habit.name,
@@ -48,6 +48,7 @@ class HabitProvider with ChangeNotifier {
         imagePath: habit.imagePath,
         cycleType: habit.cycleType,
         icon: habit.icon,
+        descriptionJson: habit.descriptionJson, // 添加descriptionJson字段
         trackTime: habit.trackTime,
         colorValue: habit.colorValue, // 显式复制colorValue字段
         trackingDurations: Map.from(habit.trackingDurations),
@@ -72,7 +73,7 @@ class HabitProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 创建一个新的Habit对象，确保colorValue字段被正确复制
+      // 创建一个新的Habit对象，确保所有字段都被正确复制
       final updatedHabit = Habit(
         id: habit.id,
         name: habit.name,
@@ -83,6 +84,7 @@ class HabitProvider with ChangeNotifier {
         imagePath: habit.imagePath,
         cycleType: habit.cycleType,
         icon: habit.icon,
+        descriptionJson: habit.descriptionJson, // 添加descriptionJson字段
         trackTime: habit.trackTime,
         colorValue: habit.colorValue, // 显式复制colorValue字段
         trackingDurations: Map.from(habit.trackingDurations),
@@ -180,6 +182,7 @@ class HabitProvider with ChangeNotifier {
         imagePath: habit.imagePath,
         cycleType: habit.cycleType,
         icon: habit.icon,
+        descriptionJson: habit.descriptionJson, // 添加descriptionJson字段
         trackTime: habit.trackTime,
         colorValue: habit.colorValue, // 直接访问colorValue字段
         trackingDurations: Map.from(habit.trackingDurations),

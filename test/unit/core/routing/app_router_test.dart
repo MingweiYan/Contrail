@@ -4,11 +4,32 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:contrail/core/routing/app_router.dart';
 import 'package:contrail/navigation/main_tab_page.dart';
+import 'package:contrail/navigation/main_tab_page.dart';
 import 'package:contrail/features/habit/presentation/routes/habit_routes.dart';
 import 'package:contrail/features/statistics/presentation/routes/statistics_routes.dart';
 import 'package:contrail/features/profile/presentation/routes/profile_routes.dart';
 import 'package:contrail/features/focus/presentation/routes/focus_routes.dart';
-import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/features/habit/domain/use_cases/get_habits_use_case.dart';
+import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/models/goal_type.dart';
+import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'dart:io';
+
+// 模拟GetHabitsUseCase
+class MockGetHabitsUseCase extends Mock implements GetHabitsUseCase {} 
+
+// 模拟path_provider平台接口
+class MockPathProviderPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {
+  @override
+  Future<String?> getApplicationDocumentsPath() async {
+    return Directory.systemTemp.path;
+  }
+}
 import 'package:contrail/features/habit/domain/use_cases/get_habits_use_case.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
@@ -43,8 +64,8 @@ void main() {
       // 创建一个简单的路由配置，仅用于测试路由配置相关的属性
       // 不依赖于实际的应用初始化
       router = GoRouter(
-        initialLocation: '/',
-        routes: [
+      final initialLocation = router.routeInformationProvider.value.location;
+      expect(initialLocation, '/');
           GoRoute(
             path: '/',
             builder: (context, state) => Scaffold(body: Text('Test Home')),
