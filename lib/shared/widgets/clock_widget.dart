@@ -95,7 +95,6 @@ class _ClockWidgetState extends State<ClockWidget> {
   late Duration _currentDuration;
   final bool _isDragging = false;
   double _rotationProgress = 0.0;
-  double _pausedProgress = 0.0; // 存储暂停时的进度
   Timer? _rotationTimer;
 
   @override

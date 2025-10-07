@@ -224,7 +224,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children:[
                 Text(
-                  '打卡日历',
+                  '完成日历',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

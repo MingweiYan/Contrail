@@ -143,7 +143,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   // 标题
                   Center(
                     child: Text(
-                      '补充打卡',
+                      '补充记录',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,

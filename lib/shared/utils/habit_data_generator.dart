@@ -2,10 +2,8 @@ import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 import 'dart:math';
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
-import 'package:contrail/core/state/focus_state.dart';
 import 'dart:convert';
 
 /// 习惯数据生成器，用于创建测试数据
@@ -44,15 +42,6 @@ class HabitDataGenerator {
     '冥想',
     '健身',
     '早睡'
-  ];
-  
-  static final List<String> _habitDescriptions = [
-    '每天早晨进行跑步锻炼',
-    '每天阅读至少30分钟',
-    '每天喝足够的水',
-    '每天进行冥想放松',
-    '每天健身保持健康',
-    '保持良好的睡眠习惯'
   ];
 
   /// 为习惯生成默认的富文本描述JSON
@@ -232,13 +221,13 @@ class HabitDataGenerator {
       // 生成6个习惯并添加100条数据
       final habits = generateMockHabitsWithData();
       
-      // 保存所有习惯
+      // 为生成的习惯添加专注数据
+      _generateFocusDataForHabits(habits);
+      
+      // 保存所有习惯（包含专注数据）
       for (final habit in habits) {
         await addHabitUseCase.execute(habit);
       }
-      
-      // 为生成的习惯添加专注数据
-      _generateFocusDataForHabits(habits);
       
       // 关闭加载对话框
       Navigator.pop(context);

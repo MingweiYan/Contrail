@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/models/habit.dart' show Habit, TrackingMode;
-import 'package:contrail/core/state/focus_state.dart' show PomodoroStatus;
 import '../providers/habit_provider.dart';
 import 'package:contrail/shared/widgets/clock_widget.dart' show ClockWidget;
 import 'package:contrail/core/state/focus_state.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
-import 'package:contrail/core/state/theme_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:contrail/features/habit/presentation/pages/fullscreen_clock_page.dart';
 
@@ -991,12 +989,11 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('正在追踪习惯：' + widget.habit.name),
+        title: Text('正在追踪习惯：${widget.habit.name}'),
       ),
       body: Container(
         decoration: decoration,

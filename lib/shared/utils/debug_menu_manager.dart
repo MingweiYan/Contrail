@@ -267,30 +267,6 @@ class DebugMenuManager with WidgetsBindingObserver {
     );
   }
   
-  // 构建debug功能按钮
-  Widget _buildDebugButton(BuildContext context, String text, Color color, VoidCallback onTap) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 2,
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-  
   // 构建水平占满屏幕的debug功能按钮
   Widget _buildFullWidthDebugButton(BuildContext context, String text, Color color, VoidCallback onTap) {
     return ElevatedButton(
@@ -313,33 +289,6 @@ class DebugMenuManager with WidgetsBindingObserver {
           color: Colors.white,
         ),
         textAlign: TextAlign.center,
-      ),
-    );
-  }
-  
-  // 显示确认对话框
-  void _showConfirmDialog(BuildContext context, String message, VoidCallback onConfirm) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认操作'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onConfirm();
-            },
-            child: const Text('确认'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-          ),
-        ],
       ),
     );
   }

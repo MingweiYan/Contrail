@@ -5,8 +5,6 @@ import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
-import 'package:contrail/shared/models/theme_model.dart';
-import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/features/profile/presentation/pages/theme_selection_page.dart';
 import 'package:contrail/features/profile/presentation/pages/data_backup_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,18 +28,26 @@ class _ProfilePageState extends State<ProfilePage> {
 
   final DebugMenuManager _debugMenuManager = DebugMenuManager();
 
+  // 创建一个引用以便在dispose中移除
+  late final VoidCallback _debugModeListener;
+  
   @override
   void initState() {
     super.initState();
     _loadSettings();
     
+    // 创建监听器函数
+    _debugModeListener = () {
+      if (mounted) {
+        setState(() {
+          // 当debug模式状态变化时，触发UI更新
+          logger.debug('Debug模式状态变化: ${_debugMenuManager.showDebugTab}');
+        });
+      }
+    };
+    
     // 添加对debug模式状态变化的监听
-    _debugMenuManager.showDebugTabNotifier.addListener(() {
-      setState(() {
-        // 当debug模式状态变化时，触发UI更新
-        logger.debug('Debug模式状态变化: ${_debugMenuManager.showDebugTab}');
-      });
-    });
+    _debugMenuManager.showDebugTabNotifier.addListener(_debugModeListener);
   }
 
   Future<void> _loadSettings() async {
@@ -95,8 +101,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取主题Provider
-    final themeProvider = Provider.of<ThemeProvider>(context);
     // 生成背景装饰
     final backgroundDecoration = ThemeHelper.generateBackgroundDecoration(context);
 
@@ -173,13 +177,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
   
   // 构建个人设置内容
+  
   @override
   void dispose() {
     // 移除对debug模式状态变化的监听
     try {
-      // 创建一个临时函数用于移除监听器
-      void tempListener() {}
-      _debugMenuManager.showDebugTabNotifier.removeListener(tempListener);
+      _debugMenuManager.showDebugTabNotifier.removeListener(_debugModeListener);
     } catch (e) {
       logger.error('移除debug模式监听器失败', e);
     }
