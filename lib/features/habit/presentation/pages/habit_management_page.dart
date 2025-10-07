@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart' as img_picker;
 import 'package:intl/intl.dart';
-import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/habit/domain/use_cases/get_habits_use_case.dart';
@@ -16,23 +11,13 @@ import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/habit/presentation/pages/add_habit_page.dart';
 import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
-import 'package:contrail/shared/models/goal_type.dart';
-import 'package:contrail/features/focus/presentation/pages/focus_selection_page.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
-import 'package:contrail/shared/models/theme_model.dart' as app_theme;
 import 'package:contrail/core/state/focus_state.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 
-// 从habit.dart导入所需枚举
-import 'package:contrail/shared/models/habit.dart' show CycleType, ImageSourceType, TrackingMode, GoalType;
-import 'package:contrail/shared/utils/habit_data_generator.dart';
-
-// 导入动画相关库
-import 'package:flutter/animation.dart';
-import 'package:flutter/foundation.dart';
 
 class HabitManagementPage extends StatefulWidget {
   const HabitManagementPage({super.key});
@@ -668,7 +653,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   void _navigateToTrackingPage(Habit habit) {
     // 检查是否有正在进行的专注会话
     final focusState = FocusState();
-    if (focusState.isFocusing && focusState.currentFocusHabit != null) {
+    if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
       // 如果正在专注的习惯与当前选择的习惯不同，显示提示
       if (focusState.currentFocusHabit!.id != habit.id) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -687,11 +672,13 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
           builder: (context) => HabitTrackingPage(habit: habit),
         ),
       ).then((_) {
-        // 从专注页面返回后刷新UI
-        setState(() {
-          // 重新加载习惯列表以显示更新后的进度
-          _loadHabits();
-        });
+        // 从专注页面返回后刷新UI，但要先检查widget是否仍然存在
+        if (mounted) {
+          setState(() {
+            // 重新加载习惯列表以显示更新后的进度
+            _loadHabits();
+          });
+        }
       });
     } else {
       // 如果习惯没有设置追踪时间，则直接完成该习惯的追踪
@@ -858,7 +845,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       onTap: () {
                         // 检查是否有正在进行中的专注
                         final focusState = FocusState();
-                        if (focusState.isFocusing && focusState.currentFocusHabit != null) {
+                        if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
                           // 如果有正在进行中的专注，直接进入专注页面
                           Navigator.push(
                             context,

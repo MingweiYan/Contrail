@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:contrail/core/state/focus_state.dart';
+import 'dart:convert';
 
 /// 习惯数据生成器，用于创建测试数据
 class HabitDataGenerator {
@@ -24,16 +25,16 @@ class HabitDataGenerator {
   ];
   
   static final List<String> _icons = [
-    'running',
+    'directions_run', // 对应running
     'book',
-    'water',
-    'meditation',
-    'workout',
-    'sleep',
-    'reading',
-    'yoga',
-    'coding',
-    'music'
+    'water_drop', // 对应water
+    'self_improvement', // 对应meditation
+    'fitness_center', // 对应workout
+    'bedtime', // 对应sleep
+    'menu_book', // 对应reading
+    'sports_kabaddi', // 对应yoga
+    'code', // 对应coding
+    'music_note' // 对应music
   ];
   
   static final List<String> _habitNames = [
@@ -53,6 +54,20 @@ class HabitDataGenerator {
     '每天健身保持健康',
     '保持良好的睡眠习惯'
   ];
+
+  /// 为习惯生成默认的富文本描述JSON
+  static String _generateDefaultRichTextDescription(String habitName) {
+    // 定义默认的富文本模板
+    final richTextTemplate = [
+      {"insert":"🌟 $habitName 的小提示 🌟\n","attributes":{"heading":2}},
+      {"insert":"\n"},
+      {"insert":"📚 坚持是成功的关键，每天进步一点点。\n","attributes":{"list":"bullet"}},
+      {"insert":"📈 记录你的进步，看到自己的成长。\n","attributes":{"list":"bullet"}},
+      {"insert":"🎯 设定明确的目标，让习惯成为自然。\n","attributes":{"list":"bullet"}}
+    ];
+    
+    return jsonEncode(richTextTemplate);
+  }
   
   /// 创建6个习惯并在过去一个月内随机生成100条数据
   static List<Habit> generateMockHabitsWithData() {
@@ -69,6 +84,7 @@ class HabitDataGenerator {
         goalType: GoalType.positive,
         cycleType: CycleType.daily,
         icon: _icons[i],
+        descriptionJson: _generateDefaultRichTextDescription(_habitNames[i]), // 添加富文本描述
         trackTime: true, // 所有习惯都跟踪时间
         colorValue: _colors[i].value,
         trackingDurations: {},

@@ -240,50 +240,111 @@ class _StatsResultPageState extends State<StatsResultPage> {
   List<Map<String, dynamic>> _getHabitGoalCompletionData() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
     final habits = habitProvider.habits;
+    final now = DateTime.now();
     
     final List<Map<String, dynamic>> goalCompletionData = [];
     
+    // 确定统计周期
+    DateTime startDate, endDate;
+    if (widget.periodType == 'month') {
+      // 月度统计 - 获取当前月的开始和结束日期
+      startDate = DateTime(now.year, now.month, 1);
+      endDate = DateTime(now.year, now.month + 1, 0);
+    } else if (widget.periodType == 'year') {
+      // 年度统计 - 获取当前年的开始和结束日期
+      startDate = DateTime(now.year, 1, 1);
+      endDate = DateTime(now.year, 12, 31);
+    } else {
+      // 默认周度统计
+      startDate = now.subtract(Duration(days: now.weekday - 1));
+      endDate = startDate.add(const Duration(days: 6));
+    }
+    
     for (final habit in habits) {
       // 只考虑有目标的习惯
-      if (habit.targetDays != null) {
+      if (habit.targetDays != null && habit.color != null) {
         // 计算当前周期内的完成情况
         double completionRate = 0.0;
         int completedDays = 0;
-        int requiredDays = habit.targetDays!;
+        int requiredDays = 0;
         
-        // 根据周期类型计算完成率
+        // 根据周期类型和统计周期计算完成率
         if (habit.cycleType == CycleType.daily) {
-          // 对于每日习惯，计算本月完成的天数
-          final now = DateTime.now();
-          final currentMonth = DateTime(now.year, now.month, 1);
-          final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-          final daysPassed = min(now.day, daysInMonth);
+          // 每日习惯
+          if (widget.periodType == 'month') {
+            // 月度统计：计算本月需要完成的天数（按实际天数计算）
+            final daysInMonth = endDate.day;
+            requiredDays = min(now.day, daysInMonth); // 只计算到今天为止的天数
+          } else if (widget.periodType == 'year') {
+            // 年度统计：计算今年需要完成的天数
+            final daysPassedInYear = now.difference(startDate).inDays + 1;
+            requiredDays = daysPassedInYear;
+          } else {
+            // 周度统计：计算本周需要完成的天数
+            final daysPassedInWeek = now.difference(startDate).inDays + 1;
+            requiredDays = daysPassedInWeek;
+          }
           
-          requiredDays = min(now.day, daysInMonth);
-          
+          // 计算完成的天数
           habit.dailyCompletionStatus.forEach((date, completed) {
             final dateOnly = DateTime(date.year, date.month, date.day);
-            if (dateOnly.year == now.year && 
-                dateOnly.month == now.month && 
+            if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
+                dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
+                dateOnly.isBefore(now.add(const Duration(days: 1))) && // 只计算到今天
                 completed) {
               completedDays++;
             }
           });
         } else if (habit.cycleType == CycleType.weekly) {
-          // 对于每周习惯，计算本周完成的天数
-          final now = DateTime.now();
-          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          // 每周习惯：目标是每周完成特定天数
+          if (widget.periodType == 'month') {
+            // 月度统计：计算本月有多少周，每周需要完成的天数
+            final weeksInMonth = (endDate.difference(startDate).inDays / 7).ceil();
+            requiredDays = weeksInMonth * (habit.targetDays ?? 1);
+          } else if (widget.periodType == 'year') {
+            // 年度统计：计算今年有多少周，每周需要完成的天数
+            final weeksInYear = (endDate.difference(startDate).inDays / 7).ceil();
+            requiredDays = weeksInYear * (habit.targetDays ?? 1);
+          } else {
+            // 周度统计：直接使用目标天数
+            requiredDays = habit.targetDays!;
+          }
           
+          // 计算完成的天数
           habit.dailyCompletionStatus.forEach((date, completed) {
             final dateOnly = DateTime(date.year, date.month, date.day);
-            if (dateOnly.isAfter(weekStart.subtract(const Duration(days: 1))) && 
-                dateOnly.isBefore(now.add(const Duration(days: 1))) && 
+            if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
+                dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
+                dateOnly.isBefore(now.add(const Duration(days: 1))) && // 只计算到今天
+                completed) {
+              completedDays++;
+            }
+          });
+        } else if (habit.cycleType == CycleType.monthly) {
+          // 每月习惯：目标是每月完成特定天数
+          if (widget.periodType == 'year') {
+            // 年度统计：计算今年有多少月，每月需要完成的天数
+            final monthsInYear = (endDate.year - startDate.year) * 12 + 
+                              (endDate.month - startDate.month) + 1;
+            requiredDays = monthsInYear * (habit.targetDays ?? 1);
+          } else {
+            // 月度或周度统计：直接使用目标天数
+            requiredDays = habit.targetDays!;
+          }
+          
+          // 计算完成的天数
+          habit.dailyCompletionStatus.forEach((date, completed) {
+            final dateOnly = DateTime(date.year, date.month, date.day);
+            if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
+                dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
+                dateOnly.isBefore(now.add(const Duration(days: 1))) && // 只计算到今天
                 completed) {
               completedDays++;
             }
           });
         }
         
+        // 确保requiredDays不为0，避免除零错误
         completionRate = requiredDays > 0 ? completedDays / requiredDays : 0.0;
         
         goalCompletionData.add({
@@ -296,8 +357,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
       }
     }
     
-    // 按完成率从低到高排序
-    goalCompletionData.sort((a, b) => a['completionRate'].compareTo(b['completionRate']));
+    // 按完成率从高到低排序，使图表更直观
+    goalCompletionData.sort((a, b) => b['completionRate'].compareTo(a['completionRate']));
     
     return goalCompletionData;
   }

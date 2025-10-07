@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/habit_data_generator.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/shared/utils/json_editor_page.dart';
 
 /// Debug菜单管理器 - 提供作为标签页的调试功能
 class DebugMenuManager with WidgetsBindingObserver {
@@ -193,102 +193,54 @@ class DebugMenuManager with WidgetsBindingObserver {
               ),
               const SizedBox(height: 20),
               
-              // 功能按钮网格
-              GridView.count(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  // 生成测试数据
-                  _buildDebugButton(
-                    context, 
-                    '📊 生成测试数据', 
-                    Colors.blue,
-                    () async {
-                      try {
-                        final addHabitUseCase = sl<AddHabitUseCase>();
-                        await HabitDataGenerator.generateAndSaveTestData(
-                          addHabitUseCase: addHabitUseCase,
-                          context: context,
-                        );
-                      } catch (e) {
-                        // 修复空指针错误
-                        logger.error('生成测试数据失败', e);
-                        _showToast('生成测试数据失败');
-                      }
-                    }
-                  ),
-                  
-                  // 构建测试数据
-                  _buildDebugButton(
-                    context, 
-                    '🧪 构建测试数据', 
-                    Colors.green,
-                    () async {
-                      try {
-                        final addHabitUseCase = sl<AddHabitUseCase>();
-                        // 生成习惯数据
-                        final habits = HabitDataGenerator.generateMockHabitsWithData();
-                        
-                        // 保存所有习惯
-                        for (final habit in habits) {
-                          await addHabitUseCase.execute(habit);
-                        }
-                        
-                        _showToast('测试数据构建成功！已创建6个习惯并生成100条数据');
-                        logger.debug('测试数据构建成功');
-                      } catch (e) {
-                        // 修复空指针错误
-                        logger.error('构建测试数据失败', e);
-                        _showToast('构建测试数据失败');
-                      }
-                    }
-                  ),
-                  
-                  // 清除所有数据
-                  _buildDebugButton(
-                    context, 
-                    '🧹 清除所有数据', 
-                    Colors.orange,
-                    () async {
-                      _showConfirmDialog(
-                        context,
-                        '确定要清除所有数据吗？此操作不可恢复！',
-                        () async {
-                          // 这里可以实现清除所有数据的逻辑
-                          logger.debug('清除所有数据');
-                          _showToast('数据清除操作已触发');
-                        },
-                      );
-                    }
-                  ),
-                  
-                  // 显示日志
-                  _buildDebugButton(
-                    context, 
-                    '📝 查看日志', 
-                    Colors.purple,
-                    () {
-                      logger.debug('查看日志');
-                      _showToast('日志功能待实现');
-                    }
-                  ),
-                  
-                  // 切换主题
-                  _buildDebugButton(
-                    context, 
-                    '🎨 切换主题', 
-                    Colors.pink,
-                    () {
-                      logger.debug('切换主题');
-                      _showToast('主题切换功能待实现');
-                    }
-                  ),
-                ],
+              // 生成测试数据按钮 - 水平占满屏幕
+              _buildFullWidthDebugButton(
+                context, 
+                '📊 生成测试数据', 
+                Colors.blue,
+                () async {
+                  try {
+                    final addHabitUseCase = sl<AddHabitUseCase>();
+                    await HabitDataGenerator.generateAndSaveTestData(
+                      addHabitUseCase: addHabitUseCase,
+                      context: context,
+                    );
+                  } catch (e) {
+                    // 修复空指针错误
+                    logger.error('生成测试数据失败', e);
+                    _showToast('生成测试数据失败');
+                  }
+                }
               ),
               const SizedBox(height: 20),
+              
+              // JSON编辑器按钮 - 水平占满屏幕
+              _buildFullWidthDebugButton(
+                context, 
+                '📝 JSON编辑器', 
+                Colors.purple,
+                () async {
+                  try {
+                    // 打开JSON编辑器页面
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => JsonEditorPage(),
+                      ),
+                    );
+                    
+                    // 如果有返回结果，使用增强的分段打印方法，确保完整显示
+                    if (result != null && result is String) {
+                      _printLongJsonWithHeaders('JSON编辑器返回数据', result);
+                      _showToast('JSON数据已完整输出到日志');
+                    }
+                  } catch (e) {
+                    logger.error('打开JSON编辑器失败', e);
+                    _showToast('打开JSON编辑器失败');
+                  }
+                }
+              ),
+              const SizedBox(height: 40),
               
               // 关闭debug模式按钮
               ElevatedButton(
@@ -339,6 +291,32 @@ class DebugMenuManager with WidgetsBindingObserver {
     );
   }
   
+  // 构建水平占满屏幕的debug功能按钮
+  Widget _buildFullWidthDebugButton(BuildContext context, String text, Color color, VoidCallback onTap) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+        // 水平占满屏幕
+        minimumSize: Size(double.infinity, 0),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+  
   // 显示确认对话框
   void _showConfirmDialog(BuildContext context, String message, VoidCallback onConfirm) {
     showDialog(
@@ -379,6 +357,39 @@ class DebugMenuManager with WidgetsBindingObserver {
         ),
       );
     }
+  }
+  
+  // 增强的分段打印方法，使用小标题分隔，确保完整显示
+  void _printLongJsonWithHeaders(String prefix, String jsonString) {
+    const int maxLength = 500; // 更小的分段大小，确保每个段都能完整显示
+    
+    // 打印开始标记和总长度信息
+    logger.debug('=' * 50);
+    logger.debug('开始输出$prefix - 总长度: ${jsonString.length} 字符');
+    logger.debug('=' * 50);
+    
+    // 分段打印
+    int start = 0;
+    int segmentIndex = 1;
+    
+    while (start < jsonString.length) {
+      int end = start + maxLength;
+      if (end > jsonString.length) {
+        end = jsonString.length;
+      }
+      
+      final segment = jsonString.substring(start, end);
+      logger.debug('【$prefix - 分段 $segmentIndex】 字符范围: $start-$end');
+      logger.debug(segment);
+      
+      start = end;
+      segmentIndex++;
+    }
+    
+    // 打印结束标记
+    logger.debug('=' * 50);
+    logger.debug('$prefix 输出完成，共分成 ${segmentIndex-1} 段');
+    logger.debug('=' * 50);
   }
   
   // 获取当前debug模式状态

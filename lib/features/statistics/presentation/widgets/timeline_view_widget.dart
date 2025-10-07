@@ -40,7 +40,6 @@ class TimelineViewWidget extends StatelessWidget {
           for (final duration in durations) {
             final endTime = startTime.add(duration);
             // 添加日志查看habit.icon的实际值
-            print('Habit: ${habit.name}, Icon: ${habit.icon}');
             focusSessions.add({
               'habitName': habit.name,
               'color': color,
@@ -55,8 +54,8 @@ class TimelineViewWidget extends StatelessWidget {
       });
     }
 
-    // 按开始时间排序
-    focusSessions.sort((a, b) => a['startTime'].compareTo(b['startTime']));
+    // 按开始时间倒序排序
+    focusSessions.sort((a, b) => b['startTime'].compareTo(a['startTime']));
 
     // 如果没有数据，显示提示
     if (focusSessions.isEmpty) {

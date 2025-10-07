@@ -17,7 +17,7 @@ class AppLogger {
         PrettyPrinter(
           methodCount: 2,
           errorMethodCount: 8,
-          lineLength: 120,
+          lineLength: 10000, // 设置为一个非常大的值，基本实现不限制长度
           colors: true,
           printEmojis: true,
           printTime: true,

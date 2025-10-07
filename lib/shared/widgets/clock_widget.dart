@@ -1,5 +1,7 @@
 import 'dart:math';
+import 'package:contrail/core/state/focus_state.dart';
 import 'package:flutter/material.dart';
+import 'package:contrail/shared/utils/logger.dart';
 import 'dart:async';
 import '../utils/theme_helper.dart';
 
@@ -69,7 +71,7 @@ class CustomCirclePainter extends CustomPainter {
 
 class ClockWidget extends StatefulWidget {
   final Duration duration;
-  final bool isRunning;
+  final FocusStatus focusStatus;
   final Function(Duration) onDurationChanged;
   final bool isCountdown;
   final bool isSettingsMode; // 是否在设置界面
@@ -78,7 +80,7 @@ class ClockWidget extends StatefulWidget {
   const ClockWidget({
     super.key,
     required this.duration,
-    required this.isRunning,
+    required this.focusStatus,
     required this.onDurationChanged,
     this.isCountdown = false,
     this.isSettingsMode = false,
@@ -93,6 +95,7 @@ class _ClockWidgetState extends State<ClockWidget> {
   late Duration _currentDuration;
   final bool _isDragging = false;
   double _rotationProgress = 0.0;
+  double _pausedProgress = 0.0; // 存储暂停时的进度
   Timer? _rotationTimer;
 
   @override
@@ -101,7 +104,7 @@ class _ClockWidgetState extends State<ClockWidget> {
     _currentDuration = widget.duration;
     
     // 如果在设置界面或专注已开始，启动旋转动画
-    if (widget.isSettingsMode || widget.isRunning) {
+    if (widget.isSettingsMode || widget.focusStatus == FocusStatus.run) {
       _startRotationAnimation();
     }
   }
@@ -114,14 +117,15 @@ class _ClockWidgetState extends State<ClockWidget> {
         _currentDuration = widget.duration;
       });
     }
+
+    _updateProgress();
     
     // 如果设置模式、旋转速度或运行状态发生变化，重新启动或停止动画
-    if (widget.isSettingsMode != oldWidget.isSettingsMode || 
-        widget.rotationSpeed != oldWidget.rotationSpeed ||
-        widget.isRunning != oldWidget.isRunning) {
+    if (widget.isSettingsMode != oldWidget.isSettingsMode ||
+        widget.focusStatus != oldWidget.focusStatus) {
       
       // 在设置界面或运行状态下启动动画
-      if (widget.isSettingsMode || widget.isRunning) {
+      if (widget.isSettingsMode || widget.focusStatus == FocusStatus.run) {
         _startRotationAnimation();
       } else {
         // 否则停止动画
@@ -136,10 +140,22 @@ class _ClockWidgetState extends State<ClockWidget> {
     super.dispose();
   }
 
+  void _updateProgress() {
+    if (!widget.isSettingsMode) {
+      // 非设置模式下，根据当前_currentDuration计算旋转进度
+      // 60秒刚好转完一圈
+      _rotationProgress = (_currentDuration.inSeconds % 60 / 60).clamp(0.0, 1.0);
+      logger.debug('非设置模式，根据_currentDuration计算旋转进度: $_rotationProgress');
+    }
+    
+  }
+
   // 启动旋转动画
   void _startRotationAnimation() {
     _stopRotationAnimation(); // 先停止之前的动画
-    
+
+    _updateProgress();
+
     // 计算每毫秒旋转的进度 (根据 rotationSpeed 计算)
     final millisecondsPerCycle = (60000 / widget.rotationSpeed).toInt(); // 一圈的毫秒数
     
@@ -167,7 +183,7 @@ class _ClockWidgetState extends State<ClockWidget> {
 
   // 处理数字时钟的滑动调整
   void _handleVerticalDrag(DragUpdateDetails details) {
-    if (widget.isRunning) return;
+    if (widget.focusStatus != FocusStatus.stop) return;
 
     // 计算滑动距离对应的分钟变化
     double sensitivity = 0.5; // 灵敏度调整
@@ -222,11 +238,10 @@ class _ClockWidgetState extends State<ClockWidget> {
                 CustomPaint(
                   size: Size(size, size),
                   painter: CustomCirclePainter(
-                    progress: widget.isSettingsMode || widget.isRunning 
-                      ? (widget.isSettingsMode ? _rotationProgress : 1.0) 
-                      : (widget.isCountdown 
-                          ? 1.0 - (_currentDuration.inSeconds / (widget.duration.inSeconds > 0 ? widget.duration.inSeconds : 1)) 
-                          : 0.0),
+                    progress: _rotationProgress,
+                    // widget.ise SettingsMod
+                    //   ? _rotationProgress // 在设置模式使用旋转进度
+                      // :  ((_currentDuration.inSeconds % 60) / 60).clamp(0.0, 1.0),
                     strokeWidth: 14, // 添加必要的strokeWidth参数
                     backgroundColor: onPrimaryColor.withOpacity(0.1),
                     valueColor: onPrimaryColor,

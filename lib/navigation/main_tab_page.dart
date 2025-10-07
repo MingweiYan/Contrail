@@ -11,7 +11,7 @@ import 'package:contrail/core/routing/app_router.dart';
 import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/shared/models/theme_model.dart' as app_theme;
 import 'package:contrail/core/state/focus_state.dart';
-import '../main.dart'; // 导入main.dart以访问isNotificationClicked、isStatsReportNotification和statsReportType变量
+import '../main.dart'; // 导入main.dart以访问isNotificationClicked变量
 
 class MainTabPage extends StatefulWidget {
   const MainTabPage({super.key});
@@ -83,40 +83,11 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
 
   // 检查通知状态并执行相应的导航操作
   void _checkNotificationState() {
-    logger.debug('🔍  检查通知状态: isStatsReportNotification=$isStatsReportNotification, isNotificationClicked=$isNotificationClicked, statsReportType=$statsReportType');
+    logger.debug('🔍  检查通知状态: isNotificationClicked=$isNotificationClicked');
     
-    // 检查是否是通过统计报告通知点击启动的
-    if (isStatsReportNotification) {
-      logger.debug('📊  检测到统计报告通知标志为true');
-      // 确定周期类型
-      String periodType = 'week'; // 默认周报告
-      if (statsReportType == 'monthly_report') {
-        periodType = 'month';
-      }
-      
-      logger.debug('📅  确定周期类型: $periodType (statsReportType=$statsReportType)');
-      logger.debug('🚀  准备导航到统计结果页面: statistics/result, extra={periodType: $periodType}');
-      
-      // 立即执行导航，不使用addPostFrameCallback以避免延迟问题
-      try {
-        // 直接使用GoRouter的静态方法进行导航，无需依赖BuildContext
-        AppRouter.router.push('/statistics/result', extra: {
-          'periodType': periodType,
-        });
-        logger.debug('✅  成功触发导航到统计结果页面');
-      } catch (e) {
-        logger.error('❌  导航失败: $e');
-        // 即使导航失败，也重置全局变量，避免状态错乱
-      }
-      
-      logger.debug('🔄  重置全局变量: isStatsReportNotification=false, isNotificationClicked=false, statsReportType=null');
-      isStatsReportNotification = false; // 重置标记
-      isNotificationClicked = false; // 同时重置普通通知标记
-      statsReportType = null; // 重置报告类型
-    } 
-    // 检查是否是通过普通通知点击启动的
-    else if (isNotificationClicked) {
-      logger.debug('💬  检测到普通通知标志为true');
+    // 检查是否是通过通知点击启动的
+    if (isNotificationClicked) {
+      logger.debug('💬  检测到通知标志为true');
       // 立即执行导航，无需等待
       try {
         logger.debug('🔄  切换到底部导航栏的统计页面（索引1）');

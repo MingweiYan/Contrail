@@ -1,15 +1,18 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:hive/hive.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:provider/provider.dart';
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:flutter/widgets.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
 
 // 导入依赖注入容器
 import 'package:contrail/core/di/injection_container.dart';
@@ -27,25 +30,13 @@ class DataBackupPage extends StatefulWidget {
   State<DataBackupPage> createState() => _DataBackupPageState();
 }
 
-class _DataBackupPageState extends State<DataBackupPage> {
+class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObserver {
   // 本地备份路径
   String _localBackupPath = '';
   // 备份文件列表
   List<BackupFileInfo> _backupFiles = [];
-  // WebDAV配置
-  String _webDavUrl = '';
-  String _webDavUsername = '';
-  String _webDavPassword = '';
-  // WebDAV文本控制器
-  late TextEditingController _webDavUrlController;
-  late TextEditingController _webDavUsernameController;
-  late TextEditingController _webDavPasswordController;
   // 加载状态
   bool _isLoading = false;
-  // 备份类型选择
-  BackupType _selectedBackupType = BackupType.local;
-  // 恢复类型选择
-  RestoreType _selectedRestoreType = RestoreType.local;
   
   // 自动备份设置
   bool _autoBackupEnabled = false;
@@ -59,10 +50,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
   @override
   void initState() {
     super.initState();
-    // 初始化文本控制器
-    _webDavUrlController = TextEditingController();
-    _webDavUsernameController = TextEditingController();
-    _webDavPasswordController = TextEditingController();
     
     // 初始化时区数据
     tz.initializeTimeZones();
@@ -73,6 +60,9 @@ class _DataBackupPageState extends State<DataBackupPage> {
     _loadSettings();
     _loadLocalBackupFiles();
     _checkAndPerformAutoBackup();
+    
+    // 添加观察者，监听页面可见性变化
+    WidgetsBinding.instance.addObserver(this);
   }
   
   // 初始化本地通知
@@ -88,21 +78,39 @@ class _DataBackupPageState extends State<DataBackupPage> {
 
   @override
   void dispose() {
-    // 释放文本控制器资源
-    _webDavUrlController.dispose();
-    _webDavUsernameController.dispose();
-    _webDavPasswordController.dispose();
+    // 移除观察者
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // 当应用从后台回到前台时，刷新备份文件列表
+    if (state == AppLifecycleState.resumed) {
+      _loadLocalBackupFiles();
+    }
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // 每次进入页面时（包括初始加载和从其他页面返回时）自动刷新备份文件列表
+    // 确保_localBackupPath已经初始化
+    if (_localBackupPath.isNotEmpty) {
+      _loadLocalBackupFiles();
+    } else {
+      // 如果_localBackupPath还未初始化，先加载设置然后再加载备份文件列表
+      _loadSettings().then((_) => _loadLocalBackupFiles());
+    }
   }
 
   // 加载设置
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _webDavUrl = prefs.getString('webDavUrl') ?? '';
-      _webDavUsername = prefs.getString('webDavUsername') ?? '';
-      _webDavPassword = prefs.getString('webDavPassword') ?? '';
-      
       // 加载自动备份设置
       _autoBackupEnabled = prefs.getBool('autoBackupEnabled') ?? false;
       _backupFrequency = prefs.getInt('backupFrequency') ?? 1;
@@ -112,11 +120,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
       _lastBackupTime = lastBackupMillis != null 
           ? DateTime.fromMillisecondsSinceEpoch(lastBackupMillis)
           : null;
-      
-      // 更新文本控制器的值
-      _webDavUrlController.text = _webDavUrl;
-      _webDavUsernameController.text = _webDavUsername;
-      _webDavPasswordController.text = _webDavPassword;
     });
     
     // 尝试从SharedPreferences加载用户上次选择的备份路径
@@ -227,8 +230,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
     final tzDateTime = tz.TZDateTime.from(scheduledDateTime, location);
     
     // 设置重复频率
-    final repeatInterval = RepeatInterval.daily;
-    
     const AndroidNotificationDetails androidPlatformChannelSpecifics = 
         AndroidNotificationDetails(
       'auto_backup_channel',
@@ -262,18 +263,78 @@ class _DataBackupPageState extends State<DataBackupPage> {
     await _flutterLocalNotificationsPlugin.cancelAll();
   }
 
-  // 保存WebDAV设置
-  Future<void> _saveWebDavSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('webDavUrl', _webDavUrl);
-    await prefs.setString('webDavUsername', _webDavUsername);
-    await prefs.setString('webDavPassword', _webDavPassword);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('WebDAV设置已保存')),
+
+
+  // 删除备份文件
+  Future<void> _deleteBackupFile(BackupFileInfo backupFile) async {
+    try {
+      final file = File(backupFile.path);
+      if (await file.exists()) {
+        await file.delete();
+        // 重新加载备份文件列表
+        await _loadLocalBackupFiles();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('备份文件已删除')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('删除备份文件失败: $e')),
+      );
+    }
+  }
+  
+  // 显示删除确认对话框
+  void _showDeleteConfirmation(BackupFileInfo backupFile) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text('确认删除', style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.red
+        )),
+        content: Text('确定要删除备份文件 "${backupFile.name}" 吗？此操作不可撤销！', style: TextStyle(
+          fontSize: 16,
+          color: ThemeHelper.onBackground(context)
+        )),
+        actions: [
+          ElevatedButton(
+            child: Text('取消', style: TextStyle(
+              fontSize: 16,
+              color: ThemeHelper.onPrimary(context)
+            )),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeHelper.primary(context).withOpacity(0.8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: Text('确认删除', style: TextStyle(
+              fontSize: 16,
+              color: Colors.white
+            )),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteBackupFile(backupFile);
+            },
+          ),
+        ],
+      ),
     );
   }
-
+  
   // 加载本地备份文件列表
   Future<void> _loadLocalBackupFiles() async {
     setState(() => _isLoading = true);
@@ -296,7 +357,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
           path: file.path,
           lastModified: file.lastModifiedSync(),
           size: file.lengthSync(),
-          type: 'local',
         )).toList();
       });
     } catch (e) {
@@ -308,47 +368,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
     }
   }
 
-  // 加载WebDAV备份文件列表
-  Future<void> _loadWebDavBackupFiles() async {
-    if (_webDavUrl.isEmpty || _webDavUsername.isEmpty || _webDavPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先配置WebDAV设置')),
-      );
-      return;
-    }
-    
-    setState(() => _isLoading = true);
-    try {
-      // 这里是WebDAV文件列表获取的示例代码
-      // 实际实现需要根据WebDAV服务器的API进行调整
-      final response = await http.get(
-        Uri.parse(_webDavUrl),
-        headers: {
-          'Authorization': 'Basic ' + base64Encode(utf8.encode('$_webDavUsername:$_webDavPassword')),
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        // 解析WebDAV响应，获取文件列表
-        // 这部分需要根据实际的WebDAV服务器响应格式进行调整
-        // 这里只是一个示例
-        final files = <BackupFileInfo>[];
-        // 假设响应包含文件列表信息
-        
-        setState(() {
-          _backupFiles = files;
-        });
-      } else {
-        throw Exception('WebDAV请求失败: \${response.statusCode}');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('加载WebDAV备份文件失败: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+
 
   // 执行本地备份
   Future<void> _performLocalBackup() async {
@@ -377,8 +397,18 @@ class _DataBackupPageState extends State<DataBackupPage> {
         'cycleType': habit.cycleType?.index,
         'icon': habit.icon,
         'trackTime': habit.trackTime,
-        // 注意：这里简化了复杂数据结构的存储
-        // 在实际应用中可能需要更复杂的序列化逻辑
+        'colorValue': habit.colorValue,
+        'descriptionJson': habit.descriptionJson,
+        // 序列化trackingDurations（Map<DateTime, List<Duration>>）
+        'trackingDurations': habit.trackingDurations.map((date, durations) => MapEntry(
+          date.toIso8601String(),
+          durations.map((duration) => duration.inMilliseconds).toList()
+        )),
+        // 序列化dailyCompletionStatus（Map<DateTime, bool>）
+        'dailyCompletionStatus': habit.dailyCompletionStatus.map((date, completed) => MapEntry(
+          date.toIso8601String(),
+          completed
+        ))
       }).toList();
       
       // 备份统计数据（如果有）
@@ -411,83 +441,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
     }
   }
 
-  // 执行WebDAV备份
-  Future<void> _performWebDavBackup() async {
-    if (_webDavUrl.isEmpty || _webDavUsername.isEmpty || _webDavPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先配置WebDAV设置')),
-      );
-      return;
-    }
-    
-    setState(() => _isLoading = true);
-    try {
-      // 创建备份文件名（包含时间戳）
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final backupFileName = 'contrail_backup_$timestamp.json';
-      
-      // 收集所有需要备份的数据
-      final backupData = <String, dynamic>{};
-      
-      // 备份习惯数据
-      final habitsBox = sl<Box<Habit>>();
-      final habits = habitsBox.values.toList();
-      // 手动构建JSON对象，不使用toJson()方法
-      backupData['habits'] = habits.map((habit) => {
-        'id': habit.id,
-        'name': habit.name,
-        'totalDuration': habit.totalDuration.inMilliseconds,
-        'currentDays': habit.currentDays,
-        'targetDays': habit.targetDays,
-        'goalType': habit.goalType.index,
-        'imagePath': habit.imagePath,
-        'cycleType': habit.cycleType?.index,
-        'icon': habit.icon,
-        'trackTime': habit.trackTime,
-        // 注意：这里简化了复杂数据结构的存储
-        // 在实际应用中可能需要更复杂的序列化逻辑
-      }).toList();
-      
-      // 备份统计数据（如果有）
-      // 这里需要根据实际的统计数据结构进行调整
-      
-      // 备份用户设置
-      final prefs = await SharedPreferences.getInstance();
-      final settings = <String, dynamic>{};
-      for (final key in prefs.getKeys()) {
-        settings[key] = prefs.get(key);
-      }
-      backupData['settings'] = settings;
-      
-      // 上传到WebDAV
-      final auth = 'Basic ${base64Encode(utf8.encode('$_webDavUsername:$_webDavPassword'))}';
-      final response = await http.put(
-        Uri.parse('$_webDavUrl/$backupFileName'),
-        headers: {
-          'Authorization': auth,
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(backupData),
-      );
-      
-      if (response.statusCode != 201 && response.statusCode != 204) {
-        throw Exception('WebDAV上传失败: \${response.statusCode}');
-      }
-      
-      // 重新加载WebDAV备份文件列表
-      await _loadWebDavBackupFiles();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('WebDAV备份成功')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('WebDAV备份失败: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+
 
   // 从本地备份恢复
   Future<void> _restoreFromLocal(BackupFileInfo backupFile) async {
@@ -505,6 +459,27 @@ class _DataBackupPageState extends State<DataBackupPage> {
         final habitsList = backupData['habits'] as List;
         for (final habitJson in habitsList) {
           final habitMap = habitJson as Map<String, dynamic>;
+          // 反序列化trackingDurations
+          final trackingDurations = <DateTime, List<Duration>>{};
+          if (habitMap.containsKey('trackingDurations')) {
+            final trackingData = habitMap['trackingDurations'] as Map<String, dynamic>;
+            trackingData.forEach((dateString, durations) {
+              final date = DateTime.parse(dateString);
+              final durationList = (durations as List).map((ms) => Duration(milliseconds: ms as int)).toList();
+              trackingDurations[date] = durationList;
+            });
+          }
+          
+          // 反序列化dailyCompletionStatus
+          final dailyCompletionStatus = <DateTime, bool>{};
+          if (habitMap.containsKey('dailyCompletionStatus')) {
+            final completionData = habitMap['dailyCompletionStatus'] as Map<String, dynamic>;
+            completionData.forEach((dateString, completed) {
+              final date = DateTime.parse(dateString);
+              dailyCompletionStatus[date] = completed as bool;
+            });
+          }
+          
           // 由于Habit类没有fromJson方法，我们需要手动构建Habit对象
           final habit = Habit(
             id: habitMap['id'] as String,
@@ -517,9 +492,10 @@ class _DataBackupPageState extends State<DataBackupPage> {
             cycleType: habitMap.containsKey('cycleType') ? CycleType.values[habitMap['cycleType'] as int] : null,
             icon: habitMap['icon'] as String?,
             trackTime: habitMap['trackTime'] as bool,
-            // 简单处理时间映射，实际可能需要更复杂的转换
-            trackingDurations: {},
-            dailyCompletionStatus: {},
+            colorValue: habitMap['colorValue'] as int?,
+            descriptionJson: habitMap['descriptionJson'] as String?,
+            trackingDurations: trackingDurations,
+            dailyCompletionStatus: dailyCompletionStatus,
           );
           await habitsBox.add(habit);
         }
@@ -545,6 +521,10 @@ class _DataBackupPageState extends State<DataBackupPage> {
           }
         }
       }
+      
+      // 重新加载习惯数据，确保内存中的数据与数据库一致
+      final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+      await habitProvider.loadHabits();
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('从本地备份恢复成功')),
@@ -561,95 +541,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
     }
   }
 
-  // 从WebDAV备份恢复
-  Future<void> _restoreFromWebDav(BackupFileInfo backupFile) async {
-    if (_webDavUrl.isEmpty || _webDavUsername.isEmpty || _webDavPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先配置WebDAV设置')),
-      );
-      return;
-    }
-    
-    setState(() => _isLoading = true);
-    try {
-      // 从WebDAV下载备份文件
-      final auth = 'Basic ${base64Encode(utf8.encode('$_webDavUsername:$_webDavPassword'))}';
-      final response = await http.get(
-        Uri.parse('$_webDavUrl/${backupFile.name}'),
-        headers: {
-          'Authorization': auth,
-        },
-      );
-      
-      if (response.statusCode != 200) {
-        throw Exception('WebDAV下载失败: \${response.statusCode}');
-      }
-      
-      final backupData = json.decode(response.body) as Map<String, dynamic>;
-      
-      // 恢复习惯数据
-      final habitsBox = sl<Box<Habit>>();
-      await habitsBox.clear();
-      
-      if (backupData.containsKey('habits')) {
-        final habitsList = backupData['habits'] as List;
-        for (final habitJson in habitsList) {
-          final habitMap = habitJson as Map<String, dynamic>;
-          // 由于Habit类没有fromJson方法，我们需要手动构建Habit对象
-          final habit = Habit(
-            id: habitMap['id'] as String,
-            name: habitMap['name'] as String,
-            totalDuration: Duration(milliseconds: habitMap['totalDuration'] as int),
-            currentDays: habitMap['currentDays'] as int,
-            targetDays: habitMap['targetDays'] as int?,
-            goalType: GoalType.values[habitMap['goalType'] as int],
-            imagePath: habitMap['imagePath'] as String?,
-            cycleType: habitMap.containsKey('cycleType') ? CycleType.values[habitMap['cycleType'] as int] : null,
-            icon: habitMap['icon'] as String?,
-            trackTime: habitMap['trackTime'] as bool,
-            // 简单处理时间映射，实际可能需要更复杂的转换
-            trackingDurations: {},
-            dailyCompletionStatus: {},
-          );
-          await habitsBox.add(habit);
-        }
-      }
-      
-      // 恢复用户设置
-      if (backupData.containsKey('settings')) {
-        final settings = backupData['settings'] as Map<String, dynamic>;
-        final prefs = await SharedPreferences.getInstance();
-        
-        for (final entry in settings.entries) {
-          final key = entry.key;
-          final value = entry.value;
-          
-          if (value is String) {
-            await prefs.setString(key, value);
-          } else if (value is bool) {
-            await prefs.setBool(key, value);
-          } else if (value is int) {
-            await prefs.setInt(key, value);
-          } else if (value is double) {
-            await prefs.setDouble(key, value);
-          }
-        }
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('从WebDAV备份恢复成功')),
-      );
-      
-      // 恢复成功后返回上一页
-      Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('从WebDAV备份恢复失败: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+
 
   // 更换本地备份路径
   Future<void> _changeLocalBackupPath() async {
@@ -689,20 +581,12 @@ class _DataBackupPageState extends State<DataBackupPage> {
 
   // 执行备份
   Future<void> _performBackup() async {
-    if (_selectedBackupType == BackupType.local) {
-      await _performLocalBackup();
-    } else {
-      await _performWebDavBackup();
-    }
+    await _performLocalBackup();
   }
 
   // 加载备份文件
   Future<void> _loadBackupFiles() async {
-    if (_selectedRestoreType == RestoreType.local) {
-      await _loadLocalBackupFiles();
-    } else {
-      await _loadWebDavBackupFiles();
-    }
+    await _loadLocalBackupFiles();
   }
 
   @override
@@ -805,38 +689,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
             ),
             const SizedBox(height: 16),
             
-            // 备份类型选择
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile(
-                    title: const Text('本地备份'),
-                    value: BackupType.local,
-                    groupValue: _selectedBackupType,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedBackupType = value as BackupType;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: RadioListTile(
-                    title: const Text('WebDAV备份'),
-                    value: BackupType.webDav,
-                    groupValue: _selectedBackupType,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedBackupType = value as BackupType;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-            
             // 本地备份设置
-            if (_selectedBackupType == BackupType.local) ...[
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -871,55 +724,7 @@ class _DataBackupPageState extends State<DataBackupPage> {
                   ),
                 ),
               ),
-            ],
             
-            // WebDAV备份设置
-            if (_selectedBackupType == BackupType.webDav) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _webDavUrlController,
-                        decoration: const InputDecoration(labelText: 'WebDAV服务器地址'),
-                        onChanged: (value) => setState(() => _webDavUrl = value),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _webDavUsernameController,
-                        decoration: const InputDecoration(labelText: '用户名'),
-                        onChanged: (value) => setState(() => _webDavUsername = value),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _webDavPasswordController,
-                        decoration: const InputDecoration(labelText: '密码'),
-                        obscureText: true,
-                        onChanged: (value) => setState(() => _webDavPassword = value),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _saveWebDavSettings,
-                        child: const Text('保存WebDAV设置'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _performWebDavBackup,
-                        child: const Text('执行WebDAV备份'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                          backgroundColor: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
             
             const SizedBox(height: 32),
             
@@ -930,37 +735,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
             ),
             const SizedBox(height: 16),
             
-            // 恢复类型选择
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile(
-                    title: const Text('本地恢复'),
-                    value: RestoreType.local,
-                    groupValue: _selectedRestoreType,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedRestoreType = value as RestoreType;
-                      });
-                      _loadBackupFiles();
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: RadioListTile(
-                    title: const Text('WebDAV恢复'),
-                    value: RestoreType.webDav,
-                    groupValue: _selectedRestoreType,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedRestoreType = value as RestoreType;
-                      });
-                      _loadBackupFiles();
-                    },
-                  ),
-                ),
-              ],
-            ),
             
             const SizedBox(height: 16),
             
@@ -997,15 +771,26 @@ class _DataBackupPageState extends State<DataBackupPage> {
                         (backupFile.size / 1024).toStringAsFixed(2) +
                         ' KB'
                       ),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          if (_selectedRestoreType == RestoreType.local) {
-                            _restoreFromLocal(backupFile);
-                          } else {
-                            _restoreFromWebDav(backupFile);
-                          }
-                        },
-                        child: const Text('恢复'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              _restoreFromLocal(backupFile);
+                            },
+                            child: const Text('恢复'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              _showDeleteConfirmation(backupFile);
+                            },
+                            child: const Text('删除'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -1018,31 +803,17 @@ class _DataBackupPageState extends State<DataBackupPage> {
   }
 }
 
-// 备份类型枚举
-enum BackupType {
-  local,
-  webDav,
-}
-
-// 恢复类型枚举
-enum RestoreType {
-  local,
-  webDav,
-}
-
 // 备份文件信息类
 class BackupFileInfo {
   final String name;
   final String path;
   final DateTime lastModified;
   final int size;
-  final String type; // 'local' 或 'webDav'
 
   BackupFileInfo({
     required this.name,
     required this.path,
     required this.lastModified,
     required this.size,
-    required this.type,
   });
 }

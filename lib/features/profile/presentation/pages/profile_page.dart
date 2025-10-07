@@ -4,9 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/shared/models/theme_model.dart';
-import 'package:get_it/get_it.dart';
-import 'package:contrail/shared/services/notification_service.dart';
 import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/features/profile/presentation/pages/theme_selection_page.dart';
 import 'package:contrail/features/profile/presentation/pages/data_backup_page.dart';
@@ -26,12 +25,9 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   String _username = '用户';
   String? _avatarPath;
-  bool _notificationsEnabled = true;
   bool _dataBackupEnabled = false;
   String _backupFrequency = '每周';
 
-  // 获取通知服务的实例
-  final NotificationService _notificationService = GetIt.instance<NotificationService>();
   final DebugMenuManager _debugMenuManager = DebugMenuManager();
 
   @override
@@ -54,7 +50,6 @@ class _ProfilePageState extends State<ProfilePage> {
       try {
         _username = prefs.getString('username') ?? '用户';
         _avatarPath = prefs.getString('avatarPath');
-        _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
         _dataBackupEnabled = prefs.getBool('dataBackupEnabled') ?? false;
         
         // 安全地获取backupFrequency，处理可能的类型错误
@@ -73,7 +68,6 @@ class _ProfilePageState extends State<ProfilePage> {
         // 设置默认值以确保应用继续运行
         _username = '用户';
         _avatarPath = null;
-        _notificationsEnabled = true;
         _dataBackupEnabled = false;
         _backupFrequency = '每周';
       }
@@ -84,7 +78,6 @@ class _ProfilePageState extends State<ProfilePage> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', _username);
     await prefs.setString('avatarPath', _avatarPath ?? '');
-    await prefs.setBool('notificationsEnabled', _notificationsEnabled);
     await prefs.setBool('dataBackupEnabled', _dataBackupEnabled);
     await prefs.setString('backupFrequency', _backupFrequency);
   }
@@ -310,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: Column(
               children: [
-                // 通知设置 - 带有渐变背景和圆角
+                // 主题设置
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: const BorderRadius.only(
@@ -319,49 +312,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   child: ListTile(
-                    title: Text('通知设置', style: TextStyle(
+                    title: Text('主题设置', style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: ThemeHelper.onBackground(context)
                     )),
-                    subtitle: Text('接收习惯提醒和统计报告', style: TextStyle(
+                    subtitle: Text('选择应用的外观风格', style: TextStyle(
                       fontSize: 14,
                       color: ThemeHelper.onBackground(context).withOpacity(0.7)
                     )),
-                    trailing: Switch(
-                      value: _notificationsEnabled,
-                      activeColor: ThemeHelper.primary(context),
-                      onChanged: (value) async {
-                        setState(() => _notificationsEnabled = value);
-                        await _saveSettings(); // 保存设置
-                        // 立即更新通知服务的状态
-                        await _notificationService.updateNotificationSettings();
-                      },
-                    ),
+                    trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => ThemeSelectionPage())
+                      );
+                    },
                   ),
-                ),
-
-                // 分隔线
-                Divider(height: 1, color: ThemeHelper.onBackground(context).withOpacity(0.1)),
-
-                // 主题设置
-                ListTile(
-                  title: Text('主题设置', style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: ThemeHelper.onBackground(context)
-                  )),
-                  subtitle: Text('选择应用的外观风格', style: TextStyle(
-                    fontSize: 14,
-                    color: ThemeHelper.onBackground(context).withOpacity(0.7)
-                  )),
-                  trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
-                  onTap: () {
-                    Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (context) => ThemeSelectionPage())
-                    );
-                  },
                 ),
 
                 // 分隔线
@@ -525,6 +492,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             // 清除专注状态单例中的内存状态
                             final focusState = FocusState();
                             focusState.endFocus();
+                            
+                            // 重新加载习惯数据，确保内存中的数据与数据库一致
+                            final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+                            await habitProvider.loadHabits();
                             
                             // 显示成功消息
                             ScaffoldMessenger.of(context).showSnackBar(
