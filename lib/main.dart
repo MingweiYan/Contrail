@@ -113,10 +113,11 @@ void main() async {
           final focusState = FocusState();
           if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
             logger.debug('🔄  重新显示前台通知，确保专注会话通知保持常驻');
-            notificationService.updateForegroundService(
-              habit: focusState.currentFocusHabit!,
-              duration: focusState.elapsedTime
-            );
+            // notificationService.updateForegroundService(
+            //   habit: focusState.currentFocusHabit!,
+            //   duration: focusState.elapsedTime
+            // );
+            notificationService.showFocusNotification(habit: focusState.currentFocusHabit!);
           }
         }
       });

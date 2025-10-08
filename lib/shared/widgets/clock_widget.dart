@@ -144,7 +144,7 @@ class _ClockWidgetState extends State<ClockWidget> {
       // 非设置模式下，根据当前_currentDuration计算旋转进度
       // 60秒刚好转完一圈
       _rotationProgress = (_currentDuration.inSeconds % 60 / 60).clamp(0.0, 1.0);
-      logger.debug('非设置模式，根据_currentDuration计算旋转进度: $_rotationProgress');
+      // logger.debug('非设置模式，根据_currentDuration计算旋转进度: $_rotationProgress');
     }
     
   }

@@ -73,43 +73,6 @@ class NotificationService {
     }
   }
 
-  // 发送即时通知
-  Future<void> showNotification({
-    required int id,
-    required String title,
-    required String body,
-    String? payload,
-  }) async {
-    try {
-      final AndroidNotificationDetails androidPlatformChannelSpecifics = 
-          AndroidNotificationDetails(
-        'habit_reminder_channel',
-        '习惯提醒',
-        importance: Importance.max,
-        priority: Priority.high,
-        showWhen: false,
-        channelDescription: '用于发送习惯提醒的通知渠道',
-      );
-
-      final DarwinNotificationDetails iOSPlatformChannelSpecifics = 
-          DarwinNotificationDetails();
-
-      final NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: iOSPlatformChannelSpecifics,
-      );
-
-      await flutterLocalNotificationsPlugin.show(
-        id,
-        title,
-        body,
-        platformChannelSpecifics,
-        payload: payload,
-      );
-    } catch (e) {
-      logger.error('显示通知失败', e);
-    }
-  }
 
   // 取消特定通知
   Future<void> cancelNotification(int id) async {
@@ -167,10 +130,47 @@ class NotificationService {
         payload: habit.id,
       );
       
+      await showFocusNotification(habit: habit);
+      
       logger.debug('前台通知服务启动成功');
     } catch (e, stackTrace) {
       logger.error('启动前台服务失败', e, stackTrace);
     }
+  }
+
+  Future<void> showFocusNotification({required Habit habit}) async {
+
+      final String content = '正在专注于 ${habit.name}';
+
+      // 更新前台通知
+        await flutterLocalNotificationsPlugin.show(
+          100,
+          '专注进行中',
+          content,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'focus_session_channel',
+              '专注会话',
+              importance: Importance.max,
+              priority: Priority.high,
+              showWhen: false,
+              channelDescription: '用于显示正在进行的专注会话',
+              ongoing: true, // 标记为持续通知，用户不能轻易关闭
+              enableVibration: false,
+              enableLights: true,
+              playSound: false,
+              actions: [
+                // 返回应用的动作按钮
+                const AndroidNotificationAction(
+                  'return_to_app',
+                  '返回应用',
+                  showsUserInterface: true,
+                ),
+              ],
+            ),
+          ),
+          payload: habit.id,
+        );
   }
 
   // 更新前台通知

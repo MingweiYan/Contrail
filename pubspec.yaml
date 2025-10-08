@@ -22,7 +22,6 @@ dependencies:
   flutter_neat_and_clean_calendar: ^0.4.16
   flutter_echarts: ^2.0.0
   flutter_local_notifications: ^17.0.0
-  workmanager: ^0.9.0+2
   dav: ^0.2.0
   shared_preferences: ^2.2.2
   uuid: ^4.4.0

@@ -94,23 +94,23 @@ class FocusState {
   // 获取已流逝的时间
   Duration get elapsedTime {
     // 计算应用在后台时流逝的时间
-    if (_focusStartTime != null && _lastUpdateTime != null) {
-      final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
-      // 只在超过1秒时更新，避免频繁计算
-      if (timeSinceLastUpdate.inSeconds > 0) {
-        _updateElapsedTime();
-      }
-    }
+    // if (_focusStartTime != null && _lastUpdateTime != null) {
+    //   final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
+    //   // 只在超过1秒时更新，避免频繁计算
+    //   if (timeSinceLastUpdate.inSeconds > 0) {
+    //     _updateElapsedTime();
+    //   }
+    // }
     return _elapsedTime;
   }
   
   // 更新已流逝的时间（考虑后台时间）
   void _updateElapsedTime() {
-    if (_focusStartTime != null && _lastUpdateTime != null) {
-      final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
-      _elapsedTime += timeSinceLastUpdate;
-      _lastUpdateTime = DateTime.now();
-    }
+    // if (_focusStartTime != null && _lastUpdateTime != null) {
+    //   final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
+    //   _elapsedTime += timeSinceLastUpdate;
+    //   _lastUpdateTime = DateTime.now();
+    // }
   }
   
   // 开始专注
@@ -301,12 +301,12 @@ class FocusState {
       listener(_elapsedTime);
     }
     // 更新前台通知
-    if (_currentFocusHabit != null && _foregroundNotificationRunning) {
-      _notificationService.updateForegroundService(
-        habit: _currentFocusHabit!,
-        duration: _elapsedTime,
-      );
-    }
+    // if (_currentFocusHabit != null && _foregroundNotificationRunning) {
+    //   _notificationService.updateForegroundService(
+    //     habit: _currentFocusHabit!,
+    //     duration: _elapsedTime,
+    //   );
+    // }
 
   }
   

@@ -847,17 +847,26 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         final focusState = FocusState();
                         if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
                           // 如果有正在进行中的专注，直接进入专注页面
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => HabitTrackingPage(habit: focusState.currentFocusHabit!),
-                            ),
-                          ).then((_) {
-                            // 从专注页面返回后刷新UI
-                            setState(() {
-                              _loadHabits();
+                          // 再次检查currentFocusHabit是否为null，防止竞态条件
+                          final currentHabit = focusState.currentFocusHabit;
+                          if (currentHabit != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HabitTrackingPage(habit: currentHabit),
+                              ),
+                            ).then((_) {
+                              // 从专注页面返回后刷新UI
+                              setState(() {
+                                _loadHabits();
+                              });
                             });
-                          });
+                          } else {
+                            // 如果currentFocusHabit变为null，显示错误提示
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('无法获取专注信息')),
+                            );
+                          }
                         } else {
                           // 如果没有正在进行中的专注，提示用户
                           ScaffoldMessenger.of(context).showSnackBar(
