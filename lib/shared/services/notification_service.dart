@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:contrail/shared/utils/logger.dart';
 
@@ -13,6 +14,9 @@ class NotificationService {
       // Android通知设置
       const AndroidInitializationSettings initializationSettingsAndroid = 
           AndroidInitializationSettings('@mipmap/ic_launcher'); // 使用应用程序启动图标
+
+      // 确保前台服务通知通道已创建
+      await _createNotificationChannels();
 
       // iOS通知设置
       const DarwinInitializationSettings initializationSettingsIOS = 
@@ -91,6 +95,41 @@ class NotificationService {
     } catch (e) {
       logger.error('取消所有通知失败', e);
     }
+  }
+
+  // 创建必要的通知通道
+  Future<void> _createNotificationChannels() async {
+    // 为前台服务创建通知通道
+    final AndroidNotificationChannel focusSessionChannel = AndroidNotificationChannel(
+      'focus_session_channel', // 与background_timer_service.dart中使用的通道ID匹配
+      '专注会话', // 通道名称
+      description: '用于显示专注模式的前台服务通知', // 通道描述
+      importance: Importance.low, // 前台服务通知不需要太高的重要性
+      playSound: false, // 前台服务通知通常不需要声音
+      enableVibration: false, // 前台服务通知通常不需要振动
+      showBadge: false, // 不显示角标
+    );
+
+    // 注册通知通道
+    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(focusSessionChannel);
+    
+    // 创建专注完成通知通道
+    final AndroidNotificationChannel focusCompletionChannel = AndroidNotificationChannel(
+      'focus_completion_channel',
+      '专注完成提醒',
+      description: '当专注倒计时结束时提醒用户',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+    
+    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(focusCompletionChannel);
+    
+    logger.debug('通知通道创建成功');
   }
 
   // 发送专注倒计时结束的前台通知

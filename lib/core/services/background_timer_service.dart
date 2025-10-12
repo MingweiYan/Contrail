@@ -71,10 +71,11 @@ class BackgroundTimerService {
           isForegroundMode: true,
           autoStart: false,
           notificationChannelId: 'focus_session_channel',
-          initialNotificationTitle: '✈️ Contaril 正在为您服务',
-          initialNotificationContent: '    💪每一次努力都不会白费',
+          initialNotificationTitle: 'Contrail正在为您服务',
+          initialNotificationContent: '每一次努力都不会白费',
           foregroundServiceNotificationId: 999,
-          // flutter_background_service 插件中的通知点击处理通常通过onStart中的事件监听实现
+          // 修复前台服务通知问题
+          // 在这个版本中，flutter_background_service会自动使用应用的启动图标
         ),
       );
 
