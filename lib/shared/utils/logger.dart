@@ -15,12 +15,12 @@ class AppLogger {
       level: kDebugMode ? Level.verbose : Level.info,
       printer: PrefixPrinter(
         PrettyPrinter(
-          methodCount: 2,
+          methodCount: 0,
           errorMethodCount: 8,
           lineLength: 10000, // 设置为一个非常大的值，基本实现不限制长度
           colors: true,
           printEmojis: true,
-          printTime: true,
+          dateTimeFormat: DateTimeFormat.dateAndTime,
         ),
       ),
     );

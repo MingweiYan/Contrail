@@ -1,17 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:contrail/features/habit/presentation/pages/habit_management_page.dart';
 import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
+import 'package:flutter/material.dart';
+import 'package:contrail/features/habit/presentation/pages/habit_management_page.dart';
 import 'package:contrail/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:contrail/features/profile/presentation/pages/profile_page.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
-import 'package:contrail/core/routing/app_router.dart';
-import 'package:contrail/core/state/theme_provider.dart';
-import 'package:contrail/shared/models/theme_model.dart' as app_theme;
+
 import 'package:contrail/core/state/focus_state.dart';
-import '../main.dart'; // 导入main.dart以访问isNotificationClicked变量
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MainTabPage extends StatefulWidget {
   const MainTabPage({super.key});
@@ -48,63 +44,47 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkNotificationState();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 在依赖变化时也检查通知状态，确保从后台唤醒时能正确处理
-    _checkNotificationState();
+    logger.debug('🔍  依赖变化时检查通知状态');
   }
-
-
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    
     super.dispose();
   }
   
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      // 应用从后台唤醒时检查通知状态
-      _checkNotificationState();
-      
-      // 检查专注状态并更新时间
-      final focusState = FocusState();
-      // 调用appResumed方法更新后台流逝的时间
-      focusState.appResumed();
-    }
+    logger.debug('🔄  应用从后台唤醒');
+    // if (state == AppLifecycleState.resumed) {
+
+    //   // 检查专注状态并更新时间
+    //   final focusState = FocusState();
+    //   // 调用appResumed方法更新后台流逝的时间
+    //   focusState.appResumed();
+    //   if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
+    //     // 如果有正在进行中的专注，直接进入专注页面
+    //     // 再次检查currentFocusHabit是否为null，防止竞态条件
+    //     final currentHabit = focusState.currentFocusHabit;
+    //     if (currentHabit != null) {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(
+    //           builder: (context) => HabitTrackingPage(habit: currentHabit),
+    //         ),
+    //       );
+    //       logger.debug('🔄  导航到专注页面');
+    //     }
+    //   }
+    // }
   }
 
-  // 检查通知状态并执行相应的导航操作
-  void _checkNotificationState() {
-    logger.debug('🔍  检查通知状态: isNotificationClicked=$isNotificationClicked');
-    
-    // 检查是否是通过通知点击启动的
-    if (isNotificationClicked) {
-      logger.debug('💬  检测到通知标志为true');
-      // 立即执行导航，无需等待
-      try {
-        logger.debug('🔄  切换到底部导航栏的统计页面（索引1）');
-        setState(() {
-          _selectedIndex = 1; // 切换到统计页面（索引为1）
-          isNotificationClicked = false; // 重置标记
-        });
-      } catch (e) {
-        logger.error('❌  切换tab失败: $e');
-        // 即使失败，也重置全局变量
-        isNotificationClicked = false;
-      }
-    }
-    else {
-      logger.debug('✅  没有检测到通知点击，无需特殊处理');
-    }
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -114,37 +94,40 @@ class _MainTabPageState extends State<MainTabPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final currentTheme = themeProvider.currentTheme;
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: decoration,
-            child: _pages.elementAt(_selectedIndex),
-          ),
-        ],
+      body: SafeArea(
+        bottom: false, // 底部导航栏不需要避开
+        child: Stack(
+          children: [
+            Container(
+              decoration: decoration,
+              child: _pages.elementAt(_selectedIndex),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: '习惯管理',
+            icon: Icon(Icons.list, size: ScreenUtil().setSp(24)),
+            label: '习惯',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.bar_chart, size: ScreenUtil().setSp(24)),
             label: '统计',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person, size: ScreenUtil().setSp(24)),
             label: '我的',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         onTap: _onItemTapped,
+        selectedLabelStyle: TextStyle(fontSize: ScreenUtil().setSp(16), fontWeight: FontWeight.bold),
+        unselectedLabelStyle: TextStyle(fontSize: ScreenUtil().setSp(16), fontWeight: FontWeight.w600),
       ),
     );
   }

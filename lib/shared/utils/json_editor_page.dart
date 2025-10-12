@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class JsonEditorPage extends StatefulWidget {
   const JsonEditorPage({Key? key}) : super(key: key);
@@ -72,12 +73,12 @@ class _JsonEditorPageState extends State<JsonEditorPage> {
           children: [
             // 编辑说明
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
               child: Text(
                 '编辑以下JSON数据，点击右上角保存按钮输出并返回',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: 14,
+                  fontSize: ScreenUtil().setSp(18),
                 ),
               ),
             ),
@@ -90,11 +91,11 @@ class _JsonEditorPageState extends State<JsonEditorPage> {
             // 富文本编辑区域
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                 child: QuillEditor.basic(
                   controller: _controller,
                   config: QuillEditorConfig(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
                     placeholder: '在此编辑富文本内容...',
                     autoFocus: true,
                     expands: false,
@@ -106,21 +107,21 @@ class _JsonEditorPageState extends State<JsonEditorPage> {
             ),
             // 输出按钮
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
               child: ElevatedButton(
                 onPressed: _outputAndExit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(16)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                   ),
                   minimumSize: Size(double.infinity, 0),
                 ),
-                child: const Text(
+                child: Text(
                   '📋 输出JSON并返回',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: ScreenUtil().setSp(20),
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),

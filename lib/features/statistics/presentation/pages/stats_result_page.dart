@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
-import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/services/habit_statistics_service.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:async';
-import 'dart:collection';
 import 'dart:math';
 import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatsResultPage extends StatefulWidget {
   // 可选的参数，用于接收统计数据
@@ -134,45 +132,11 @@ class _StatsResultPageState extends State<StatsResultPage> {
         logger.debug('⏱️  - 总加载时间: $totalLoadDuration 毫秒');
         logger.debug('⏱️  - 数据加载时间: $dataLoadDuration 毫秒');
         logger.debug('⏱️  - UI渲染时间: $renderDuration 毫秒');
-        
-        // 显示加载时间到用户界面
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('页面加载完成: $totalLoadDuration 毫秒'),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
+
       }
     });
   }
 
-  // 格式化日期显示
-  String _formatDateRange(DateTime startDate, DateTime endDate) {
-    final formatter = DateFormat('yyyy年MM月dd日');
-    return '${formatter.format(startDate)} 至 ${formatter.format(endDate)}';
-  }
-
-  // 获取当前主题下最佳的文本颜色
-  Color _getOptimalTextColor(BuildContext context, {bool isImportant = false}) {
-    final bgColor = Theme.of(context).scaffoldBackgroundColor;
-    if (isImportant) {
-      return ThemeHelper.ensureTextContrast(ThemeHelper.primary(context), bgColor);
-    }
-    return ThemeHelper.ensureTextContrast(ThemeHelper.onBackground(context), bgColor);
-  }
-
-  // 获取周期标题
-  String _getPeriodTitle() {
-    if (widget.periodType == 'month') {
-      return '月度统计报告';
-    } else if (widget.periodType == 'year') {
-      return '年度统计报告';
-    } else {
-      return '周度统计报告';
-    }
-  }
 
   // 获取当前月的习惯完成次数数据（用于饼状图）
   Map<String, int> _getMonthlyHabitCompletionCounts() {
@@ -262,7 +226,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
     
     for (final habit in habits) {
       // 只考虑有目标的习惯
-      if (habit.targetDays != null && habit.color != null) {
+      if (habit.targetDays != null) {
         // 计算当前周期内的完成情况
         double completionRate = 0.0;
         int completedDays = 0;
@@ -352,7 +316,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
           'completedDays': completedDays,
           'requiredDays': requiredDays,
           'completionRate': completionRate,
-          'color': habit.color
+          'color': habit.color ?? Colors.blue // 提供默认颜色，避免null
         });
       }
     }
@@ -403,10 +367,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: 
         [
-          const Text('习惯目标完成度', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
+          Text('习惯目标完成度', style: TextStyle(fontSize: ScreenUtil().setSp(20), fontWeight: FontWeight.bold)),
+          SizedBox(height: ScreenUtil().setHeight(20)),
           SizedBox(
-            height: 300,
+            height: ScreenUtil().setHeight(300),
             child: BarChart(
               BarChartData(
                 barGroups: barGroups,
@@ -424,7 +388,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                             width: 60,
                             child: Text(
                               goalCompletionData[index]['name'].toString(),
-                              style: const TextStyle(fontSize: 10),
+                              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
                               textAlign: TextAlign.center,
                               maxLines: 2,
                             ),
@@ -441,7 +405,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           '${(value * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(fontSize: 10),
+                          style: TextStyle(fontSize: ScreenUtil().setSp(18)),
                         );
                       },
                       reservedSize: 40,
@@ -493,9 +457,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
             color: colors[colorIndex % colors.length],
             value: entry.value.toDouble(),
             title: '${percentage.toStringAsFixed(0)}%',
-            radius: 80,
-            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
+            radius: ScreenUtil().setWidth(80),
+            titleStyle: TextStyle(fontSize: ScreenUtil().setSp(18), fontWeight: FontWeight.bold),
+          )
         );
         colorIndex++;
       }
@@ -508,21 +472,21 @@ class _StatsResultPageState extends State<StatsResultPage> {
       if (entry.value > 0) {
         legendItems.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children:
-                [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    color: colors[colorIndex % colors.length],
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${entry.key}: ${entry.value}次',
-                    style: const TextStyle(fontSize: 12),
-                  ),
+            padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(6), horizontal: ScreenUtil().setWidth(12)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children:
+                  [
+                    Container(
+                      width: ScreenUtil().setWidth(12),
+                      height: ScreenUtil().setHeight(12),
+                      color: colors[colorIndex % colors.length],
+                    ),
+                    SizedBox(width: ScreenUtil().setWidth(6)),
+                    Text(
+                      '${entry.key}: ${entry.value}次',
+                      style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+                    ),
                 ],
             ),
           ),
@@ -541,16 +505,16 @@ class _StatsResultPageState extends State<StatsResultPage> {
           children: 
             [
               // 先显示饼图
-              SizedBox(
-                height: 220, // 增加饼图高度，提供更多空间
-                child: PieChart(
+                SizedBox(
+                  height: ScreenUtil().setHeight(220), // 增加饼图高度，提供更多空间
+                  child: PieChart(
                   PieChartData(
                     sections: sections.asMap().entries.map((entry) {
                       final index = entry.key;
                       final data = entry.value;
                       final isTouched = index == touchedIndex;
                       // 增加缩放效果的差异，使变化更明显
-                      final radius = isTouched ? 100.0 : 80.0;
+                      final radius = isTouched ? ScreenUtil().setWidth(100) : ScreenUtil().setWidth(80);
                         
                       return PieChartSectionData(
                         color: data.color,
@@ -558,18 +522,18 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         title: data.title,
                         radius: radius,
                         titleStyle: TextStyle(
-                          fontSize: isTouched ? 14 : 12, 
+                          fontSize: isTouched ? ScreenUtil().setSp(18) : ScreenUtil().setSp(16), 
                           fontWeight: isTouched ? FontWeight.bold : FontWeight.normal,
                           color: isTouched ? Colors.white : Colors.black,
                         ),
                         // 增加更明显的边框效果
                         borderSide: isTouched 
-                          ? const BorderSide(color: Colors.black, width: 3) 
+                          ? BorderSide(color: Colors.black, width: ScreenUtil().setWidth(3)) 
                           : BorderSide.none,
                       );
                     }).toList(),
-                    centerSpaceRadius: 50,
-                    sectionsSpace: 2,
+                    centerSpaceRadius: ScreenUtil().setWidth(50),
+                    sectionsSpace: ScreenUtil().setWidth(2),
                     borderData: FlBorderData(show: false),
                     pieTouchData: PieTouchData(
                       enabled: true,
@@ -593,30 +557,30 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 ),
               ),
               // 再显示图例（确保不覆盖图标）
-              const SizedBox(height: 20), // 增加饼图和图例之间的间距
-              SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10), // 增加左右内边距
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 20.0, // 增加图例项之间的水平间距
-                    runSpacing: 12.0, // 增加图例项之间的垂直间距
-                    children: legendItems,
+                SizedBox(height: ScreenUtil().setHeight(20)), // 增加饼图和图例之间的间距
+                SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(10)), // 增加左右内边距
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: ScreenUtil().setWidth(20), // 增加图例项之间的水平间距
+                      runSpacing: ScreenUtil().setHeight(12), // 增加图例项之间的垂直间距
+                      children: legendItems,
+                    ),
                   ),
                 ),
-              ),
-              // 最后显示标题（标题放在图例下面）
-              const SizedBox(height: 20), // 增加图例和标题之间的间距
-              Text(
-                '本月习惯完成次数分布', 
-                style: ThemeHelper.textStyleWithTheme(
-                  context,
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onSurface(context),
+                // 最后显示标题（标题放在图例下面）
+                SizedBox(height: ScreenUtil().setHeight(20)), // 增加图例和标题之间的间距
+                Text(
+                  '本月习惯完成次数分布', 
+                  style: ThemeHelper.textStyleWithTheme(
+                    context,
+                    fontSize: ScreenUtil().setSp(20), 
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.onSurface(context),
+                  ),
                 ),
-              ),
             ],
         );
       },
@@ -656,9 +620,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
             color: colors[colorIndex % colors.length],
             value: entry.value.toDouble(),
             title: '${percentage.toStringAsFixed(0)}%',
-            radius: 80,
-            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
+            radius: ScreenUtil().setWidth(80),
+            titleStyle: TextStyle(fontSize: ScreenUtil().setSp(16), fontWeight: FontWeight.bold),
+          )
         );
         colorIndex++;
       }
@@ -675,21 +639,21 @@ class _StatsResultPageState extends State<StatsResultPage> {
         
         legendItems.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children:
-                [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    color: colors[colorIndex % colors.length],
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${entry.key}: $timeDisplay',
-                    style: const TextStyle(fontSize: 12),
-                  ),
+            padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(6), horizontal: ScreenUtil().setWidth(12)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children:
+                  [
+                    Container(
+                      width: ScreenUtil().setWidth(12),
+                      height: ScreenUtil().setHeight(12),
+                      color: colors[colorIndex % colors.length],
+                    ),
+                    SizedBox(width: ScreenUtil().setWidth(6)),
+                    Text(
+                      '${entry.key}: $timeDisplay',
+                      style: TextStyle(fontSize: ScreenUtil().setSp(16)),
+                    ),
                 ],
             ),
           ),
@@ -708,16 +672,16 @@ class _StatsResultPageState extends State<StatsResultPage> {
           children: 
             [
               // 先显示饼图
-              SizedBox(
-                height: 220, // 增加饼图高度，提供更多空间
-                child: PieChart(
+                SizedBox(
+                  height: ScreenUtil().setHeight(220), // 增加饼图高度，提供更多空间
+                  child: PieChart(
                   PieChartData(
                     sections: sections.asMap().entries.map((entry) {
                       final index = entry.key;
                       final data = entry.value;
                       final isTouched = index == touchedIndex;
                       // 增加缩放效果的差异，使变化更明显
-                      final radius = isTouched ? 100.0 : 80.0;
+                      final radius = isTouched ? ScreenUtil().setWidth(100) : ScreenUtil().setWidth(80);
                         
                       return PieChartSectionData(
                         color: data.color,
@@ -725,18 +689,18 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         title: data.title,
                         radius: radius,
                         titleStyle: TextStyle(
-                          fontSize: isTouched ? 14 : 12, 
+                          fontSize: isTouched ? ScreenUtil().setSp(18) : ScreenUtil().setSp(16), 
                           fontWeight: isTouched ? FontWeight.bold : FontWeight.normal,
                           color: isTouched ? Colors.white : Colors.black,
                         ),
                         // 增加更明显的边框效果
                         borderSide: isTouched 
-                          ? const BorderSide(color: Colors.black, width: 3) 
+                          ? BorderSide(color: Colors.black, width: ScreenUtil().setWidth(3)) 
                           : BorderSide.none,
                       );
                     }).toList(),
-                    centerSpaceRadius: 50,
-                    sectionsSpace: 2,
+                    centerSpaceRadius: ScreenUtil().setWidth(50),
+                    sectionsSpace: ScreenUtil().setWidth(2),
                     borderData: FlBorderData(show: false),
                     pieTouchData: PieTouchData(
                       enabled: true,
@@ -760,30 +724,30 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 ),
               ),
               // 再显示图例（确保不覆盖图标）
-              const SizedBox(height: 20), // 增加饼图和图例之间的间距
-              SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10), // 增加左右内边距
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 20.0, // 增加图例项之间的水平间距
-                    runSpacing: 12.0, // 增加图例项之间的垂直间距
-                    children: legendItems,
+                SizedBox(height: ScreenUtil().setHeight(20)), // 增加饼图和图例之间的间距
+                SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(10)), // 增加左右内边距
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: ScreenUtil().setWidth(20), // 增加图例项之间的水平间距
+                      runSpacing: ScreenUtil().setHeight(12), // 增加图例项之间的垂直间距
+                      children: legendItems,
+                    ),
                   ),
                 ),
-              ),
-              // 最后显示标题（标题放在图例下面）
-              const SizedBox(height: 20), // 增加图例和标题之间的间距
-              Text(
-                '本月习惯完成时间分布', 
-                style: ThemeHelper.textStyleWithTheme(
-                  context,
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onSurface(context),
+                // 最后显示标题（标题放在图例下面）
+                SizedBox(height: ScreenUtil().setHeight(20)), // 增加图例和标题之间的间距
+                Text(
+                  '本月习惯完成时间分布', 
+                  style: ThemeHelper.textStyleWithTheme(
+                    context,
+                    fontSize: ScreenUtil().setSp(20), 
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.onSurface(context),
+                  ),
                 ),
-              ),
             ],
         );
       },
@@ -799,9 +763,14 @@ class _StatsResultPageState extends State<StatsResultPage> {
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildContent(),
+      body: Container(
+        decoration: ThemeHelper.generateBackgroundDecoration(context) ?? BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
+        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _buildContent(),
+      ),
     );
   }
 
@@ -809,13 +778,13 @@ class _StatsResultPageState extends State<StatsResultPage> {
     final goalCompletionData = _getHabitGoalCompletionData();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.all(ScreenUtil().setWidth(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children:
           [
             // 移除了日期范围显示，因为当前只统计当前月的结果
-            const SizedBox(height: 10),
+            SizedBox(height: ScreenUtil().setHeight(10)),
 
             // 结果统计
             ThemeHelper.gradientText(
@@ -823,27 +792,33 @@ class _StatsResultPageState extends State<StatsResultPage> {
               '结果统计',
               style: ThemeHelper.textStyleWithTheme(
                 context,
-                fontSize: 20,
+                fontSize: ScreenUtil().setSp(22),
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: ScreenUtil().setHeight(16)),
 
             // 饼状图部分（使用一个大的背景块）
             SizedBox(
               width: double.infinity,
               child: Card(
                 elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16))),
                 color: Theme.of(context).cardColor,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  // 增加顶部和底部内边距，特别是顶部内边距以避免饼图超出
+                  padding: EdgeInsets.fromLTRB(
+                    ScreenUtil().setWidth(16), 
+                    ScreenUtil().setHeight(30), // 增大顶部内边距
+                    ScreenUtil().setWidth(16), 
+                    ScreenUtil().setHeight(24)  // 增大底部内边距
+                  ),
                   child: Column(
                     children: 
                       [
                         // 完成次数饼状图
                         _buildCompletionCountPieChart(),
-                        const SizedBox(height: 60), // 增大次数和时间统计之间的间隔
+                        SizedBox(height: ScreenUtil().setHeight(60)), // 增大次数和时间统计之间的间隔
                         // 完成时间饼状图
                         _buildCompletionTimePieChart(),
                       ],
@@ -851,7 +826,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: ScreenUtil().setHeight(30)),
 
             // 目标追踪
             if (goalCompletionData.isNotEmpty) ...[
@@ -860,20 +835,20 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 '目标追踪',
                 style: ThemeHelper.textStyleWithTheme(
                   context,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontSize: ScreenUtil().setSp(22),
+                fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ScreenUtil().setHeight(16)),
               
               // 习惯目标完成度柱状图
               SizedBox(
                 width: double.infinity,
                 child: Card(
                   elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16))),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                     child: _buildGoalCompletionBarChart(),
                   ),
                 ),
@@ -888,11 +863,11 @@ class _StatsResultPageState extends State<StatsResultPage> {
   Widget _buildHabitCard(String habitName, dynamic completionRate) {
     final rate = (completionRate * 100).toStringAsFixed(1);
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ScreenUtil().setHeight(12)),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12))),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children:
@@ -901,8 +876,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 habitName,
                 style: ThemeHelper.textStyleWithTheme(
                   context,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontSize: ScreenUtil().setSp(18),
+                fontWeight: FontWeight.w500,
                   color: ThemeHelper.onSurface(context),
                 ),
               ),
@@ -911,8 +886,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 '$rate%',
                 style: ThemeHelper.textStyleWithTheme(
                   context,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: ScreenUtil().setSp(18),
+                fontWeight: FontWeight.bold,
                 ),
                 highlightColor: _getCompletionRateColor(double.parse(rate)),
               ),

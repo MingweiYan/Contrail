@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // 日历视图中习惯点大小分析：
 // 1. 当某天完成的习惯数量 <= 2 个时，使用 Row 布局（一行显示），习惯点大小固定为 12.0 x 12.0
@@ -51,8 +52,8 @@ class CalendarViewWidget extends StatelessWidget {
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7, // 7列，对应星期
         childAspectRatio: cellAspectRatio,
-        crossAxisSpacing: 2.0, // 减小间距，使布局更紧凑
-        mainAxisSpacing: 2.0,
+        crossAxisSpacing: ScreenUtil().setWidth(2), // 减小间距，使布局更紧凑
+        mainAxisSpacing: ScreenUtil().setHeight(2),
       ),
       itemCount: 7 + daysToDisplay, // 7天标题 + 显示的日期数量
       itemBuilder: (context, index) {
@@ -63,7 +64,7 @@ class CalendarViewWidget extends StatelessWidget {
           
           return Container(
             alignment: Alignment.center,
-            padding: EdgeInsets.symmetric(vertical: 12.0),
+            padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(12)),
             child: Text(
               weekDays[index], 
               style: TextStyle(
@@ -71,7 +72,7 @@ class CalendarViewWidget extends StatelessWidget {
                 color: isWeekend 
                   ? ThemeHelper.error(context) 
                   : ThemeHelper.onSurface(context),
-                fontSize: 13,
+                fontSize: ScreenUtil().setSp(18),
               ),
             ),
           );
@@ -113,16 +114,16 @@ class CalendarViewWidget extends StatelessWidget {
               : isCurrentMonthDate 
                 ? ThemeHelper.surface(context) 
                 : Colors.transparent, // 非当前月份不显示背景
-            borderRadius: BorderRadius.circular(12.0), // 圆角更美观
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)), // 圆角更美观
             border: isToday 
-              ? Border.all(color: ThemeHelper.primary(context), width: 2.0) // 今天边框高亮
+              ? Border.all(color: ThemeHelper.primary(context), width: ScreenUtil().setWidth(2)) // 今天边框高亮
               : null,
             boxShadow: isToday 
               ? [
                   BoxShadow(
                     color: ThemeHelper.primary(context).withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+                    blurRadius: ScreenUtil().setWidth(4),
+                    offset: Offset(0, ScreenUtil().setHeight(2)),
                   ),
                 ] 
               : null,
@@ -134,11 +135,11 @@ class CalendarViewWidget extends StatelessWidget {
                 Align(
                   alignment: Alignment.topRight,
                   child: Padding(
-                    padding: EdgeInsets.all(6.0),
+                    padding: EdgeInsets.all(ScreenUtil().setWidth(6)),
                     child: Text(
                       '$day',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: ScreenUtil().setSp(18),
                         fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                         color: isToday 
                           ? ThemeHelper.primary(context) // 今天日期特殊颜色
@@ -153,30 +154,30 @@ class CalendarViewWidget extends StatelessWidget {
               // 习惯完成标记 - 统一使用GridView来确保大小一致
               if (isCurrentMonthDate && completedHabitIndices.isNotEmpty)
                 Positioned(
-                  bottom: 4.0,
-                  left: 4.0,
-                  right: 4.0,
+                  bottom: ScreenUtil().setHeight(4),
+                  left: ScreenUtil().setWidth(4),
+                  right: ScreenUtil().setWidth(4),
                   child: GridView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2, // 总是使用2列，确保单个习惯点大小与两个习惯点时的大小对齐
-                      mainAxisSpacing: 2.0,
-                      crossAxisSpacing: 2.0,
+                      mainAxisSpacing: ScreenUtil().setHeight(2),
+                      crossAxisSpacing: ScreenUtil().setWidth(2),
                     ),
                     itemCount: completedHabitIndices.length,
                     itemBuilder: (context, i) {
                       final habitIndex = completedHabitIndices[i];
                       final color = habitColors[habits[habitIndex].name] ?? Colors.grey;
                       return Container(
-                        width: 12.0,
-                        height: 12.0,
+                        width: ScreenUtil().setWidth(12),
+                        height: ScreenUtil().setHeight(12),
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: ThemeHelper.surface(context),
-                            width: 1.0,
+                            width: ScreenUtil().setWidth(1),
                           ),
                         ),
                       );

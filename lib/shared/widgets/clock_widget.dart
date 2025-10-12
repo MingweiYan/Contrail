@@ -1,9 +1,10 @@
 import 'dart:math';
 import 'package:contrail/core/state/focus_state.dart';
 import 'package:flutter/material.dart';
-import 'package:contrail/shared/utils/logger.dart';
 import 'dart:async';
 import '../utils/theme_helper.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../models/habit.dart'; // 导入Habit模型以使用TrackingMode枚举
 
 // 时钟样式枚举 - 只保留数字时钟
 enum ClockStyle {
@@ -73,7 +74,7 @@ class ClockWidget extends StatefulWidget {
   final Duration duration;
   final FocusStatus focusStatus;
   final Function(Duration) onDurationChanged;
-  final bool isCountdown;
+  final TrackingMode trackingMode;
   final bool isSettingsMode; // 是否在设置界面
   final double rotationSpeed; // 设置界面的旋转速度（圈/分钟）
 
@@ -82,7 +83,7 @@ class ClockWidget extends StatefulWidget {
     required this.duration,
     required this.focusStatus,
     required this.onDurationChanged,
-    this.isCountdown = false,
+    required this.trackingMode,
     this.isSettingsMode = false,
     this.rotationSpeed = 1.0, // 默认每分钟一圈
   });
@@ -96,6 +97,9 @@ class _ClockWidgetState extends State<ClockWidget> {
   final bool _isDragging = false;
   double _rotationProgress = 0.0;
   Timer? _rotationTimer;
+  
+  // 获取是否为倒计时模式（番茄钟和倒计时都视为倒计时）
+  bool get isCountdown => widget.trackingMode == TrackingMode.pomodoro || widget.trackingMode == TrackingMode.countdown;
 
   @override
   void initState() {
@@ -143,7 +147,8 @@ class _ClockWidgetState extends State<ClockWidget> {
     if (!widget.isSettingsMode) {
       // 非设置模式下，根据当前_currentDuration计算旋转进度
       // 60秒刚好转完一圈
-      _rotationProgress = (_currentDuration.inSeconds % 60 / 60).clamp(0.0, 1.0);
+      double newValue = (_currentDuration.inSeconds % 60 / 60).clamp(0.0, 1.0);
+     _rotationProgress = isCountdown ? 1 - newValue : newValue;
       // logger.debug('非设置模式，根据_currentDuration计算旋转进度: $_rotationProgress');
     }
     
@@ -182,7 +187,8 @@ class _ClockWidgetState extends State<ClockWidget> {
 
   // 处理数字时钟的滑动调整
   void _handleVerticalDrag(DragUpdateDetails details) {
-    if (widget.focusStatus != FocusStatus.stop) return;
+    // 正计时模式下无法滑动改变，专注状态不为停止也不能改变
+    if (widget.focusStatus != FocusStatus.stop || !isCountdown) return;
 
     // 计算滑动距离对应的分钟变化
     double sensitivity = 0.5; // 灵敏度调整
@@ -225,8 +231,8 @@ class _ClockWidgetState extends State<ClockWidget> {
               boxShadow: [
                 BoxShadow(
                   color: Theme.of(context).colorScheme.shadow,
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+                  blurRadius: ScreenUtil().setWidth(15),
+                  offset: Offset(0, ScreenUtil().setHeight(5)),
                 ),
               ],
             ),
@@ -241,7 +247,7 @@ class _ClockWidgetState extends State<ClockWidget> {
                     // widget.ise SettingsMod
                     //   ? _rotationProgress // 在设置模式使用旋转进度
                       // :  ((_currentDuration.inSeconds % 60) / 60).clamp(0.0, 1.0),
-                    strokeWidth: 14, // 添加必要的strokeWidth参数
+                    strokeWidth: ScreenUtil().setWidth(14), // 使用响应式宽度
                     backgroundColor: onPrimaryColor.withOpacity(0.1),
                     valueColor: onPrimaryColor,
                     isClockwise: true,
@@ -254,16 +260,16 @@ class _ClockWidgetState extends State<ClockWidget> {
                     Text(
                       _formatDuration(_currentDuration),
                       style: TextStyle(
-                        fontSize: size * 0.18,
+                        fontSize: ScreenUtil().setSp(48), // 使用响应式字体大小，约为48sp
                         fontWeight: FontWeight.bold,
                         color: onPrimaryColor,
                       ),
                     ),
-                    SizedBox(height: size * 0.03),
+                    SizedBox(height: ScreenUtil().setHeight(12)), // 使用响应式高度
                     Text(
-                      widget.isCountdown ? '倒计时' : '正计时',
+                      getTrackingModeDescription(),
                       style: TextStyle(
-                        fontSize: size * 0.06,
+                        fontSize: ScreenUtil().setSp(24), // 使用响应式字体大小，约为16sp
                         color: onPrimaryColor.withOpacity(0.9),
                       ),
                     ),
@@ -275,6 +281,17 @@ class _ClockWidgetState extends State<ClockWidget> {
         );
       },
     );
+  }
+
+  String getTrackingModeDescription() {
+    switch (widget.trackingMode) {
+      case TrackingMode.countdown:
+        return '倒计时';
+      case TrackingMode.stopwatch:
+        return '正计时';
+      case TrackingMode.pomodoro:
+        return '番茄钟';
+      }
   }
 
   @override

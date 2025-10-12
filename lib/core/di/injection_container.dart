@@ -1,5 +1,4 @@
 import 'package:get_it/get_it.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type_adapter.dart';
@@ -11,15 +10,30 @@ import 'package:contrail/features/habit/domain/use_cases/get_habits_use_case.dar
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:contrail/features/habit/domain/use_cases/update_habit_use_case.dart';
 import 'package:contrail/features/habit/domain/use_cases/delete_habit_use_case.dart';
-import 'package:contrail/core/state/state_manager.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:contrail/core/state/focus_state.dart';
+
+import '../../shared/services/habit_statistics_service.dart';
+import '../../shared/services/notification_service.dart';
 
 final sl = GetIt.instance; 
 
 Future<void> init() async {
   // 核心服务
   sl.registerLazySingleton(() => logger);
-  sl.registerLazySingleton(() => AppStateManager());
+
+  final statisticsService = HabitStatisticsService();
+  final notificationService = NotificationService();
+  final focusState = FocusState();
+
+  // 注册到依赖注入容器
+  sl.registerSingleton(focusState);
+  sl.registerSingleton<NotificationService>(notificationService);
+  sl.registerSingleton<HabitStatisticsService>(statisticsService);
+
+  // 初始化通知服务
+  await notificationService.initialize();
+  logger.debug('通知服务已初始化');
 
   // 数据层
   await _initDataLayer();
@@ -28,9 +42,6 @@ Future<void> init() async {
   _initHabitDomainLayer();
   // 其他模块的领域层初始化...
 
-  // 表示层 - 按模块组织
-  _initHabitPresentationLayer();
-  // 其他模块的表示层初始化...
 }
 
 Future<void> _initDataLayer() async {
@@ -57,9 +68,4 @@ void _initHabitDomainLayer() {
   sl.registerFactory(() => AddHabitUseCase(sl()));
   sl.registerFactory(() => UpdateHabitUseCase(sl()));
   sl.registerFactory(() => DeleteHabitUseCase(sl()));
-}
-
-void _initHabitPresentationLayer() {
-  // 注册Habit模块UI组件
-  // 例如：sl.registerFactory(() => HabitManagementPage());
 }

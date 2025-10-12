@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/features/statistics/presentation/providers/statistics_provider.dart';
 import 'package:contrail/features/statistics/presentation/widgets/statistics_chart_widget.dart';
@@ -9,8 +9,8 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/features/statistics/presentation/widgets/calendar_view_widget.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/core/routing/app_router.dart';
-import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/shared/services/habit_statistics_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -89,9 +89,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.white,
         foregroundColor: isSelected ? ThemeHelper.onPrimary(context) : ThemeHelper.onBackground(context),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(20), vertical: ScreenUtil().setHeight(12)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
         ),
         elevation: isSelected ? 3 : 1,
         shadowColor: Colors.black.withOpacity(0.1),
@@ -100,28 +100,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
         label,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          fontSize: 16,
+          fontSize: ScreenUtil().setSp(20),
         ),
       ),
     );
   }
 
-  // 计算日期是当年的第几周
-  int _getWeekNumber(DateTime date) {
-    // 计算日期是当年的第几周
-    final firstDayOfYear = DateTime(date.year, 1, 1);
-    final days = date.difference(firstDayOfYear).inDays;
-    // 假设每周从周一开始
-    final firstDayOfYearWeekday = firstDayOfYear.weekday;
-    final daysToFirstMonday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-    final adjustedDays = days - daysToFirstMonday;
-    return adjustedDays >= 0 ? (adjustedDays ~/ 7) + 1 : 1;
-  }
 
   // 计算统计数据
   Map<String, dynamic> _calculateStats(List<Habit> habits) {
     final today = DateTime.now();
-    final todayOnly = DateTime(today.year, today.month, today.day);
     
     // 计算本周第一天（周一）
     final firstDayOfWeek = today.subtract(Duration(days: today.weekday - 1));
@@ -206,10 +194,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
       children: [
           // 日历视图 - 独立的白色块
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
             decoration: BoxDecoration(
               color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -219,19 +207,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children:[
                 Text(
                   '完成日历',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: ScreenUtil().setSp(24),
                     fontWeight: FontWeight.bold,
                     color: ThemeHelper.onBackground(context),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ScreenUtil().setHeight(16)),
                 CalendarViewWidget(
                   habits: visibleHabits,
                   selectedYear: statisticsProvider.detailSelectedYear,
@@ -243,10 +231,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
           // 时间轴视图 - 独立的白色块
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
             decoration: BoxDecoration(
               color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -256,19 +244,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children:[
                 Text(
                   '活动时间轴',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: ScreenUtil().setSp(24),
                     fontWeight: FontWeight.bold,
                     color: ThemeHelper.onBackground(context),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ScreenUtil().setHeight(16)),
                 TimelineViewWidget(
                   habits: visibleHabits,
                   selectedYear: statisticsProvider.detailSelectedYear,
@@ -278,7 +266,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             ),
           ),
           // 添加底部内边距，确保内容不会贴在底部
-          const SizedBox(height: 80),
+          SizedBox(height: ScreenUtil().setHeight(80)),
         ],
       );
   }
@@ -286,40 +274,45 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer2<HabitProvider, StatisticsProvider>(
-        builder: (context, habitProvider, statisticsProvider, child) {
-          final habits = habitProvider.habits;
-          
-          // 延迟初始化习惯可见性列表，避免在build过程中调用notifyListeners
-          if (statisticsProvider.isHabitVisible == null || statisticsProvider.isHabitVisible!.length != habits.length) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (context.mounted) {
-                statisticsProvider.initializeHabitVisibility(habits);
-              }
-            });
-          }
-          
-          // 确保isHabitVisible不为null，提供默认值用于初始渲染
-          final isHabitVisible = statisticsProvider.isHabitVisible ?? List<bool>.filled(habits.length, true);
-          
-          // 过滤可见习惯时添加索引安全检查
-          final visibleHabits = habits.asMap().entries
-              .where((entry) => entry.key < isHabitVisible.length && isHabitVisible[entry.key])
-              .map((entry) => entry.value)
-              .toList();
-                      
-          // 使用习惯的颜色属性，不再需要固定的颜色列表
-          final Map<String, Color> habitColors = {};
-          for (int i = 0; i < habits.length; i++) {
-            habitColors[habits[i].name] = habits[i].color;
-          }
-          
-          // 计算统计数据
-          final stats = _calculateStats(visibleHabits);
-          
-          return SingleChildScrollView(
-            child: Column(
-              children: [
+      body: Container(
+        decoration: ThemeHelper.generateBackgroundDecoration(context) ?? BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
+        ),
+        child: Consumer2<HabitProvider, StatisticsProvider>(
+          builder: (context, habitProvider, statisticsProvider, child) {
+            final habits = habitProvider.habits;
+            
+            // 延迟初始化习惯可见性列表，避免在build过程中调用notifyListeners
+            if (statisticsProvider.isHabitVisible == null || statisticsProvider.isHabitVisible!.length != habits.length) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  statisticsProvider.initializeHabitVisibility(habits);
+                }
+              });
+            }
+            
+            // 确保isHabitVisible不为null，提供默认值用于初始渲染
+            final isHabitVisible = statisticsProvider.isHabitVisible ?? List<bool>.filled(habits.length, true);
+            
+            // 过滤可见习惯时添加索引安全检查
+            final visibleHabits = habits.asMap().entries
+                .where((entry) => entry.key < isHabitVisible.length && isHabitVisible[entry.key])
+                .map((entry) => entry.value)
+                .toList();
+                           
+            // 使用习惯的颜色属性，不再需要固定的颜色列表
+            final Map<String, Color> habitColors = {};
+            for (int i = 0; i < habits.length; i++) {
+              habitColors[habits[i].name] = habits[i].color;
+            }
+            
+            // 计算统计数据
+            final stats = _calculateStats(visibleHabits);
+            
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(ScreenUtil().setWidth(16)), // 添加整体页面的边距
+              child: Column(
+                children: [
                 // 渐变背景的头部（与习惯页面统一使用主题颜色）
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 500),
@@ -333,10 +326,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         Theme.of(context).colorScheme.primary.withOpacity(0.8),
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(ScreenUtil().setWidth(30))),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
@@ -346,7 +336,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       ),
                     ],
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32), // 与习惯页面统一内边距
+                  padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(32)), // 与习惯页面统一内边距
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start, // 与习惯页面统一对齐方式
                     children: [
@@ -354,21 +344,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         '习惯统计',
                         style: ThemeHelper.textStyleWithTheme(
                           context,
-                          fontSize: 32, // 与习惯页面统一标题大小
+                          fontSize: ScreenUtil().setSp(32), // 与习惯页面统一标题大小
                           fontWeight: FontWeight.bold,
                           color: ThemeHelper.onPrimary(context),
                         ),
                       ),
-                      SizedBox(height: 8), // 添加标题与副标题间距
+                      SizedBox(height: ScreenUtil().setHeight(8)), // 添加标题与副标题间距
                       Text(
                         '每一次努力都会留下踪迹', // 添加副标题
                         style: ThemeHelper.textStyleWithTheme(
                           context,
-                          fontSize: 16,
+                          fontSize: ScreenUtil().setSp(20),
                           color: ThemeHelper.onPrimary(context).withOpacity(0.9),
                         ),
                       ),
-                      const SizedBox(height: 24), // 添加与统计卡片的间距
+                      SizedBox(height: ScreenUtil().setHeight(24)), // 添加与统计卡片的间距
                       // 功能按钮 - 与习惯页面风格一致
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -377,28 +367,28 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           Card(
                             elevation: 3,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                             ),
                             child: InkWell(
                               onTap: () => _toggleView(statisticsProvider),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                               child: Container(
-                                width: 80,
-                                height: 80,
+                                width: ScreenUtil().setWidth(80),
+                                height: ScreenUtil().setHeight(80),
                                 alignment: Alignment.center,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
                                       Icons.timeline,
-                                      size: 28,
+                                      size: ScreenUtil().setSp(28),
                                       color: Colors.black,
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: ScreenUtil().setHeight(4)),
                                     Text(
                                       _isDetailView ? '明细视图' : '趋势视图',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: ScreenUtil().setSp(16),
                                         color: Colors.black,
                                       ),
                                       textAlign: TextAlign.center,
@@ -413,7 +403,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           Card(
                             elevation: 3,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                             ),
                             child: InkWell(
                               onTap: () {
@@ -428,10 +418,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                   }
                                 });
                               },
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                               child: Container(
-                                width: 80,
-                                height: 80,
+                                width: ScreenUtil().setWidth(80),
+                                height: ScreenUtil().setHeight(80),
                                 alignment: Alignment.center,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -443,16 +433,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                           ? '${stats['completedMonthTasks']}'
                                           : '${stats['completedYearTasks']}',
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: ScreenUtil().setSp(20),
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: ScreenUtil().setHeight(4)),
                                     Text(
                                       _statsTimeRange == 'week' ? '本周次数' : _statsTimeRange == 'month' ? '本月次数' : '本年次数',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: ScreenUtil().setSp(16),
                                         color: Colors.black,
                                       ),
                                       textAlign: TextAlign.center,
@@ -467,28 +457,28 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           Card(
                             elevation: 3,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                             ),
                             child: InkWell(
                               onTap: () => _sendProgressReport(context),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                               child: Container(
-                                width: 80,
-                                height: 80,
+                                width: ScreenUtil().setWidth(80),
+                                height: ScreenUtil().setHeight(80),
                                 alignment: Alignment.center,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
                                       Icons.send,
-                                      size: 28,
+                                      size: ScreenUtil().setSp(28),
                                       color: Colors.black,
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: ScreenUtil().setHeight(4)),
                                     Text(
                                       '分享报告',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: ScreenUtil().setSp(16),
                                         color: Colors.black,
                                       ),
                                       textAlign: TextAlign.center,
@@ -500,18 +490,18 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           ),
                         ],
                       ),
-                      ],
-                    ),
+                    ],
                   ),
+                ),
                 // 时间选择器 - 根据视图类型显示不同的选择器
                 _isDetailView ? 
                   // 明细视图时间选择器（固定为月份选择）
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    padding: const EdgeInsets.all(16),
+                    margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+                    padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                     decoration: BoxDecoration(
                       color: Colors.white, // 与其他卡片保持一致的背景色
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.05),
@@ -542,7 +532,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         Text(
                           '${statisticsProvider.detailSelectedYear}年${statisticsProvider.detailSelectedMonth}月',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: ScreenUtil().setSp(20),
                             fontWeight: FontWeight.bold,
                             color: ThemeHelper.onBackground(context)
                           ),
@@ -567,11 +557,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   ) : 
                   // 趋势视图时间选择器（可切换周/月/年）
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    padding: const EdgeInsets.all(16),
+                    margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+                    padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.05),
@@ -618,7 +608,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               ? '${statisticsProvider.trendSelectedYear}年${statisticsProvider.trendSelectedMonth}月'
                               : '${statisticsProvider.trendSelectedYear}年',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: ScreenUtil().setSp(20),
                             fontWeight: FontWeight.bold,
                             color: ThemeHelper.onBackground(context)
                           ),
@@ -665,11 +655,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   // 明细视图的图例选择部分 - 放在日期选择下方
                   if (_isDetailView) 
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      padding: const EdgeInsets.all(16),
+                      margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+                      padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -684,8 +674,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         children: [
                           Expanded(
                             child: Wrap(
-                              spacing: 12,
-                              runSpacing: 8,
+                              spacing: ScreenUtil().setWidth(12),
+                              runSpacing: ScreenUtil().setHeight(8),
                               children: habits.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final habit = entry.value;
@@ -696,10 +686,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                     statisticsProvider.toggleHabitVisibility(index);
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(6)),
                                     decoration: BoxDecoration(
                                       color: isVisible ? habit.color : Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
                                       border: Border.all(
                                         color: isVisible ? habit.color : Colors.grey.shade300,
                                         width: 2,
@@ -709,19 +699,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Container(
-                                          width: 12,
-                                          height: 12,
+                                          width: ScreenUtil().setWidth(12),
+                                          height: ScreenUtil().setHeight(12),
                                           decoration: BoxDecoration(
                                             color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade400,
                                             shape: BoxShape.circle,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: ScreenUtil().setWidth(8)),
                                         Text(
                                           habit.name,
                                           style: TextStyle(
                                             color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade600,
-                                            fontSize: 14,
+                                            fontSize: ScreenUtil().setSp(18),
                                           ),
                                         ),
                                       ],
@@ -732,7 +722,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             ),
                           ),
                           // 确保容器宽度充足，即使习惯数量较少
-                          habits.length < 3 ? Container(width: 80) : Container(),
+                          habits.length < 3 ? Container(width: ScreenUtil().setWidth(80)) : Container(),
                         ],
                       ),
                     ),
@@ -753,11 +743,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                     children: [
                                       // 周/月/年维度切换控件
                                       Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                        padding: const EdgeInsets.all(16),
+                                        margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+                                        padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.black.withOpacity(0.05),
@@ -773,11 +763,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                             _buildPeriodButton(context, '周', statisticsProvider.trendSelectedPeriod == 'week', () {
                                               statisticsProvider.setTrendSelectedPeriod('week');
                                             }),
-                                            const SizedBox(width: 16),
+                                            SizedBox(width: ScreenUtil().setWidth(16)),
                                             _buildPeriodButton(context, '月', statisticsProvider.trendSelectedPeriod == 'month', () {
                                               statisticsProvider.setTrendSelectedPeriod('month');
                                             }),
-                                            const SizedBox(width: 16),
+                                            SizedBox(width: ScreenUtil().setWidth(16)),
                                             _buildPeriodButton(context, '年', statisticsProvider.trendSelectedPeriod == 'year', () {
                                               statisticsProvider.setTrendSelectedPeriod('year');
                                             }),
@@ -786,11 +776,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                       ),
                                       // 趋势视图的图例选择部分 - 放在周、月、年选择维度下方
                                       Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                        padding: const EdgeInsets.all(16),
+                                        margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+                                        padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.black.withOpacity(0.05),
@@ -805,22 +795,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                           children: [
                                             Expanded(
                                               child: Wrap(
-                                                spacing: 12,
-                                                runSpacing: 8,
+                                                spacing: ScreenUtil().setWidth(12),
+                                                runSpacing: ScreenUtil().setHeight(8),
                                                 children: habits.asMap().entries.map((entry) {
                                                   final index = entry.key;
                                                   final habit = entry.value;
                                                   final isVisible = index < isHabitVisible.length && isHabitVisible[index];
-                                                       
+                                                        
                                                   return GestureDetector(
                                                     onTap: () {
                                                       statisticsProvider.toggleHabitVisibility(index);
                                                     },
                                                     child: Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(6)),
                                                       decoration: BoxDecoration(
                                                         color: isVisible ? habit.color : Colors.grey.shade200,
-                                                        borderRadius: BorderRadius.circular(20),
+                                                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
                                                         border: Border.all(
                                                           color: isVisible ? habit.color : Colors.grey.shade300,
                                                           width: 2,
@@ -830,19 +820,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
                                                           Container(
-                                                            width: 12,
-                                                            height: 12,
+                                                            width: ScreenUtil().setWidth(12),
+                                                            height: ScreenUtil().setHeight(12),
                                                             decoration: BoxDecoration(
                                                               color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade400,
                                                               shape: BoxShape.circle,
                                                             ),
                                                           ),
-                                                          const SizedBox(width: 8),
+                                                          SizedBox(width: ScreenUtil().setWidth(8)),
                                                           Text(
                                                             habit.name,
                                                             style: TextStyle(
                                                               color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade600,
-                                                              fontSize: 14,
+                                                              fontSize: ScreenUtil().setSp(18),
                                                             ),
                                                           ),
                                                         ],
@@ -853,7 +843,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                               ),
                                             ),
                                             // 确保容器宽度充足，即使习惯数量较少
-                                            habits.length < 3 ? Container(width: 80) : Container(),
+                                            habits.length < 3 ? Container(width: ScreenUtil().setWidth(80)) : Container(),
                                           ],
                                         ),
                                       ),
@@ -874,8 +864,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
               ],
             ),
           );
-        },
+       },
       ),
-    );
+    ),
+);
   }
 }

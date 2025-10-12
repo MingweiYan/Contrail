@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class IconHelper {
   /// 图标分类映射表
   static final Map<String, List<String>> _iconsByCategory = {
-    '学习类': ['book', 'menu_book', 'school', 'school_rounded', 'book_online', 'edit', 'read_more', 'calendar_today', 'flash_on', 'library_books', 'search', 'work_outline', 'description', 'list_alt'],
+    '学习类': ['book', 'menu_book', 'school', 'book_online', 'edit', 'read_more', 'calendar_today', 'flash_on', 'library_books', 'search', 'work_outline', 'description', 'list_alt'],
     '健康类': ['fitness_center', 'water_drop', 'local_drink', 'coffee', 'directions_run', 'directions_walk', 'sports_esports', 'favorite', 'bedtime', 'heart_broken', 'medical_services', 'medication', 'accessibility_new', 'accessibility', 'medical_information'],
     '创意类': ['music_note', 'palette', 'lightbulb', 'lightbulb_outline', 'brush', 'camera', 'video_call', 'headphones', 'mic', 'movie', 'art_track', 'edit_note', 'design_services', 'animation', 'emoji_emotions'],
     '技术类': ['code', 'laptop', 'smartphone', 'tablet', 'watch', 'wifi', 'bluetooth', 'cloud', 'security', 'share', 'download', 'upload'],
@@ -23,7 +23,6 @@ class IconHelper {
     'book': Icons.book,
     'menu_book': Icons.menu_book,
     'school': Icons.school,
-    'school_rounded': Icons.school_rounded,
     'book_online': Icons.book_online,
     'edit': Icons.edit,
     'read_more': Icons.read_more,
@@ -211,9 +210,6 @@ class IconHelper {
   /// 缓存图标分类的图标数据结果
   static Map<String, List<IconData>>? _cachedIconsByCategory;
   
-  /// 缓存所有图标列表结果
-  static List<Map<String, dynamic>>? _cachedAllIcons;
-
   /// 根据图标名称获取对应的IconData
   static IconData getIconData(String? iconName, {bool logError = true}) {
     if (iconName == null || iconName.isEmpty) {
@@ -264,18 +260,6 @@ class IconHelper {
     return 'book'; // 默认图标名称
   }
   
-  /// 验证图标名称是否与Icons类中的静态对象名称一致
-  static bool validateIconName(String? iconName) {
-    // 检查是否存在于映射表中
-    if (iconName == null || !_iconMap.containsKey(iconName)) {
-      return false;
-    }
-    
-    // 验证图标名称是否与Icons类中的静态对象名称一致
-    // 由于我们已经确保iconName和对应的IconData是一致的，直接返回true
-    return true;
-  }
-  
   /// 获取所有图标分类的图标数据（带缓存优化）
   static Map<String, List<IconData>> getIconsByCategory() {
     // 检查缓存是否存在
@@ -299,44 +283,5 @@ class IconHelper {
     _cachedIconsByCategory = result;
     
     return result;
-  }
-  
-  /// 搜索图标
-  static List<IconData> searchIcons(String query) {
-    if (query.isEmpty) {
-      return _iconMap.values.toList();
-    }
-    
-    final lowercaseQuery = query.toLowerCase();
-    return _iconMap.entries
-        .where((entry) => entry.key.toLowerCase().contains(lowercaseQuery))
-        .map((entry) => entry.value)
-        .toList();
-  }
-
-  /// 获取所有可用的图标列表，用于图标选择器（带缓存优化）
-  static List<Map<String, dynamic>> getAllIcons() {
-    // 检查缓存是否存在
-    if (_cachedAllIcons != null) {
-      return _cachedAllIcons!;
-    }
-    
-    final List<Map<String, dynamic>> result = _iconMap.entries.map((entry) {
-      return {
-        'name': entry.key,
-        'icon': entry.value,
-      };
-    }).toList();
-    
-    // 缓存结果
-    _cachedAllIcons = result;
-    
-    return result;
-  }
-  
-  /// 清除缓存（用于测试或特殊场景）
-  static void clearCache() {
-    _cachedIconsByCategory = null;
-    _cachedAllIcons = null;
   }
 }

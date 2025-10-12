@@ -130,8 +130,7 @@ class HabitStatisticsService {
       final weeksInPeriod = (endDate.difference(startDate).inDays / 7).ceil();
       totalRequiredDays = weeksInPeriod * (habit.targetDays ?? 3); // 默认每周3天
       
-      // 计算完成的天数
-      int weekCount = 0;
+
       DateTime currentWeekStart = startDate;
       
       while (currentWeekStart.isBefore(endDate.add(const Duration(days: 1)))) {
@@ -153,9 +152,9 @@ class HabitStatisticsService {
         // 如果这个周内的完成次数超过目标次数，按目标次数计算
         completedDays += weeklyCompleted > (habit.targetDays ?? 3)
             ? (habit.targetDays ?? 3)
-            : weeklyCompleted;
-        
-        weekCount++;
+            : weeklyCompleted++;
+
+
         currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
       }
     } else if (habit.cycleType == CycleType.monthly) {
@@ -224,8 +223,8 @@ class HabitStatisticsService {
   String generateReportContent(Map<String, dynamic> statistics) {
     final cycleType = statistics['cycleType'] as CycleType;
     final formatter = DateFormat('yyyy-MM-dd');
-    final monthFormatter = DateFormat('yyyy年MM月');
     final yearFormatter = DateFormat('yyyy年');
+    final monthFormatter = DateFormat('yyyy年MM月');
     
     String content;
     String avgRate = (statistics['averageCompletionRate'] * 100).toStringAsFixed(0);
@@ -311,8 +310,8 @@ class HabitStatisticsService {
       content += '\n表现最佳的习惯:\n';
       statistics['topHabits'].forEach((name, rate) {
         final habitRate = (rate * 100).toStringAsFixed(0);
-        content += '- $name: $habitRate%\n';
-      });
+        content += '- $name: $habitRate';  // 生成周报告通知内容（调用统一方法）
+    });
     }
     
     content += '\n$encouragement';

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class FullEditorPage extends StatefulWidget {
   final String? initialContent; // 初始富文本内容
@@ -19,8 +20,6 @@ class FullEditorPage extends StatefulWidget {
 
 class _FullEditorPageState extends State<FullEditorPage> {
   late QuillController _controller;
-  final FocusNode _focusNode = FocusNode();
-  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -68,15 +67,15 @@ class _FullEditorPageState extends State<FullEditorPage> {
             // 编辑器主体
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: QuillEditor.basic(
-                  controller: _controller,
-                  config: QuillEditorConfig(
-                    padding: const EdgeInsets.all(8),
-                    placeholder: widget.placeholder,
+                  padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+                  child: QuillEditor.basic(
+                    controller: _controller,
+                    config: QuillEditorConfig(
+                      padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
+                      placeholder: widget.placeholder,
+                    ),
                   ),
                 ),
-              ),
             ),
           ],
         ),

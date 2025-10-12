@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:contrail/core/state/focus_state.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:async';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/core/di/injection_container.dart';
 
 class FullscreenClockPage extends StatefulWidget {
   const FullscreenClockPage({super.key});
@@ -20,7 +22,7 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
     super.initState();
     
     // 初始化时获取当前专注状态和时间
-    final focusState = FocusState();
+    final focusState = sl<FocusState>();
     _elapsedTime = focusState.elapsedTime;
     _focusStatus = focusState.focusStatus;
     
@@ -28,14 +30,14 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
     WakelockPlus.enable();
     
     // 添加状态监听器
-    FocusState().addListener(_onFocusStateChanged);
-    FocusState().addTimeUpdateListener(_onTimeUpdate);
+    sl<FocusState>().addListener(_onFocusStateChanged);
+    sl<FocusState>().addTimeUpdateListener(_onTimeUpdate);
     
     // 每秒更新一次UI，确保显示最新时间
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {
-          _elapsedTime = FocusState().elapsedTime;
+          _elapsedTime = sl<FocusState>().elapsedTime;
         });
       }
     });
@@ -44,8 +46,8 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
   @override
   void dispose() {
     // 移除监听器
-    FocusState().removeListener(_onFocusStateChanged);
-    FocusState().removeTimeUpdateListener(_onTimeUpdate);
+    sl<FocusState>().removeListener(_onFocusStateChanged);
+    sl<FocusState>().removeTimeUpdateListener(_onTimeUpdate);
     
     // 取消定时器
     _timer.cancel();
@@ -98,27 +100,18 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
                 // 大字体显示时间
                 Text(
                   _formatDuration(_elapsedTime),
-                  style: const TextStyle(
-                    fontSize: 120,
+                  style: TextStyle(
+                    fontSize: ScreenUtil().setSp(120),
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 20),
-                // 显示专注状态
-                Text(
-                  _getFocusStatusText(),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 40),
+                SizedBox(height: ScreenUtil().setHeight(40)),
                 // 提示文字
-                const Text(
+                Text(
                   '点击屏幕返回专注页面',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: ScreenUtil().setSp(24),
                     color: Colors.grey,
                   ),
                 ),

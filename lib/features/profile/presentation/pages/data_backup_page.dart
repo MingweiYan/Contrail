@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:flutter/widgets.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 // 导入依赖注入容器
 import 'package:contrail/core/di/injection_container.dart';
@@ -22,6 +24,7 @@ import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DataBackupPage extends StatefulWidget {
   const DataBackupPage({super.key});
@@ -57,12 +60,114 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
     // 初始化本地通知
     _initializeNotifications();
     
-    _loadSettings();
-    _loadLocalBackupFiles();
-    _checkAndPerformAutoBackup();
+    // 先检查存储权限，然后再加载设置和备份文件
+    _checkStoragePermission().then((hasPermission) {
+      if (hasPermission) {
+        _loadSettings();
+        _loadLocalBackupFiles();
+        _checkAndPerformAutoBackup();
+      } else {
+        logger.warning('未获取到存储权限，无法加载备份设置和文件');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('请授予存储权限以使用备份功能')),
+        );
+      }
+    });
     
     // 添加观察者，监听页面可见性变化
     WidgetsBinding.instance.addObserver(this);
+  }
+  
+  // 检查并申请存储权限
+  Future<bool> _checkStoragePermission() async {
+    // 在Android 13及以上版本，使用不同的权限
+    if (Platform.isAndroid) {
+      // 检查Android版本
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      final sdkInt = androidInfo.version.sdkInt;
+      
+      // Android 13及以上使用photos权限
+      if (sdkInt >= 33) {
+        var status = await Permission.photos.status;
+        if (!status.isGranted) {
+          status = await Permission.photos.request();
+          // 如果用户拒绝了权限并且选择了"不再询问"
+          if (!status.isGranted && status.isDenied) {
+            // 显示解释对话框，引导用户去设置中授予权限
+            _showPermissionExplanation();
+            return false;
+          }
+        }
+        return status.isGranted;
+      } else {
+        // Android 12及以下使用storage权限
+        var status = await Permission.storage.status;
+        if (!status.isGranted) {
+          status = await Permission.storage.request();
+          // 如果用户拒绝了权限并且选择了"不再询问"
+          if (!status.isGranted && status.isDenied) {
+            // 显示解释对话框，引导用户去设置中授予权限
+            _showPermissionExplanation();
+            return false;
+          }
+        }
+        return status.isGranted;
+      }
+    } else {
+      // 其他平台默认返回true
+      return true;
+    }
+  }
+  
+  // 显示权限请求解释对话框
+  void _showPermissionExplanation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text('需要存储权限', style: TextStyle(
+          fontSize: ScreenUtil().setSp(18),
+          fontWeight: FontWeight.bold,
+          color: ThemeHelper.onBackground(context)
+        )),
+        content: Text('为了备份和恢复您的数据，我们需要访问您的存储空间。请在设置中找到我们的应用，然后授予存储权限。', style: TextStyle(
+          fontSize: ScreenUtil().setSp(16),
+          color: ThemeHelper.onBackground(context)
+        )),
+        actions: [
+          ElevatedButton(
+            child: Text('取消', style: TextStyle(
+              fontSize: ScreenUtil().setSp(16),
+              color: ThemeHelper.onPrimary(context)
+            )),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeHelper.primary(context).withOpacity(0.8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: Text('去设置', style: TextStyle(
+              fontSize: ScreenUtil().setSp(16),
+              color: Colors.white
+            )),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeHelper.primary(context),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+          ),
+        ],
+      ),
+    );
   }
   
   // 初始化本地通知
@@ -172,6 +277,13 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
   
   // 执行计划备份
   Future<void> _performScheduledBackup() async {
+    // 先检查存储权限
+    final hasPermission = await _checkStoragePermission();
+    if (!hasPermission) {
+      logger.error('未获取到存储权限，自动备份失败');
+      return;
+    }
+    
     try {
       await _performBackup();
       
@@ -267,6 +379,13 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
 
   // 删除备份文件
   Future<void> _deleteBackupFile(BackupFileInfo backupFile) async {
+    // 先检查存储权限
+    final hasPermission = await _checkStoragePermission();
+    if (!hasPermission) {
+      _showPermissionExplanation();
+      return;
+    }
+    
     try {
       final file = File(backupFile.path);
       if (await file.exists()) {
@@ -292,37 +411,37 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
         title: Text('确认删除', style: TextStyle(
-          fontSize: 16,
+          fontSize: ScreenUtil().setSp(18),
           fontWeight: FontWeight.bold,
           color: Colors.red
         )),
         content: Text('确定要删除备份文件 "${backupFile.name}" 吗？此操作不可撤销！', style: TextStyle(
-          fontSize: 16,
+          fontSize: ScreenUtil().setSp(18),
           color: ThemeHelper.onBackground(context)
         )),
         actions: [
           ElevatedButton(
             child: Text('取消', style: TextStyle(
-              fontSize: 16,
+              fontSize: ScreenUtil().setSp(18),
               color: ThemeHelper.onPrimary(context)
             )),
             style: ElevatedButton.styleFrom(
               backgroundColor: ThemeHelper.primary(context).withOpacity(0.8),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
               ),
             ),
             onPressed: () => Navigator.pop(context),
           ),
           ElevatedButton(
             child: Text('确认删除', style: TextStyle(
-              fontSize: 16,
+              fontSize: ScreenUtil().setSp(18),
               color: Colors.white
             )),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
               ),
             ),
             onPressed: () {
@@ -337,6 +456,14 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
   
   // 加载本地备份文件列表
   Future<void> _loadLocalBackupFiles() async {
+    // 先检查存储权限
+    final hasPermission = await _checkStoragePermission();
+    if (!hasPermission) {
+      _showPermissionExplanation();
+      setState(() => _isLoading = false);
+      return;
+    }
+    
     setState(() => _isLoading = true);
     try {
       final backupDir = Directory(_localBackupPath);
@@ -372,6 +499,13 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
 
   // 执行本地备份
   Future<void> _performLocalBackup() async {
+    // 先检查存储权限
+    final hasPermission = await _checkStoragePermission();
+    if (!hasPermission) {
+      _showPermissionExplanation();
+      return;
+    }
+    
     setState(() => _isLoading = true);
     try {
       // 创建备份文件名（包含时间戳）
@@ -445,6 +579,13 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
 
   // 从本地备份恢复
   Future<void> _restoreFromLocal(BackupFileInfo backupFile) async {
+    // 先检查存储权限
+    final hasPermission = await _checkStoragePermission();
+    if (!hasPermission) {
+      _showPermissionExplanation();
+      return;
+    }
+    
     setState(() => _isLoading = true);
     try {
       // 读取备份文件
@@ -545,6 +686,13 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
 
   // 更换本地备份路径
   Future<void> _changeLocalBackupPath() async {
+    // 先检查存储权限
+    final hasPermission = await _checkStoragePermission();
+    if (!hasPermission) {
+      _showPermissionExplanation();
+      return;
+    }
+    
     try {
       // 使用file_picker打开文件夹选择器
       String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
@@ -592,23 +740,23 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('数据备份与恢复')),
+      appBar: AppBar(title: Text('数据备份与恢复')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 备份部分
-            const Text(
+            Text(
               '备份数据',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: ScreenUtil().setSp(29), fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: ScreenUtil().setHeight(16)),
             
             // 自动备份设置
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(ScreenUtil().setWidth(18)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children:
@@ -617,9 +765,9 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children:
                           [
-                            const Text(
+                            Text(
                               '自动备份',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: ScreenUtil().setSp(18), fontWeight: FontWeight.bold),
                             ),
                             Switch(
                               value: _autoBackupEnabled,
@@ -633,11 +781,11 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                           ],
                       ),
                       if (_autoBackupEnabled) ...[
-                        const SizedBox(height: 16),
+                        SizedBox(height: ScreenUtil().setHeight(16)),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('备份频率:'),
+                            Text('备份频率:'),
                             DropdownButton<int>(
                               value: _backupFrequency,
                               items: const [
@@ -667,12 +815,12 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: ScreenUtil().setHeight(8)),
                         if (_lastBackupTime != null)
                           Text(
                             '上次备份时间: ' +
                                 DateFormat('yyyy-MM-dd HH:mm:ss').format(_lastBackupTime!),
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: Colors.grey, fontSize: ScreenUtil().setSp(16)),
                           ),
                         Text(
                           '下次备份: ' +
@@ -680,25 +828,25 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                                   ? DateFormat('yyyy-MM-dd HH:mm:ss')
                                       .format(_lastBackupTime!.add(Duration(days: _backupFrequency)))
                                   : '开启后立即执行第一次备份'),
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Colors.grey, fontSize: ScreenUtil().setSp(16)),
                         ),
                       ],
                     ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: ScreenUtil().setHeight(16)),
             
             // 本地备份设置
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('备份路径:'),
+                          Text('备份路径:', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
                           Expanded(
                             child: Text(
                               _localBackupPath,
@@ -708,16 +856,16 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                           ),
                           TextButton(
                             onPressed: _changeLocalBackupPath,
-                            child: const Text('更换'),
+                            child: Text('更换', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: ScreenUtil().setHeight(16)),
                       ElevatedButton(
                         onPressed: _performLocalBackup,
-                        child: const Text('执行本地备份'),
+                        child: Text('执行本地备份', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
                         style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
+                          minimumSize: Size(double.infinity, ScreenUtil().setHeight(48)),
                         ),
                       ),
                     ],
@@ -726,34 +874,34 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
               ),
             
             
-            const SizedBox(height: 32),
+            SizedBox(height: ScreenUtil().setHeight(32)),
             
             // 恢复部分
-            const Text(
+            Text(
               '恢复数据',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: ScreenUtil().setSp(18), fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: ScreenUtil().setHeight(16)),
             
             
-            const SizedBox(height: 16),
+            SizedBox(height: ScreenUtil().setHeight(16)),
             
             // 刷新备份文件列表按钮
             ElevatedButton(
               onPressed: _loadBackupFiles,
-              child: const Text('刷新备份文件列表'),
+              child: Text('刷新备份文件列表', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
+                minimumSize: Size(double.infinity, ScreenUtil().setHeight(48)),
               ),
             ),
             
-            const SizedBox(height: 16),
+            SizedBox(height: ScreenUtil().setHeight(16)),
             
             // 备份文件列表
             if (_isLoading) 
-              const Center(child: CircularProgressIndicator())
+              Center(child: CircularProgressIndicator())
             else if (_backupFiles.isEmpty) 
-              const Center(child: Text('没有找到备份文件'))
+              Center(child: Text('没有找到备份文件', style: TextStyle(fontSize: ScreenUtil().setSp(16))))
             else
               ListView.builder(
                 shrinkWrap: true,
@@ -763,13 +911,14 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                   final backupFile = _backupFiles[index];
                   return Card(
                     child: ListTile(
-                      title: Text(backupFile.name),
+                      title: Text(backupFile.name, style: TextStyle(fontSize: ScreenUtil().setSp(16))),
                       subtitle: Text(
                         '修改时间: ' + 
                         DateFormat('yyyy-MM-dd HH:mm:ss').format(backupFile.lastModified) +
                         '\n大小: ' +
                         (backupFile.size / 1024).toStringAsFixed(2) +
-                        ' KB'
+                        ' KB',
+                        style: TextStyle(fontSize: ScreenUtil().setSp(14))
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -778,14 +927,14 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                             onPressed: () {
                               _restoreFromLocal(backupFile);
                             },
-                            child: const Text('恢复'),
+                            child: Text('恢复', style: TextStyle(fontSize: ScreenUtil().setSp(16))),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: ScreenUtil().setWidth(8)),
                           ElevatedButton(
                             onPressed: () {
                               _showDeleteConfirmation(backupFile);
                             },
-                            child: const Text('删除'),
+                            child: Text('删除', style: TextStyle(fontSize: ScreenUtil().setSp(16))),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                             ),

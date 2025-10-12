@@ -143,66 +143,8 @@ class HabitDataGenerator {
   static Color getRandomColor() {
     return _colors[_random.nextInt(_colors.length)];
   }
-  
-  /// 为指定习惯生成指定日期范围内的随机数据
-  static void generateRandomDataForHabit(
-    Habit habit,
-    DateTime startDate,
-    DateTime endDate,
-    int dataPointsCount
-  ) {
-    for (int i = 0; i < dataPointsCount; i++) {
-      // 随机选择日期范围内的日期
-      final int daysDifference = endDate.difference(startDate).inDays;
-      final int randomDays = _random.nextInt(daysDifference + 1);
-      final DateTime randomDate = startDate.add(Duration(days: randomDays));
-      final dateKey = DateTime(randomDate.year, randomDate.month, randomDate.day);
-      
-      // 随机决定是否完成
-      final bool isCompleted = _random.nextBool();
-      
-      if (isCompleted) {
-        // 更新完成状态
-        habit.dailyCompletionStatus[dateKey] = true;
-        habit.currentDays++;
-        
-        // 如果习惯跟踪时间，添加时间数据
-        if (habit.trackTime) {
-          // 随机生成持续时间（5-60分钟）
-          final int minutes = 5 + _random.nextInt(56);
-          final duration = Duration(minutes: minutes);
-          
-          // 更新总持续时间
-          habit.totalDuration += duration;
-          
-          // 添加到当天的跟踪时间列表
-          if (!habit.trackingDurations.containsKey(dateKey)) {
-            habit.trackingDurations[dateKey] = [];
-          }
-          habit.trackingDurations[dateKey]!.add(duration);
-        }
-      } else {
-        // 如果已存在该日期的完成状态，删除它
-        habit.dailyCompletionStatus.remove(dateKey);
-      }
-    }
-  }
-  
-  /// 添加一个测试按钮到习惯管理页面，用于生成测试数据
-  /// 注意：这只是一个辅助方法，实际应用中可能需要通过其他方式调用
-  static Widget createTestDataButton({
-    required Function onGenerateData,
-  }) {
-    return FloatingActionButton.extended(
-      onPressed: () {
-        onGenerateData();
-      },
-      label: const Text('生成测试数据'),
-      icon: const Icon(Icons.data_saver_on),
-      backgroundColor: Colors.purple,
-      tooltip: '创建6个习惯并生成100条测试数据',
-    );
-  }
+    
+
   
   /// 生成测试数据并保存到HabitProvider
   /// 这个方法可以直接在应用中调用，用于快速创建测试数据

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatisticsChartWidget extends StatefulWidget {
   final List<Habit> habits;
@@ -80,20 +81,20 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         children: [
           // 次数统计图表 - 添加独立的白色背景块
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(8)),
             decoration: BoxDecoration(
               color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
+                  spreadRadius: ScreenUtil().setWidth(2),
+                  blurRadius: ScreenUtil().setWidth(5),
+                  offset: Offset(0, ScreenUtil().setHeight(2)),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
             child: Container(
               height: chartHeight,
               width: double.infinity,
@@ -111,11 +112,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           
           // 次数统计标题
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
             child: Text(
               '习惯完成次数统计',
               style: TextStyle(
-                fontSize: MediaQuery.of(context).textScaleFactor * 16,
+                fontSize: ScreenUtil().setSp(18),
                 fontWeight: FontWeight.bold,
                 color: ThemeHelper.onBackground(context),
               ),
@@ -124,10 +125,10 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
 
           // 时间统计图表 - 添加独立的白色背景块
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(8)),
             decoration: BoxDecoration(
               color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -137,7 +138,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
             child: Container(
               height: chartHeight,
               width: double.infinity,
@@ -155,11 +156,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           
           // 时间统计标题
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
             child: Text(
               '习惯专注时间统计 (分钟)',
               style: TextStyle(
-                fontSize: MediaQuery.of(context).textScaleFactor * 16,
+                fontSize: ScreenUtil().setSp(18),
                 fontWeight: FontWeight.bold,
                 color: ThemeHelper.onBackground(context),
               ),
@@ -179,18 +180,18 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       isCurved: true, // 曲线样式
       curveSmoothness: 0.3, // 曲线平滑度
       color: color,
-      barWidth: 3.0, // 线条宽度
+      barWidth: ScreenUtil().setWidth(3), // 线条宽度
       isStrokeCapRound: true, // 线条两端为圆形
       dotData: FlDotData(
         show: true,
         getDotPainter: (spot, percent, barData, index) {
           // 根据是否选中显示不同样式的点
           return FlDotCirclePainter(
-            radius: touchedSpot == spot && touchedBarIndex == index ? 6 : 4,
+            radius: touchedSpot == spot && touchedBarIndex == index ? ScreenUtil().setWidth(6) : ScreenUtil().setWidth(4),
             color: touchedSpot == spot && touchedBarIndex == index 
               ? color.withOpacity(1.0) 
               : color.withOpacity(0.8),
-            strokeWidth: touchedSpot == spot && touchedBarIndex == index ? 2 : 0,
+            strokeWidth: touchedSpot == spot && touchedBarIndex == index ? ScreenUtil().setWidth(2) : 0,
             strokeColor: ThemeHelper.onBackground(context),
           );
         },
@@ -218,7 +219,8 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     String chartType,
     List<String> habitNames,
     List<Color> habitColors,
-  ) {
+  )
+  {
     // 计算Y轴的最大值
     double maxY = 0;
     for (final barData in lineBarsData) {
@@ -253,7 +255,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
               return TouchedSpotIndicatorData(
                 FlLine(
                   color: barData.color != null ? barData.color!.withOpacity(0.3) : Colors.grey.shade300,
-                  strokeWidth: 2,
+                  strokeWidth: ScreenUtil().setWidth(2),
                 ),
                 FlDotData(
                   show: false,
@@ -305,11 +307,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             getTitlesWidget: (value, meta) {
               if (value.toInt() < titles.length) {
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
+                  padding: EdgeInsets.only(top: ScreenUtil().setHeight(8)),
                   child: Text(
                     titles[value.toInt()],
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).textScaleFactor * 12,
+                      fontSize: ScreenUtil().setSp(16),
                       color: ThemeHelper.onSurfaceVariant(context),
                     ),
                   ),
@@ -353,13 +355,13 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         show: true,
         border: Border(
           bottom: BorderSide(
-            color: ThemeHelper.outline(context),
-            width: 1,
-          ),
-          left: BorderSide(
-            color: ThemeHelper.outline(context),
-            width: 1,
-          ),
+                    color: ThemeHelper.outline(context),
+                    width: ScreenUtil().setWidth(1),
+                  ),
+                  left: BorderSide(
+                    color: ThemeHelper.outline(context),
+                    width: ScreenUtil().setWidth(1),
+                  ),
           top: BorderSide.none,
           right: BorderSide.none,
         ),

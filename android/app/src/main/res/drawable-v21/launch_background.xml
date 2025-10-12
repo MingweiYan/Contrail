@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 直接显示cover.png图片，完全填充屏幕 -->
-<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
-    android:src="@drawable/splash" 
-    android:scaleType="fitXY" />
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 白色背景 -->
+    <item>
+        <color android:color="#FFFFFF" />
+    </item>
+</layer-list>

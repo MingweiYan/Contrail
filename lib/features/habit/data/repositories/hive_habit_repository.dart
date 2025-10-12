@@ -12,7 +12,6 @@ class HiveHabitRepository implements HabitRepository {
   Future<List<Habit>> getHabits() async {
     try {
       final habits = _habitBox.values.toList();
-      logger.debug('加载习惯数量: ${habits.length}');
       return habits;
     } catch (e) {
       logger.error('获取习惯列表失败', e);

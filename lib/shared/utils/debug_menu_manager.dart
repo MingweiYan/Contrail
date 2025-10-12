@@ -5,6 +5,7 @@ import 'package:contrail/shared/utils/habit_data_generator.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/json_editor_page.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Debug菜单管理器 - 提供作为标签页的调试功能
 class DebugMenuManager with WidgetsBindingObserver {
@@ -158,7 +159,7 @@ class DebugMenuManager with WidgetsBindingObserver {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -166,10 +167,10 @@ class DebugMenuManager with WidgetsBindingObserver {
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                 ),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -179,19 +180,19 @@ class DebugMenuManager with WidgetsBindingObserver {
                         Theme.of(context).colorScheme.primary.withOpacity(0.8),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                   ),
-                  child: const Text(
+                  child: Text(
                     '🔧 Debug工具菜单',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: ScreenUtil().setSp(20),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: ScreenUtil().setHeight(20)),
               
               // 生成测试数据按钮 - 水平占满屏幕
               _buildFullWidthDebugButton(
@@ -212,7 +213,7 @@ class DebugMenuManager with WidgetsBindingObserver {
                   }
                 }
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: ScreenUtil().setHeight(20)),
               
               // JSON编辑器按钮 - 水平占满屏幕
               _buildFullWidthDebugButton(
@@ -240,22 +241,22 @@ class DebugMenuManager with WidgetsBindingObserver {
                   }
                 }
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: ScreenUtil().setHeight(40)),
               
               // 关闭debug模式按钮
               ElevatedButton(
                 onPressed: deactivateDebugMode,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(16)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '🛑 关闭Debug模式',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: ScreenUtil().setSp(16),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -273,9 +274,9 @@ class DebugMenuManager with WidgetsBindingObserver {
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(24)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
         ),
         elevation: 2,
         // 水平占满屏幕
@@ -283,8 +284,8 @@ class DebugMenuManager with WidgetsBindingObserver {
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 18,
+        style: TextStyle(
+          fontSize: ScreenUtil().setSp(18),
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),

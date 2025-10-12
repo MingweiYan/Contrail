@@ -17,6 +17,9 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/core/state/focus_state.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:contrail/features/statistics/presentation/pages/habit_detail_statistics_page.dart';
+import 'package:contrail/features/statistics/presentation/providers/statistics_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 
 class HabitManagementPage extends StatefulWidget {
@@ -87,7 +90,6 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       setState(() {
         _habits = habits;
       });
-      logger.debug('加载习惯成功，数量: ${habits.length}');
     } catch (e) {
       logger.error('加载习惯失败', e);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +122,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setStateDialog) => Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -132,9 +134,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   Theme.of(context).colorScheme.primary.withOpacity(0.8),
                 ],
                     ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
             ),
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(ScreenUtil().setWidth(24)),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -145,30 +147,30 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                     child: Text(
                       '补充记录',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: ScreenUtil().setSp(24),
                         fontWeight: FontWeight.bold,
                         color: ThemeHelper.onPrimary(context),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: ScreenUtil().setHeight(24)),
 
                   // 习惯选择
                   Text(
                     '选择习惯',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: ScreenUtil().setSp(18),
                       fontWeight: FontWeight.w500,
                       color: ThemeHelper.onPrimary(context),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: ScreenUtil().setHeight(8)),
                   Container(
                     decoration: BoxDecoration(
                       color: ThemeHelper.onPrimary(context).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12)),
                     child: DropdownButton<Habit>(
                       hint: Text('选择习惯', style: TextStyle(color: ThemeHelper.onPrimary(context).withOpacity(0.7))),
                       value: selectedHabit,
@@ -188,25 +190,25 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       icon: Icon(Icons.arrow_drop_down, color: ThemeHelper.onPrimary(context)),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: ScreenUtil().setHeight(20)),
 
                   // 日期选择
                   Text(
                     '选择日期',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: ScreenUtil().setSp(18),
                       fontWeight: FontWeight.w500,
                       color: ThemeHelper.onPrimary(context),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: ScreenUtil().setHeight(8)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children:[
                       Text(
                         '日期:',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: ScreenUtil().setSp(20),
                           color: ThemeHelper.onPrimary(context).withOpacity(0.8),
                         ),
                       ),
@@ -237,7 +239,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                           ),
                           elevation: 0,
                         ),
@@ -248,25 +250,25 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: ScreenUtil().setHeight(16)),
 
                   // 时间选择（新增的开始时间选择功能）
                   Text(
                     '选择开始时间',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: ScreenUtil().setSp(18),
                       fontWeight: FontWeight.w500,
                       color: ThemeHelper.onPrimary(context),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: ScreenUtil().setHeight(8)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children:[
                       Text(
                         '时间:',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: ScreenUtil().setSp(20),
                           color: ThemeHelper.onPrimary(context).withOpacity(0.8),
                         ),
                       ),
@@ -295,7 +297,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                           ),
                           elevation: 0,
                         ),
@@ -306,22 +308,22 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: ScreenUtil().setHeight(20))
 
                   // 时长选择（仅当习惯需要追踪时间时显示）
-                  if (selectedHabit?.trackTime ?? false)
+                  ,if (selectedHabit?.trackTime ?? false)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children:[
                         Text(
                           '选择时长',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: ThemeHelper.onPrimary(context),
+                            style: TextStyle(
+                              fontSize: ScreenUtil().setSp(18),
+                              fontWeight: FontWeight.w500,
+                              color: ThemeHelper.onPrimary(context),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
+                          SizedBox(height: ScreenUtil().setHeight(8)),
                         Slider(
                           value: durationMinutes.toDouble(),
                           min: 1.0,
@@ -340,7 +342,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           child: Text(
                             '$durationMinutes 分钟',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: ScreenUtil().setSp(18),
                               fontWeight: FontWeight.bold,
                               color: ThemeHelper.onPrimary(context),
                             ),
@@ -348,7 +350,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         ),
                       ],
                     ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: ScreenUtil().setHeight(24)),
 
                   // 按钮区域
                   Row(
@@ -359,9 +361,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(12)),
                           elevation: 0,
                         ),
                         child: Text(
@@ -400,6 +402,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                             );
                             // 重新加载习惯列表
                             _loadHabits();
+                            
+                            // 通知StatisticsProvider更新数据，确保统计页面能及时刷新
+                            final statisticsProvider = Provider.of<StatisticsProvider>(context, listen: false);
+                            statisticsProvider.notifyListeners();
                           } catch (e) {
                             logger.error('更新习惯失败', e);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -410,9 +416,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ThemeHelper.onPrimary(context),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(12)),
                           elevation: 4,
                         ),
                         child: Text(
@@ -425,8 +431,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       ),
                     ],
                   ),
-                  ],
-                ),
+                ],
+              ),
             ),
           ),
         ),
@@ -475,16 +481,16 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       // 如果设置了目标，显示周期和进度
       switch (habit.cycleType!) {
         case CycleType.daily:
-          buffer.write('每日目标');
+          buffer.write('每日');
           break;
         case CycleType.weekly:
-          buffer.write('每周目标');
+          buffer.write('每周');
           break;
         case CycleType.monthly:
-          buffer.write('每月目标');
+          buffer.write('每月');
           break;
         case CycleType.annual:
-          buffer.write('每年目标');
+          buffer.write('每年');
           break;
       }
       
@@ -575,10 +581,6 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
         // 本月开始
         startDate = DateTime(now.year, now.month, 1);
         break;
-      case CycleType.annual:
-        // 本年开始
-        startDate = DateTime(now.year, 1, 1);
-        break;
       case CycleType.daily:
       default:
         // 今天
@@ -609,10 +611,6 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       case CycleType.monthly:
         // 本月开始
         startDate = DateTime(now.year, now.month, 1);
-        break;
-      case CycleType.annual:
-        // 本年开始
-        startDate = DateTime(now.year, 1, 1);
         break;
       case CycleType.daily:
       default:
@@ -652,7 +650,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   // 导航到追踪页面
   void _navigateToTrackingPage(Habit habit) {
     // 检查是否有正在进行的专注会话
-    final focusState = FocusState();
+    final focusState = sl<FocusState>();
     if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
       // 如果正在专注的习惯与当前选择的习惯不同，显示提示
       if (focusState.currentFocusHabit!.id != habit.id) {
@@ -699,16 +697,17 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    logger.debug('HabitManagementPage 构建中，习惯数量: ${_habits.length}');
     
     final themeProvider = Provider.of<ThemeProvider>(context);
     final currentTheme = themeProvider.currentTheme;
     final isDarkMode = ThemeHelper.isDarkMode(context);
-    final decoration = ThemeHelper.generateBackgroundDecoration(context);
 
     return Scaffold(
       body: Container(
-        decoration: decoration,
+        decoration: ThemeHelper.generateBackgroundDecoration(context) ?? BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
+        ),
+        padding: EdgeInsets.all(ScreenUtil().setWidth(16)), // 添加整体页面的边距
         child: _buildHabitList(),
       ),
     );
@@ -756,7 +755,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
         AnimatedContainer(
           duration: Duration(milliseconds: 500),
           curve: Curves.easeOut,
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(32)),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -766,10 +765,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 Theme.of(context).colorScheme.primary.withOpacity(0.8),
               ],
             ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-            ),
+            borderRadius: BorderRadius.all(Radius.circular(ScreenUtil().setWidth(30))),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,21 +774,21 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 '我的习惯',
                 style: ThemeHelper.textStyleWithTheme(
                   context,
-                  fontSize: 32,
+                  fontSize: ScreenUtil().setSp(32),
                   fontWeight: FontWeight.bold,
                   color: ThemeHelper.onPrimary(context),
                 ),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: ScreenUtil().setHeight(8)),
               Text(
                 '从新增一个习惯出发吧！',
                 style: ThemeHelper.textStyleWithTheme(
                   context,
-                  fontSize: 16,
+                  fontSize: ScreenUtil().setSp(20),
                   color: ThemeHelper.onPrimary(context).withOpacity(0.9),
                 ),
               ),
-              SizedBox(height: 24),
+              SizedBox(height: ScreenUtil().setHeight(24)),
               // 功能按钮 - 与统计页面风格一致
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -801,30 +797,30 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   Card(
                     elevation: 3,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                     ),
                     child: InkWell(
                       onTap: () {
                         _showSupplementCheckInDialog(context);
                       },
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: ScreenUtil().setWidth(80),
+                        height: ScreenUtil().setHeight(80),
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.edit,
-                              size: 28,
+                              size: ScreenUtil().setSp(28),
                               color: Colors.black,
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: ScreenUtil().setHeight(4)),
                             Text(
                               '补充记录',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: ScreenUtil().setSp(16),
                                 color: Colors.black,
                               ),
                               textAlign: TextAlign.center,
@@ -839,12 +835,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   Card(
                     elevation: 3,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                     ),
                     child: InkWell(
                       onTap: () {
                         // 检查是否有正在进行中的专注
-                        final focusState = FocusState();
+                        final focusState = sl<FocusState>();
                         if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null) {
                           // 如果有正在进行中的专注，直接进入专注页面
                           // 再次检查currentFocusHabit是否为null，防止竞态条件
@@ -874,24 +870,24 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           );
                         }
                       },
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: ScreenUtil().setWidth(80),
+                        height: ScreenUtil().setHeight(80),
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.timer,
-                              size: 28,
+                              size: ScreenUtil().setSp(28),
                               color: Colors.black,
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: ScreenUtil().setHeight(4)),
                             Text(
                               '查看专注',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: ScreenUtil().setSp(16),
                                 color: Colors.black,
                               ),
                               textAlign: TextAlign.center,
@@ -906,7 +902,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   Card(
                     elevation: 3,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                     ),
                     child: InkWell(
                       onTap: () async {
@@ -920,24 +916,24 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           });
                         }
                       },
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: ScreenUtil().setWidth(80),
+                        height: ScreenUtil().setHeight(80),
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.add,
-                              size: 28,
+                              size: ScreenUtil().setSp(28),
                               color: Colors.black,
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: ScreenUtil().setHeight(4)),
                             Text(
                               '新增习惯',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: ScreenUtil().setSp(16),
                                 color: Colors.black,
                               ),
                               textAlign: TextAlign.center,
@@ -956,7 +952,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
         // 习惯列表或空状态
         Expanded(
           child: Container(
-            padding: EdgeInsets.only(top: 24),
+            padding: EdgeInsets.only(top: ScreenUtil().setHeight(24)),
             child: _habits.isEmpty
                 ? Center(
                     child: Column(
@@ -967,26 +963,26 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           curve: Curves.bounceInOut,
                           child: Icon(
                             Icons.list,
-                            size: 80,
+                            size: ScreenUtil().setSp(80),
                             color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
                           ),
                         ),
-                        SizedBox(height: 24),
+                        SizedBox(height: ScreenUtil().setHeight(24)),
                         Text(
                           '还没有添加习惯',
                           style: ThemeHelper.textStyleWithTheme(
                             context,
-                            fontSize: 20,
+                            fontSize: ScreenUtil().setSp(24),
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        SizedBox(height: ScreenUtil().setHeight(12)),
                         Text(
                           '点击右下角的+按钮开始添加',
                           style: ThemeHelper.textStyleWithTheme(
                             context,
-                            fontSize: 16,
+                            fontSize: ScreenUtil().setSp(18),
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                           ),
                         ),
@@ -994,7 +990,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                     ),
                   )
                 : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(8)),
                     itemCount: _habits.length,
                     itemBuilder: (context, index) {
                       final habit = _habits[index];
@@ -1007,60 +1003,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     );
   }
 
-  // 构建统计卡片
-  Widget _buildStatCard(BuildContext context, {
-    required IconData icon,
-    required String value,
-    required String label,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ThemeHelper.onPrimary(context).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 24,
-            color: ThemeHelper.onPrimary(context),
-          ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: ThemeHelper.textStyleWithTheme(
-              context,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ThemeHelper.onPrimary(context),
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            label,
-            style: ThemeHelper.textStyleWithTheme(
-              context,
-              fontSize: 12,
-              color: ThemeHelper.onPrimary(context).withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  // 渐变背景色生成器，为每个习惯生成独特的渐变
-  List<Color> _generateGradientColors(Habit habit) {
-    // 使用习惯的颜色属性来创建渐变
-    Color primaryColor = habit.color;
-    
-    // 为了创建更好看的渐变效果，我们可以基于主色生成一个稍微暗一点的颜色
-    HSLColor hsl = HSLColor.fromColor(primaryColor);
-    Color secondaryColor = hsl.withLightness(hsl.lightness * 0.8).toColor();
-    
-    return [primaryColor, secondaryColor];
-  }
+
+
 
   // 获取习惯图标
   Widget _getHabitIcon(Habit habit) {
@@ -1069,8 +1014,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     return ThemeHelper.iconWithBackground(
       context,
       IconHelper.getIconData(habit.icon ?? '', logError: false),
-      size: 32,
-      backgroundSize: 64,
+      size: ScreenUtil().setSp(32),
+      backgroundSize: ScreenUtil().setWidth(64),
       iconColor: Colors.white, // 图标颜色始终为白色，确保在任何背景下都清晰可见
       backgroundColor: Colors.transparent, // 背景颜色设置为透明，因为我们已经在_buildHabitItem中设置了渐变背景
       shape: BoxShape.circle,
@@ -1080,8 +1025,6 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
 
 
   Widget _buildHabitItem(Habit habit) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final currentTheme = themeProvider.currentTheme;
     final isDarkMode = ThemeHelper.isDarkMode(context);
     
     // 使用习惯的颜色属性来创建渐变，而不是使用主题颜色
@@ -1108,14 +1051,14 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       },
       // 滑动背景
       background: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(10)),
         decoration: BoxDecoration(
           color: Colors.red,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
+          children: [
             Text(
               '删除',
               style: TextStyle(
@@ -1123,12 +1066,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(width: 16),
+            SizedBox(width: ScreenUtil().setWidth(16)),
             Icon(
               Icons.delete,
               color: Colors.white,
             ),
-            SizedBox(width: 24),
+            SizedBox(width: ScreenUtil().setWidth(24)),
           ],
         ),
       ),
@@ -1179,15 +1122,22 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
             });
           }
         },
+        onTap: () {
+          // 点击习惯卡片（非播放按钮区域）跳转到统计页面
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HabitDetailStatisticsPage(habit: habit)),
+          );
+        },
         child: AnimatedContainer(
           duration: Duration(milliseconds: 300),
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(10)),
           child: Stack(
             children: [
               // 卡片背景
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(context).colorScheme.shadow.withOpacity(0.15),
@@ -1200,7 +1150,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
                     border: Border.all(
                       color: isDarkMode 
                           ? Theme.of(context).colorScheme.outline.withOpacity(0.3) 
@@ -1208,22 +1158,22 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       width: 1,
                     ),
                   ),
-                  padding: EdgeInsets.all(20),
+                  padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(20), vertical: ScreenUtil().setHeight(28)),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // 图标区域
                       AnimatedContainer(
                         duration: Duration(milliseconds: 300),
-                        width: 64, 
-                        height: 64,
+                        width: ScreenUtil().setWidth(64), 
+                        height: ScreenUtil().setHeight(64),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: gradientColors,
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                           boxShadow: [
                             BoxShadow(
                               color: gradientColors[0].withOpacity(0.3),
@@ -1236,38 +1186,37 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           child: _getHabitIcon(habit),
                         ),
                       ),
-                      SizedBox(width: 20),
+                      SizedBox(width: ScreenUtil().setWidth(20)),
                       // 内容区域
                       Expanded(
                         child: Padding(
-                          padding: EdgeInsets.only(right: 60), // 为右侧按钮留出空间
+                          padding: EdgeInsets.only(right: ScreenUtil().setWidth(60)), // 为右侧按钮留出空间
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children:
-                                  [
+                                children:[
                                   Text(
                                     habit.name,
                                     style: ThemeHelper.textStyleWithTheme(
                                       context,
-                                      fontSize: 18,
+                                      fontSize: ScreenUtil().setSp(18),
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   if (isCompletedToday)
                                     Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(4)),
                                       decoration: BoxDecoration(
                                         color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                                       ),
                                       child: Text(
                                         '今日已完成',
                                         style: ThemeHelper.textStyleWithTheme(
                                           context,
-                                          fontSize: 12,
+                                          fontSize: ScreenUtil().setSp(12),
                                           fontWeight: FontWeight.w500,
                                           color: Theme.of(context).colorScheme.primary,
                                         ),
@@ -1275,16 +1224,16 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                     ),
                                 ],
                               ),
-                              SizedBox(height: 4),
+                              SizedBox(height: ScreenUtil().setHeight(4)),
                               Text(
                                 _formatHabitDescription(habit),
                                 style: ThemeHelper.textStyleWithTheme(
                                   context,
-                                  fontSize: 14,
+                                  fontSize: ScreenUtil().setSp(16),
                                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              SizedBox(height: ScreenUtil().setHeight(8)),
                               // 根据是否设置目标显示不同内容
                               Column(
                                 children: [
@@ -1296,10 +1245,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                     minHeight: 4,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
-                                  SizedBox(height: 4),
+                                  SizedBox(height: ScreenUtil().setHeight(4)),
                                 ],
                               ),
-                              SizedBox(height: 4),
+                              SizedBox(height: ScreenUtil().setHeight(4)),
                             ],
                           ),
                         ),
@@ -1310,14 +1259,14 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
               ),
               // 右侧操作按钮
               Positioned(
-                right: 24,
-                top: 50,
+                right: ScreenUtil().setWidth(24),
+                top: ScreenUtil().setHeight(50),
                 child: Container(
-                  width: 44,
-                  height: 44,
+                  width: ScreenUtil().setWidth(44),
+                  height: ScreenUtil().setHeight(44),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                     boxShadow: [
                       BoxShadow(
                         color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -1331,9 +1280,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                     icon: Icon(
                       Icons.play_arrow,
                       color: ThemeHelper.onPrimary(context),
-                      size: 20,
+                      size: ScreenUtil().setSp(20),
                     ),
                     onPressed: () {
+                      // 播放按钮点击事件，阻止事件冒泡到卡片的onTap
                       _navigateToTrackingPage(habit);
                     },
                     tooltip: '开始',

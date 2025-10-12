@@ -1,7 +1,11 @@
-import 'dart:async';
+import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/models/habit.dart' show Habit, TrackingMode;
 import 'package:contrail/shared/services/notification_service.dart';
+import 'package:contrail/core/services/background_timer_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
 
 // 运行状态枚举类
 enum FocusStatus {
@@ -19,19 +23,19 @@ enum PomodoroStatus {
 
 // 专注状态管理类
 class FocusState {
-  // 单例实例
-  static final FocusState _instance = FocusState._internal();
-  factory FocusState() => _instance;
-  
-  // 私有构造函数
-  FocusState._internal() {
-    _notificationService = NotificationService();
+  // 构造函数
+  FocusState() {
+    // 初始化后台计时器服务
+    _backgroundTimerService = BackgroundTimerService();
+    // 将自身引用传递给后台服务
+    _backgroundTimerService.setFocusState(this);
+    // 初始化后台服务（异步执行，不阻塞主线程）
+    _backgroundTimerService.start();
   }
-  
-  // 通知服务实例
-  late NotificationService _notificationService;
-  
-  
+
+  // 后台计时器服务实例
+  late BackgroundTimerService _backgroundTimerService;
+
   // 当前专注的习惯
   Habit? _currentFocusHabit;
   
@@ -53,8 +57,16 @@ class FocusState {
   // 番茄钟当前状态
   PomodoroStatus _pomodoroStatus = PomodoroStatus.work;
   
-  // 计时器
-  Timer? _timer;
+  // 倒计时结束标志
+  bool _isCountdownEnded = false;
+  
+  // 获取倒计时结束状态
+  bool get isCountdownEnded => _isCountdownEnded;
+  
+  // 重置倒计时结束标志
+  void resetCountdownEndedFlag() {
+    _isCountdownEnded = false;
+  }
   
   // 专注状态变化监听器
   final List<Function(FocusStatus)> _listeners = [];
@@ -88,13 +100,11 @@ class FocusState {
     _pomodoroStatus = status;
   }
 
-    // 前台通知是否正在运行
-  bool _foregroundNotificationRunning = false;
 
   // 获取已流逝的时间
   Duration get elapsedTime {
     // 计算应用在后台时流逝的时间
-    // if (_focusStartTime != null && _lastUpdateTime != null) {
+    // if (_focusStatus == FocusStatus.run && _focusStartTime != null && _lastUpdateTime != null) {
     //   final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
     //   // 只在超过1秒时更新，避免频繁计算
     //   if (timeSinceLastUpdate.inSeconds > 0) {
@@ -106,13 +116,62 @@ class FocusState {
   
   // 更新已流逝的时间（考虑后台时间）
   void _updateElapsedTime() {
-    // if (_focusStartTime != null && _lastUpdateTime != null) {
+    // if (_focusStatus == FocusStatus.run && _focusStartTime != null && _lastUpdateTime != null) {
     //   final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
-    //   _elapsedTime += timeSinceLastUpdate;
+    //   logger.debug('更新已流逝的时间 $timeSinceLastUpdate, last update time is $_lastUpdateTime: ');
+    //   tik(timeSinceLastUpdate);
     //   _lastUpdateTime = DateTime.now();
     // }
   }
-  
+
+  // 更新时间，广播时间变化
+  void tik([Duration deltaTime = const Duration(seconds: 1)]) {
+    if (_focusMode == TrackingMode.stopwatch) {
+      _elapsedTime += deltaTime;
+    } else {
+      _elapsedTime -= deltaTime;
+      if (_elapsedTime.compareTo(Duration.zero) <= 0) {
+        // 处理倒计时结束 - 使用then处理异步操作
+        _handleCountdownEnd().then((_) {
+          logger.debug("倒计时结束处理完成");
+        }).catchError((error) {
+          logger.error("处理倒计时结束出错: $error");
+        });
+      }
+    }
+    _lastUpdateTime = DateTime.now();
+
+    // 通知时间变化
+    _notifyTimeUpdate();
+  }
+
+
+
+  // 处理倒计时结束 - 改为异步方法
+  Future<void> _handleCountdownEnd() async {
+
+    logger.debug('cur time is $_elapsedTime');
+    await _backgroundTimerService.stopTimer();
+    // 设置倒计时结束标志
+    _isCountdownEnded = true;
+
+    logger.debug("handle count down");
+    
+    // 发送专注倒计时结束通知
+    if (_currentFocusHabit != null) {
+      try {
+        sl.get<NotificationService>().showCountdownCompleteNotification(_currentFocusHabit!.name);
+      } catch (e) {
+        logger.error('显示专注完成通知失败', e);
+      }
+    }
+
+    // 通知倒计时结束监听器
+    for (final listener in _countdownEndListeners) {
+      listener();
+    }
+  }
+
   // 开始专注
   void startFocus(Habit habit, TrackingMode mode, [Duration initialTime = Duration.zero]) {
     _currentFocusHabit = habit;
@@ -121,78 +180,41 @@ class FocusState {
     _lastUpdateTime = DateTime.now();
     _elapsedTime = initialTime;
     _defaultTime = initialTime;
+    // 重置倒计时结束标志
+    _isCountdownEnded = false;
     
-    // 启动计时器 - 合并了时间计算、通知更新和时间变化通知
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      tik();
-    });
+    // 使用后台计时器服务（异步执行）
+    _backgroundTimerService.stopTimer();
+    _backgroundTimerService.startTimer();
     
     // 通知监听器
     _focusStatus = FocusStatus.run;
     _notifyListeners(_focusStatus);
-    
-    // 启动前台通知服务（异步执行，不阻塞主线程）
-    _startForegroundNotification();
-  }
 
-  // 定时器每一秒需要做的东西
-  void tik() {
-    if (_focusMode == TrackingMode.stopwatch) {
-      _elapsedTime += const Duration(seconds: 1);
-    } else {
-      _elapsedTime -= const Duration(seconds: 1);
-      if (_elapsedTime.compareTo(Duration.zero) <= 0) {
-        // 处理倒计时结束
-        _handleCountdownEnd();
-      }
-    }
-    _lastUpdateTime = DateTime.now();
-
-    // 通知时间变化
-    _notifyTimeUpdate();
   }
-  
-  // 处理倒计时结束
-  void _handleCountdownEnd() {
-    _timer?.cancel();
-    // 通知倒计时结束监听器
-    for (final listener in _countdownEndListeners) {
-      listener();
-    }
-  }
-  
-
   
   // 暂停专注
   void pauseFocus() {
-    // 暂停前先更新时间
-    if (_focusStartTime != null) {
-      _updateElapsedTime();
-    }
-    _timer?.cancel();
+    _backgroundTimerService.stopTimer();
     // 设置暂停状态
     _focusStatus = FocusStatus.pause;
     _notifyListeners(_focusStatus);
     _notifyTimeUpdate();
   }
 
-  
   // 恢复专注
   void resumeFocus() {
     if (_focusStatus == FocusStatus.pause) {
       // 恢复前不更新时间，避免显示跳变
-      // 直接启动计时器继续从之前的时间开始
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        tik();
-      });
+      _lastUpdateTime = DateTime.now();
+      // 重新启动后台计时器
+      _backgroundTimerService.startTimer();
       
       // 设置运行状态
       _focusStatus = FocusStatus.run;
       _notifyListeners(_focusStatus);
     }
   }
-
 
   // 其实只是统计时间归零而已
   void resetFocus() {
@@ -202,63 +224,47 @@ class FocusState {
       _notifyTimeUpdate();
       logger.debug("reset elapsedTime to");
   }
-  
-  // 应用从后台返回前台时调用
-  void appResumed() {
-    if (_focusStatus == FocusStatus.run && _timer == null) {
-      // 如果正在专注但计时器未运行，更新流逝的时间
-      _updateElapsedTime();
-      _notifyTimeUpdate();
-    }
-  }
-  
+
   // 结束专注
   void endFocus() {
-    _timer?.cancel();
-    
-    // 停止前台通知服务
-    _stopForegroundNotification();
+
+    _backgroundTimerService.stopTimer();
     
     _currentFocusHabit = null;
     _focusStartTime = null;
     _focusMode = null;
-    _elapsedTime = Duration.zero;
-    
+    _elapsedTime = _defaultTime;
+
+    _focusStatus = FocusStatus.stop;
     // 通知监听器
     _notifyListeners(_focusStatus);
   }
-  
 
-    // 启动前台通知
-  Future<void> _startForegroundNotification() async {
+  // 应用从后台返回前台时调用
+  void appResumed() {
+    if (_focusStatus == FocusStatus.run) {
+      // 检查后台服务是否在运行（异步）
+      _checkBackgroundServiceStatus();
+    }
+  }
+  
+  // 异步检查后台服务状态
+  void _checkBackgroundServiceStatus() async {
     try {
-      logger.debug('开始启动前台通知服务...');
-      
-      if (_currentFocusHabit == null) {
-        logger.warning('当前没有专注习惯，无法启动前台通知服务');
-        return;
+      final isServiceRunning = await _backgroundTimerService.isRunning();
+      if (!isServiceRunning) {
+        // 如果后台服务未运行，更新流逝的时间
+        _updateElapsedTime();
+        _notifyTimeUpdate();
+        // 恢复后台计时器
+        _backgroundTimerService.start();
+        _backgroundTimerService.startTimer();
       }
-      
-      logger.debug('调用notificationService.startForegroundService，习惯名称: ${_currentFocusHabit!.name}');
-      // 启动前台服务通知
-      await _notificationService.startForegroundService(
-        habit: _currentFocusHabit!,
-        duration: _elapsedTime,
-      );
-      
-      logger.debug('前台通知服务启动成功');
-      _foregroundNotificationRunning = true;
-    } catch (e, stackTrace) {
-      logger.error('启动前台通知服务失败', e, stackTrace);
+    } catch (e) {
+      logger.error('Failed to check background service status: $e');
     }
   }
 
-  // 停止前台通知
-  void _stopForegroundNotification() async {
-    _foregroundNotificationRunning = false;
-    await _notificationService.stopForegroundService();
-  }
-  
   // 添加状态变化监听器
   void addListener(Function(FocusStatus) listener) {
     if (!_listeners.contains(listener)) {
@@ -300,13 +306,6 @@ class FocusState {
     for (final listener in _timeUpdateListeners) {
       listener(_elapsedTime);
     }
-    // 更新前台通知
-    // if (_currentFocusHabit != null && _foregroundNotificationRunning) {
-    //   _notificationService.updateForegroundService(
-    //     habit: _currentFocusHabit!,
-    //     duration: _elapsedTime,
-    //   );
-    // }
 
   }
   
@@ -319,10 +318,9 @@ class FocusState {
   
   // 清理资源
   void dispose() {
-    _timer?.cancel();
+    _backgroundTimerService.stop();
     _listeners.clear();
     _timeUpdateListeners.clear();
     _countdownEndListeners.clear();
-    _listeners.clear();
   }
 }

@@ -16,6 +16,7 @@ import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/core/state/theme_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AddHabitPage extends StatefulWidget {
   final Habit? habitToEdit;
@@ -424,7 +425,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
   // 根据周期类型获取最大天数限制
   int _getMaxDaysForCycleType() {
     if (_cycleType == CycleType.daily) {
-      return 31; // 每日习惯，每月最多31天
+      return 1; // 每日习惯，固定为1天
     } else if (_cycleType == CycleType.weekly) {
       return 7; // 每周最大7天
     } else if (_cycleType == CycleType.monthly) {
@@ -433,9 +434,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
     return 7; // 默认每周最大7天
   }
 
-  // 根据目标天数获取最大时间值（天数*1小时，单位为分钟）
+  // 根据目标天数获取最大时间值（天数*8小时，单位为分钟）
   int _getMaxTimeMinutes() {
-    return _targetDays * 60; // 天数*1小时，转换为分钟
+    return _targetDays * 480; // 天数*8小时(480分钟)，转换为分钟
   }
 
   // 根据目标天数更新目标时间（按照次数乘半小时的结果作为默认值，单位为分钟）
@@ -560,7 +561,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(ScreenUtil().setWidth(24)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -574,7 +575,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                         Text(
                           widget.habitToEdit != null ? '编辑习惯' : '添加习惯',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: ScreenUtil().setSp(24),
                             fontWeight: FontWeight.bold,
                             color: ThemeHelper.onPrimary(context),
                           ),
@@ -589,7 +590,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
               // 表单内容
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(ScreenUtil().setWidth(24)),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -600,13 +601,13 @@ class _AddHabitPageState extends State<AddHabitPage> {
                           child: Card(
                             elevation: 4,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(100),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(100)),
                             ),
                             child: GestureDetector(
                               onTap: _openIconSelector,
                               child: Container(
-                                width: 100,
-                                height: 100,
+                                width: ScreenUtil().setWidth(100),
+                                height: ScreenUtil().setHeight(100),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: LinearGradient(
@@ -621,7 +622,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 child: Center(
                                   child: Icon(
                                     _getIconData(_selectedIcon),
-                                    size: 48,
+                                    size: ScreenUtil().setSp(48),
                                     color: ThemeHelper.onPrimary(context),
                                   ),
                                 ),
@@ -629,39 +630,39 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: ScreenUtil().setHeight(12)),
                         Center(
                           child: TextButton(
                             onPressed: _openIconSelector,
-                            child: Text('选择图标', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                            child: Text('选择图标', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: ScreenUtil().setSp(20))),
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: ScreenUtil().setHeight(32)),
                         
                         // 习惯名称
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                           ),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                             child: TextFormField(
                               controller: _nameController,
                               decoration: InputDecoration(
                                 hintText: '习惯名称',
                                 border: InputBorder.none,
                                 hintStyle: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.normal,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                ),
+                                    fontSize: ScreenUtil().setSp(20),
+                                    fontWeight: FontWeight.normal,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                  ),
                               ),
                               style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                                  fontSize: ScreenUtil().setSp(20),
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return '请输入习惯名称';
@@ -669,24 +670,24 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 return null;
                               },
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // 习惯描述（富文本显示 + 完整编辑按钮）
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
+                              ),
+                            ),
+                            SizedBox(height: ScreenUtil().setHeight(16)),
+                            
+                            // 习惯描述（富文本显示 + 完整编辑按钮）
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                             child: Column(
                               children: [
                                 // 富文本显示区域
                                 if (_descriptionJson != null && _descriptionJson!.isNotEmpty) ...[
                                   ConstrainedBox(
-                                    constraints: BoxConstraints(minHeight: 120, maxHeight: 240), // 设置最小高度为120，最大高度为240
+                                    constraints: BoxConstraints(minHeight: ScreenUtil().setHeight(120), maxHeight: ScreenUtil().setHeight(240)), // 设置最小高度为120，最大高度为240
                                     child: QuillEditor.basic(
                                       controller: QuillController(
                                         document: Document.fromJson(jsonDecode(_descriptionJson!)),
@@ -718,7 +719,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 ],
                                 // 编辑按钮
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8),
+                                  padding: EdgeInsets.only(top: ScreenUtil().setHeight(8)),
                                   child: Align(
                                     alignment: Alignment.centerRight,
                                     child: TextButton(
@@ -729,8 +730,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.edit, size: 16),
-                                          const SizedBox(width: 4),
+                                          Icon(Icons.edit, size: ScreenUtil().setSp(16)),
+                                          SizedBox(width: ScreenUtil().setWidth(4)),
                                           Text('编辑描述'),
                                         ],
                                       ),
@@ -741,20 +742,20 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        const SizedBox(height: 16),
+                        SizedBox(height: ScreenUtil().setHeight(24)),
+                        SizedBox(height: ScreenUtil().setHeight(16)),
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                           ),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                             child: GridView.builder(
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 6,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
+                                crossAxisSpacing: ScreenUtil().setWidth(12),
+                                mainAxisSpacing: ScreenUtil().setHeight(12),
                               ),
                               shrinkWrap: true,
                               physics: NeverScrollableScrollPhysics(),
@@ -770,15 +771,15 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                         color: Theme.of(context).colorScheme.surface,
                                         border: Border.all(
                                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                                          width: 1,
+                                          width: ScreenUtil().setWidth(1),
                                         ),
                                       ),
                                       child: Center(
                                         child: Icon(
-                                          Icons.add,
-                                          color: Theme.of(context).colorScheme.onSurface,
-                                          size: 18,
-                                        ),
+                                            Icons.add,
+                                            color: Theme.of(context).colorScheme.onSurface,
+                                            size: ScreenUtil().setSp(18),
+                                          ),
                                       ),
                                     ),
                                   );
@@ -797,7 +798,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                       border: isSelected
                                           ? Border.all(
                                               color: Theme.of(context).colorScheme.onSurface,
-                                              width: 3,
+                                              width: ScreenUtil().setWidth(3),
                                             )
                                           : null,
                                     ),
@@ -806,7 +807,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                             child: Icon(
                                               Icons.check,
                                               color: ThemeHelper.onPrimary(context),
-                                              size: 18,
+                                              size: ScreenUtil().setSp(18),
                                             ),
                                           )
                                         : null,
@@ -816,26 +817,25 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: ScreenUtil().setHeight(24)),
                         
-
                         // 目标类型
                         Text(
                           '目标类型',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: ScreenUtil().setSp(20),
                             fontWeight: FontWeight.w500,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: ScreenUtil().setHeight(16)),
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                           ),
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
                             child: Row(
                               children: [
                                 Expanded(
@@ -868,7 +868,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: ScreenUtil().setHeight(24)),
                         
                         // 是否追踪时间
                         Row(
@@ -877,7 +877,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             Text(
                               '是否追踪时间',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: ScreenUtil().setSp(20),
                                 fontWeight: FontWeight.w500,
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
@@ -893,7 +893,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: ScreenUtil().setHeight(16)),
                         
                         // 是否设置目标
                         Row(
@@ -902,7 +902,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             Text(
                               '是否设置目标',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: ScreenUtil().setSp(20),
                                 fontWeight: FontWeight.w500,
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
@@ -926,29 +926,29 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: ScreenUtil().setHeight(16)),
                         
                         // 如果选择了设置目标，显示目标选项
                         if (_isSetGoal) ...[
                           Card(
                             elevation: 2,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                             ),
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     '周期类型',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: ScreenUtil().setSp(18),
                                       fontWeight: FontWeight.w500,
                                       color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: ScreenUtil().setHeight(12)),
                                   // 周期类型选择
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1019,28 +1019,29 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: ScreenUtil().setHeight(16)),
                           
-                          // 目标天数滑动条
+                          // 目标天数滑动条 - 当循环类型不是每天时才显示
+                          if (_cycleType != CycleType.daily) ...[
                           Card(
                             elevation: 2,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                             ),
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     '目标天数',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: ScreenUtil().setSp(18),
                                       fontWeight: FontWeight.w500,
                                       color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: ScreenUtil().setHeight(12)),
                                   Slider(
                                     value: _targetDays.toDouble(),
                                     min: 1.0,
@@ -1057,12 +1058,12 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                     activeColor: Theme.of(context).colorScheme.primary,
                                     inactiveColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: ScreenUtil().setHeight(8)),
                                   Center(
                                     child: Text(
                                       '$_targetDays 天',
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: ScreenUtil().setSp(20),
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context).colorScheme.primary,
                                       ),
@@ -1072,7 +1073,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: ScreenUtil().setHeight(24)),
+                          ],
                         ],
                         
                         // 如果选择了设置目标和追踪时间，显示目标时间值
@@ -1080,22 +1082,22 @@ class _AddHabitPageState extends State<AddHabitPage> {
                           Card(
                             elevation: 2,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
                             ),
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     '目标时长 (分钟)',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: ScreenUtil().setSp(18),
                                       fontWeight: FontWeight.w500,
                                       color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: ScreenUtil().setHeight(12)),
                                   Slider(
                                     value: _targetTimeMinutes.toDouble(),
                                     min: 5.0,
@@ -1110,23 +1112,23 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                     activeColor: Theme.of(context).colorScheme.primary,
                                     inactiveColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: ScreenUtil().setHeight(8)),
                                   Center(
                                     child: Text(
                                       '$_targetTimeMinutes 分钟',
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: ScreenUtil().setSp(20),
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context).colorScheme.primary,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: ScreenUtil().setHeight(8)),
                                   Center(
                                     child: Text(
                                       '最大时长: ${_getMaxTimeMinutes() ~/ 60}小时${_getMaxTimeMinutes() % 60}分钟',
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: ScreenUtil().setSp(18),
                                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                       ),
                                     ),
@@ -1135,20 +1137,20 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: ScreenUtil().setHeight(24)),
                         ],
-                        const SizedBox(height: 24),
+                        SizedBox(height: ScreenUtil().setHeight(24)),
                         
                         // 保存按钮
                         SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _saveHabit,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _saveHabit,
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(16)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+                                  ),
                               backgroundColor: Theme.of(context).colorScheme.primary,
                               elevation: 4,
                               shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -1156,14 +1158,14 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             child: Text(
                               widget.habitToEdit != null ? '更新习惯' : '添加习惯',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: ScreenUtil().setSp(20),
                                 fontWeight: FontWeight.bold,
                                 color: ThemeHelper.onPrimary(context),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: ScreenUtil().setHeight(32)),
                       ],
                     ),
                   ),

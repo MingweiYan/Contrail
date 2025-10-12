@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/state/theme_provider.dart';
 import '../../shared/models/theme_model.dart' as app_theme;
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 主题辅助类，提供统一的主题访问方法和增强的主题能力
 class ThemeHelper {
@@ -212,8 +213,8 @@ class ThemeHelper {
       color: surface(context),
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: outline(context), width: 0.5),
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+        side: BorderSide(color: outline(context), width: ScreenUtil().setWidth(0.5)),
       ),
     );
   }
@@ -290,7 +291,7 @@ class ThemeHelper {
           padding: padding != null ? EdgeInsets.all(padding) : null,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: defaultColor, width: 1.5),
+            border: Border.all(color: defaultColor, width: ScreenUtil().setWidth(1.5)),
           ),
           child: Icon(
             iconData,
@@ -367,8 +368,8 @@ class ThemeHelper {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 3,
-            offset: const Offset(0, 2),
+            blurRadius: ScreenUtil().setWidth(3),
+            offset: Offset(0, ScreenUtil().setHeight(2)),
           ),
         ],
       ),
@@ -446,12 +447,12 @@ class ThemeHelper {
       filled: filled,
       fillColor: surface(context),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(8)),
         borderSide: BorderSide(color: outline(context)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: primary(context), width: 2),
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(8)),
+        borderSide: BorderSide(color: primary(context), width: ScreenUtil().setWidth(2)),
       ),
       labelStyle: TextStyle(color: onSurfaceVariant(context)),
       hintStyle: TextStyle(color: onSurfaceVariant(context)),
@@ -521,8 +522,8 @@ class ThemeHelper {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(shadowOpacity * elevation),
-            blurRadius: 4 * elevation,
-            offset: Offset(0, 2 * elevation),
+            blurRadius: ScreenUtil().setWidth(4 * elevation),
+            offset: Offset(0, ScreenUtil().setHeight(2 * elevation)),
           ),
         ],
       ),

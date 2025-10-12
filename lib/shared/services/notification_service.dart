@@ -1,23 +1,14 @@
-import 'dart:io';
-
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/logger.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = 
       FlutterLocalNotificationsPlugin();
 
-  // 通知点击回调函数
-  Function(String?)? onNotificationClicked;
+  bool _isInitialized = false;
 
-  // 设置通知点击回调
-  void setNotificationCallback(Function(String?) callback) {
-    onNotificationClicked = callback;
-  }
-  
   Future<void> initialize() async {
+    if (_isInitialized) return;
     try {
       // Android通知设置
       const AndroidInitializationSettings initializationSettingsAndroid = 
@@ -41,12 +32,14 @@ class NotificationService {
       // 初始化并设置通知点击回调
       await flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
-        onDidReceiveNotificationResponse: (details) {
-          if (onNotificationClicked != null) {
-            onNotificationClicked!(details.payload);
-          }
-        },
+        onDidReceiveNotificationResponse: (NotificationResponse response) async {
+          // 处理通知点击事件
+          logger.debug('点击了通知: ${response.payload}');
+        }
       );
+
+      _isInitialized = true;
+
     } catch (e) {
       logger.error('通知初始化失败', e);
       rethrow;
@@ -73,26 +66,7 @@ class NotificationService {
     }
   }
 
-
-  // 取消特定通知
-  Future<void> cancelNotification(int id) async {
-    await flutterLocalNotificationsPlugin.cancel(id);
-  }
-
-  // 创建前台通知服务（Android特有）
-  Future<void> startForegroundService({required Habit habit, required Duration duration}) async {
-    try {
-      logger.debug('尝试启动前台通知服务...');
-      // 只在Android平台上创建前台服务
-      final androidImplementation = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      
-      if (androidImplementation == null) {
-        logger.warning('无法获取Android平台特定实现');
-        return;
-      }
-      
-      logger.debug('获取到Android平台特定实现');
-      // 首先检查权限
+  Future<void> applyForPermission() async {
       final hasPermission = await checkNotificationPermission();
       
       if (!hasPermission) {
@@ -103,146 +77,11 @@ class NotificationService {
         logger.debug('再次请求权限结果: $newPermission');
         if (!newPermission) return;
       }
-      
-      logger.debug('已获得通知权限，准备显示前台通知');
-
-      // 显示前台通知
-      logger.debug('构建通知详情...');
-      const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-          'focus_session_channel',
-          '专注会话',
-          importance: Importance.max,
-          priority: Priority.high,
-          showWhen: false,
-          channelDescription: '用于显示正在进行的专注会话',
-          ongoing: true, // 标记为持续通知，用户不能轻易关闭
-          enableVibration: false,
-          enableLights: true,
-          playSound: false,
-        );
-      
-      logger.debug('调用startForegroundService方法启动前台服务...');
-      await androidImplementation.startForegroundService(
-        100,
-        '专注进行中',
-        '正在专注于 ${habit.name}',
-        notificationDetails: androidPlatformChannelSpecifics,
-        payload: habit.id,
-      );
-      
-      await showFocusNotification(habit: habit);
-      
-      logger.debug('前台通知服务启动成功');
-    } catch (e, stackTrace) {
-      logger.error('启动前台服务失败', e, stackTrace);
-    }
   }
 
-  Future<void> showFocusNotification({required Habit habit}) async {
-
-      final String content = '正在专注于 ${habit.name}';
-
-      // 更新前台通知
-        await flutterLocalNotificationsPlugin.show(
-          100,
-          '专注进行中',
-          content,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'focus_session_channel',
-              '专注会话',
-              importance: Importance.max,
-              priority: Priority.high,
-              showWhen: false,
-              channelDescription: '用于显示正在进行的专注会话',
-              ongoing: true, // 标记为持续通知，用户不能轻易关闭
-              enableVibration: false,
-              enableLights: true,
-              playSound: false,
-              actions: [
-                // 返回应用的动作按钮
-                const AndroidNotificationAction(
-                  'return_to_app',
-                  '返回应用',
-                  showsUserInterface: true,
-                ),
-              ],
-            ),
-          ),
-          payload: habit.id,
-        );
-  }
-
-  // 更新前台通知
-  Future<void> updateForegroundService({required Habit habit, required Duration duration}) async {
-    try {
-      // 只在Android平台上更新前台服务
-      final androidImplementation = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      if (androidImplementation != null) {
-        // 格式化持续时间
-        final hours = duration.inHours;
-        final minutes = duration.inMinutes.remainder(60);
-        final seconds = duration.inSeconds.remainder(60);
-        String formattedDuration;
-        
-        if (hours > 0) {
-          formattedDuration = '$hours时$minutes分$seconds秒';
-        } else if (minutes > 0) {
-          formattedDuration = '$minutes分$seconds秒';
-        } else {
-          formattedDuration = '$seconds秒';
-        }
-
-        // 构建通知内容
-        final String content = '专注定时器时间： $formattedDuration';
-
-        // 更新前台通知
-        await flutterLocalNotificationsPlugin.show(
-          100,
-          '专注进行中',
-          content,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'focus_session_channel',
-              '专注会话',
-              importance: Importance.max,
-              priority: Priority.high,
-              showWhen: false,
-              channelDescription: '用于显示正在进行的专注会话',
-              ongoing: true, // 标记为持续通知，用户不能轻易关闭
-              enableVibration: false,
-              enableLights: true,
-              playSound: false,
-              actions: [
-                // 返回应用的动作按钮
-                const AndroidNotificationAction(
-                  'return_to_app',
-                  '返回应用',
-                  showsUserInterface: true,
-                ),
-              ],
-            ),
-          ),
-          payload: habit.id,
-        );
-      }
-    } catch (e) {
-        logger.error('更新前台服务失败', e);
-      }
-  }
-
-  // 停止前台服务
-  Future<void> stopForegroundService() async {
-    try {
-      // 只在Android平台上停止前台服务
-      final androidImplementation = flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      if (androidImplementation != null) {
-        await androidImplementation.stopForegroundService();
-        await cancelNotification(100); // 取消前台服务通知
-      }
-    } catch (e) {
-      logger.error('停止前台服务失败', e);
-    }
+    // 取消特定通知
+  Future<void> cancelNotification(int id) async {
+    await flutterLocalNotificationsPlugin.cancel(id);
   }
 
   // 取消所有通知
@@ -251,6 +90,59 @@ class NotificationService {
       await flutterLocalNotificationsPlugin.cancelAll();
     } catch (e) {
       logger.error('取消所有通知失败', e);
+    }
+  }
+
+  // 发送专注倒计时结束的前台通知
+  Future<void> showCountdownCompleteNotification(String habitName) async {
+    try {
+      // 检查是否有通知权限
+      final hasPermission = await checkNotificationPermission();
+      if (!hasPermission) {
+        logger.warning('没有通知权限，无法显示专注完成通知');
+        return;
+      }
+
+      // 创建Android通知详情
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'focus_completion_channel', // 通道ID
+        '专注完成提醒', // 通道名称
+        channelDescription: '当专注倒计时结束时提醒用户', // 通道描述
+        importance: Importance.max,
+        priority: Priority.high,
+        visibility: NotificationVisibility.public,
+        autoCancel: true,
+        ongoing: false,
+        enableVibration: true,
+        playSound: true,
+        // 使用系统默认通知声音，不再使用自定义声音资源
+      );
+
+      // 创建iOS通知详情
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentSound: true,
+        presentAlert: true,
+        presentBadge: true,
+      );
+
+      // 创建通知详情
+      const NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      // 显示通知
+      await flutterLocalNotificationsPlugin.show(
+        1001, // 通知ID
+        '当前倒计时周期已完成！', // 标题
+        '$habitName 的专注时间已结束，点击通知返回 App 查看详情！', // 内容
+        notificationDetails,
+        payload: 'focus_complete:$habitName', // 可选的payload
+      );
+
+      logger.debug('专注完成通知发送成功');
+    } catch (e) {
+      logger.error('发送专注完成通知失败', e);
     }
   }
 }

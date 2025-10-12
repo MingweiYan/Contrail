@@ -9,9 +9,7 @@ class GetHabitsUseCase {
 
   Future<List<Habit>> execute() async {
     try {
-      logger.debug('执行获取习惯列表用例');
       final habits = await _habitRepository.getHabits();
-      logger.debug('成功获取习惯列表，数量: ${habits.length}');
       return habits;
     } catch (e) {
       logger.error('获取习惯列表失败', e);

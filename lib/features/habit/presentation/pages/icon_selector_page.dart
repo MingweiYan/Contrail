@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class IconSelectorPage extends StatefulWidget {
   final String? selectedIcon;
@@ -109,7 +110,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -119,17 +120,17 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                   hintText: '搜索图标...',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
                   ),
                 ),
                 onChanged: searchIcons,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ScreenUtil().setHeight(16)),
               
               // 图标按类型分组显示
               Expanded(
                 child: filteredIcons.isEmpty
-                    ? const Center(child: Text('没有找到匹配的图标'))
+                    ? Center(child: Text('没有找到匹配的图标', style: TextStyle(fontSize: ScreenUtil().setSp(18))))
                     : ListView.builder(
                         itemCount: filteredIconsByCategory.length,
                         itemBuilder: (context, categoryIndex) {
@@ -141,11 +142,11 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                             children: [
                               // 类别标题
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+                                padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(12), horizontal: ScreenUtil().setWidth(8)),
                                 child: Text(
                                   category,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: ScreenUtil().setSp(20),
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).textTheme.titleLarge?.color,
                                   ),
@@ -155,10 +156,10 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 5, // 每行显示5个图标
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
+                                  crossAxisSpacing: ScreenUtil().setWidth(16),
+                                  mainAxisSpacing: ScreenUtil().setHeight(16),
                                   childAspectRatio: 0.8, // 调整图标项的宽高比
                                 ),
                                 itemCount: categoryIcons.length,
@@ -184,21 +185,21 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                     child: Column(
                                       children: <Widget>[
                                         Container(
-                                          width: 56,
-                                          height: 56,
+                                          width: ScreenUtil().setWidth(56),
+                                          height: ScreenUtil().setHeight(56),
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: isSelected 
                                               ? Theme.of(context).primaryColor
                                               : iconBackgroundColor.withOpacity(0.1),
                                             border: isSelected
-                                              ? Border.all(width: 2, color: Theme.of(context).primaryColor)
+                                              ? Border.all(width: ScreenUtil().setWidth(2), color: Theme.of(context).primaryColor)
                                               : null,
                                           ),
                                           child: Center(
                                             child: Icon(
                                               icon,
-                                              size: 28,
+                                              size: ScreenUtil().setSp(28),
                                               color: isSelected 
                                                 ? Colors.white
                                                 : iconBackgroundColor,
@@ -210,7 +211,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                   );
                                 },
                               ),
-                              const Divider(height: 16),
+                              Divider(height: ScreenUtil().setHeight(16)),
                             ],
                           );
                         },
