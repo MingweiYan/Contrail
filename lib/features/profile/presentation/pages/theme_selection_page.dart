@@ -3,29 +3,34 @@ import 'package:provider/provider.dart';
 
 import 'package:contrail/core/state/theme_provider.dart';
 import 'package:contrail/shared/models/theme_model.dart' as app_theme;
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class ThemeSelectionPage extends StatefulWidget {
   const ThemeSelectionPage({super.key});
 
   @override
-  _ThemeSelectionPageState createState() => _ThemeSelectionPageState();
+  State<ThemeSelectionPage> createState() => ThemeSelectionPageState();
 }
 
-class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
+class ThemeSelectionPageState extends State<ThemeSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final currentThemeMode = themeProvider.themeMode;
     final currentThemeName = themeProvider.currentTheme.name;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('主题设置'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+      body: Container(
+        decoration: ThemeHelper.generateBackgroundDecoration(context) ?? BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
+        ),
+        width: double.infinity,
+        height: double.infinity,
+        padding: PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,19 +39,19 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
               Text(
                 '主题样式',
                 style: TextStyle(
-                  fontSize: ScreenUtil().setSp(24),
+                  fontSize: ThemeSelectionPageConstants.titleFontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: ScreenUtil().setHeight(12)),
+              SizedBox(height: ThemeSelectionPageConstants.titleGridSpacing),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2, // 减少列数，增加每个卡片的可用宽度
-                    crossAxisSpacing: ScreenUtil().setWidth(16),
-                    mainAxisSpacing: ScreenUtil().setWidth(16),
-                    childAspectRatio: 2.0 / 1, // 增加宽高比，让卡片更宽一些
+                    crossAxisSpacing: ThemeSelectionPageConstants.gridCrossAxisSpacing,
+                    mainAxisSpacing: ThemeSelectionPageConstants.gridMainAxisSpacing,
+                    childAspectRatio: ThemeSelectionPageConstants.gridChildAspectRatio,
                   ),
                 itemCount: themeProvider.availableThemes.length, // 仅显示可用主题
                 itemBuilder: (context, index) {
@@ -61,15 +66,15 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          width: isSelected ? ScreenUtil().setWidth(3) : ScreenUtil().setWidth(1),
+                          width: isSelected ? ThemeSelectionPageConstants.selectedBorderWidth : ThemeSelectionPageConstants.borderWidth,
                           color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
                         ),
-                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                        borderRadius: BorderRadius.circular(ThemeSelectionPageConstants.borderRadius),
                         color: themeProvider.themeMode == app_theme.ThemeMode.dark
                             ? theme.darkTheme.colorScheme.primary
                             : theme.lightTheme.colorScheme.primary,
                       ),
-                      padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+                      padding: ThemeSelectionPageConstants.containerPadding,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -79,17 +84,17 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onPrimary,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: ScreenUtil().setSp(20),
+                              fontSize: ThemeSelectionPageConstants.themeNameFontSize,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           if (isSelected)
-                            SizedBox(height: ScreenUtil().setHeight(8)),
+                            SizedBox(height: ThemeSelectionPageConstants.checkIconSpacing),
                           if (isSelected)
                             Icon(
                               Icons.check,
                               color: Theme.of(context).colorScheme.onPrimary,
-                              size: ScreenUtil().setSp(22),
+                              size: ThemeSelectionPageConstants.checkIconSize,
                             ),
                         ],
                       ),

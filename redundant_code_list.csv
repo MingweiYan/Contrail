@@ -1,0 +1,8 @@
+Element Type,Name,Location,Reason for Removal,Status,Responsible
+Variable,testFile,lib/features/profile/presentation/providers/backup_provider.dart,仅被测试引用,待移除,技术团队
+Variable,updatedHabit,lib/features/habit/presentation/providers/habit_provider.dart,仅被测试引用,待移除,技术团队
+Method,getRandomHabitName,lib/shared/utils/habit_data_generator.dart,未被调用,已移除,技术团队
+Method,getRandomIcon,lib/shared/utils/habit_data_generator.dart,未被调用,已移除,技术团队
+Method,getRandomColor,lib/shared/utils/habit_data_generator.dart,未被调用,已移除,技术团队
+Import,package:contrail/shared/utils/logger.dart,lib/shared/utils/habit_data_generator.dart,未被使用,待移除,技术团队
+Import,package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart,lib/shared/utils/habit_data_generator.dart,未被使用,待移除,技术团队

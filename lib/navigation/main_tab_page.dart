@@ -1,4 +1,3 @@
-import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
 import 'package:flutter/material.dart';
 import 'package:contrail/features/habit/presentation/pages/habit_management_page.dart';
 import 'package:contrail/features/statistics/presentation/pages/statistics_page.dart';
@@ -6,7 +5,6 @@ import 'package:contrail/features/profile/presentation/pages/profile_page.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 
-import 'package:contrail/core/state/focus_state.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MainTabPage extends StatefulWidget {

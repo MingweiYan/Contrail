@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class TimelineViewWidget extends StatelessWidget {
   final List<Habit> habits;
@@ -65,15 +65,15 @@ class TimelineViewWidget extends StatelessWidget {
 
     // 使用Stack创建连续的时间轴效果
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+      padding: TimelineViewWidgetConstants.containerPadding,
       child: Stack(
         children: [
           // 连续的时间轴主线
           Positioned(
-            left: ScreenUtil().setWidth(26), // 调整为与图标节点中心对齐的位置 (56.0 / 2)
-            top: ScreenUtil().setHeight(6), // 稍微向下偏移，避开第一个节点
+            left: TimelineViewWidgetConstants.timelineLeft,
+            top: TimelineViewWidgetConstants.timelineTop,
             bottom: 0,
-            width: ScreenUtil().setWidth(3),
+            width: TimelineViewWidgetConstants.timelineMainWidth,
             child: Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).dividerColor,
@@ -98,43 +98,43 @@ class TimelineViewWidget extends StatelessWidget {
               final icon = session['icon'] as String?;
 
               return Container(
-                margin: EdgeInsets.only(bottom: ScreenUtil().setHeight(16)),
+                margin: EdgeInsets.only(bottom: TimelineViewWidgetConstants.itemSpacing),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center, // 改为center，确保图标在数据块的垂直中央
                   children: [
                     // 时间轴节点 - 放在主线上方，使用习惯图标
                     Container(
-                      width: ScreenUtil().setWidth(56), // 增大容器宽度以容纳更大的节点
-                      height: ScreenUtil().setHeight(48), // 设置固定高度以确保垂直对齐
+                      width: TimelineViewWidgetConstants.nodeContainerWidth,
+                      height: TimelineViewWidgetConstants.nodeContainerHeight,
                       alignment: Alignment.center, // 显式设置水平居中
                       child: Container(
-                        width: ScreenUtil().setWidth(48), // 增大节点大小以容纳图标
-                        height: ScreenUtil().setHeight(48),
+                        width: TimelineViewWidgetConstants.nodeSize,
+                        height: TimelineViewWidgetConstants.nodeSize,
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
                               color: color.withOpacity(0.5),
-                              spreadRadius: ScreenUtil().setWidth(2),
-                              blurRadius: ScreenUtil().setWidth(4),
+                              spreadRadius: 2,
+                            blurRadius: 4,
                             ),
                           ],
                           border: Border.all(
                             color: Theme.of(context).colorScheme.surface,
-                            width: ScreenUtil().setWidth(2), // 边框宽度，使节点看起来突出于主线
+                            width: TimelineViewWidgetConstants.nodeBorderWidth,
                           ),
                         ),
                         alignment: Alignment.center, // 显式设置图标在节点内水平居中
                         child: icon != null && icon.isNotEmpty
                             ? Icon(
                                 getIconDataFromString(icon),
-                                size: ScreenUtil().setSp(40), // 增大图标大小到40
+                                size: TimelineViewWidgetConstants.nodeIconSize,
                                 color: ThemeHelper.onPrimary(context),
                               )
                             : Container(
-                                width: ScreenUtil().setWidth(20),
-                                height: ScreenUtil().setHeight(20),
+                                width: TimelineViewWidgetConstants.emptyNodeSize,
+                                height: TimelineViewWidgetConstants.emptyNodeSize,
                                 decoration: BoxDecoration(
                                   color: ThemeHelper.onPrimary(context),
                                   shape: BoxShape.circle,
@@ -146,17 +146,17 @@ class TimelineViewWidget extends StatelessWidget {
                     // 内容卡片
                     Expanded(
                       child: Container(
-                        margin: EdgeInsets.only(left: ScreenUtil().setWidth(12)),
-                        padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+                        margin: EdgeInsets.only(left: TimelineViewWidgetConstants.contentLeftMargin),
+                        padding: TimelineViewWidgetConstants.contentPadding,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                          borderRadius: BorderRadius.circular(TimelineViewWidgetConstants.contentBorderRadius),
                           color: Theme.of(context).colorScheme.surface,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              spreadRadius: ScreenUtil().setWidth(2),
-                              blurRadius: ScreenUtil().setWidth(8),
-                              offset: Offset(0, ScreenUtil().setHeight(2)),
+                              spreadRadius: 2,
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
@@ -171,7 +171,7 @@ class TimelineViewWidget extends StatelessWidget {
                                 Text(
                                   session['habitName'],
                                   style: TextStyle(
-                                    fontSize: ScreenUtil().setSp(20),
+                                    fontSize: TimelineViewWidgetConstants.habitNameFontSize,
                                     fontWeight: FontWeight.bold,
                                     color: color,
                                   ),
@@ -180,7 +180,7 @@ class TimelineViewWidget extends StatelessWidget {
                                   date,
                                   style: TextStyle(
                                     color: Colors.grey.shade700,
-                                    fontSize: ScreenUtil().setSp(16),
+                                    fontSize: TimelineViewWidgetConstants.timeFontSize,
                                   ),
                                 ),
                               ],
@@ -188,12 +188,12 @@ class TimelineViewWidget extends StatelessWidget {
 
                             // 时间
                             Padding(
-                              padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(6)),
+                              padding: EdgeInsets.symmetric(vertical: TimelineViewWidgetConstants.timeSpacing),
                               child: Text(
                                 '$startTime - $endTime',
                                 style: TextStyle(
                                   color: Colors.grey.shade700,
-                                  fontSize: ScreenUtil().setSp(16),
+                                  fontSize: TimelineViewWidgetConstants.timeFontSize,
                                 ),
                               ),
                             ),
@@ -204,7 +204,7 @@ class TimelineViewWidget extends StatelessWidget {
                               style: TextStyle(
                                 color: color,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: ScreenUtil().setSp(16),
+                                    fontSize: TimelineViewWidgetConstants.durationFontSize,
                               ),
                             ),
                           ],

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 
 // 日历视图中习惯点大小分析：
 // 1. 当某天完成的习惯数量 <= 2 个时，使用 Row 布局（一行显示），习惯点大小固定为 12.0 x 12.0
@@ -14,6 +14,7 @@ class CalendarViewWidget extends StatelessWidget {
   final int selectedYear;
   final int selectedMonth;
   final Map<String, Color> habitColors;
+  final WeekStartDay weekStartDay;
 
   const CalendarViewWidget({
     super.key,
@@ -21,6 +22,7 @@ class CalendarViewWidget extends StatelessWidget {
     required this.selectedYear,
     required this.selectedMonth,
     required this.habitColors,
+    required this.weekStartDay,
   });
 
   @override
@@ -32,8 +34,17 @@ class CalendarViewWidget extends StatelessWidget {
     final today = DateTime.now();
     final isTodayInCurrentMonth = today.year == selectedYear && today.month == selectedMonth;
 
+    // 直接使用从父组件传入的周起始日参数
+    
     // 计算月份的第一天是星期几（0-6，对应周日到周六）
-    final firstDayOfMonthWeekday = startDate.weekday % 7;
+    int firstDayOfMonthWeekday = startDate.weekday % 7;
+    
+    // 根据周起始日调整星期计算
+    if (weekStartDay == WeekStartDay.monday) {
+      // 对于周一为起始日，将周一作为0
+      firstDayOfMonthWeekday = (firstDayOfMonthWeekday - 1) % 7;
+      if (firstDayOfMonthWeekday < 0) firstDayOfMonthWeekday += 7;
+    }
     
     // 计算需要显示的行数
     final weeksInMonth = (daysInMonth + firstDayOfMonthWeekday - 1) ~/ 7 + 1;
@@ -59,8 +70,24 @@ class CalendarViewWidget extends StatelessWidget {
       itemBuilder: (context, index) {
         // 星期标题
         if (index < 7) {
-          final weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-          final isWeekend = index == 0 || index == 6;
+          
+          // 根据周起始日生成星期标题数组
+          List<String> weekDays;
+          if (weekStartDay == WeekStartDay.monday) {
+            weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+          } else {
+            weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+          }
+          
+          // 计算是否为周末
+          bool isWeekend;
+          if (weekStartDay == WeekStartDay.monday) {
+            // 周一为起始日时，周六和周日是周末
+            isWeekend = index == 5 || index == 6;
+          } else {
+            // 周日为起始日时，周六和周日是周末
+            isWeekend = index == 0 || index == 6;
+          }
           
           return Container(
             alignment: Alignment.center,
@@ -88,8 +115,22 @@ class CalendarViewWidget extends StatelessWidget {
         
         // 今天的日期
         final isToday = isTodayInCurrentMonth && isCurrentMonthDate && day == today.day;
-        final weekday = isCurrentMonthDate ? DateTime(selectedYear, selectedMonth, day).weekday % 7 : 0;
-        final isWeekend = weekday == 0 || weekday == 6;
+        // 计算星期几
+        int weekday = 0;
+        bool isWeekend = false;
+        if (isCurrentMonthDate) {
+          // 获取实际的星期几
+          weekday = DateTime(selectedYear, selectedMonth, day).weekday % 7;
+          
+          // 根据周起始日确定是否为周末
+          if (weekStartDay == WeekStartDay.monday) {
+            // 周一为起始日时，周六和周日是周末
+            isWeekend = weekday == 6 || weekday == 0; // 0是周日，6是周六
+          } else {
+            // 周日为起始日时，周六和周日是周末
+            isWeekend = weekday == 0 || weekday == 6;
+          }
+        }
 
         // 检查哪些习惯在当天完成
         List<int> completedHabitIndices = [];

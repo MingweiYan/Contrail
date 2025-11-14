@@ -3,6 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/shared/services/habit_statistics_service.dart';
+import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class StatisticsChartWidget extends StatefulWidget {
   final List<Habit> habits;
@@ -10,7 +14,8 @@ class StatisticsChartWidget extends StatefulWidget {
   final int selectedYear;
   final int selectedMonth;
   final int selectedWeek;
-  final List<bool>? isHabitVisible;
+  final List<bool> isHabitVisible;
+  final WeekStartDay weekStartDay;
 
   const StatisticsChartWidget({
     super.key,
@@ -19,7 +24,8 @@ class StatisticsChartWidget extends StatefulWidget {
     required this.selectedYear,
     required this.selectedMonth,
     required this.selectedWeek,
-    this.isHabitVisible,
+    required this.isHabitVisible,
+    required this.weekStartDay,
   });
 
   @override
@@ -64,7 +70,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     final List<LineChartBarData> filteredCountData = [];
     final List<LineChartBarData> filteredTimeData = [];
     for (int i = 0; i < widget.habits.length; i++) {
-      if (widget.isHabitVisible == null || widget.isHabitVisible![i]) {
+      if (widget.isHabitVisible[i]) {
         filteredCountData.add(countData[i]);
         filteredTimeData.add(timeData[i]);
       }
@@ -81,20 +87,20 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         children: [
           // 次数统计图表 - 添加独立的白色背景块
           Container(
-            margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(8)),
+            margin: StatisticsChartWidgetConstants.containerMargin,
             decoration: BoxDecoration(
               color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+              borderRadius: BorderRadius.circular(StatisticsChartWidgetConstants.containerBorderRadius),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  spreadRadius: ScreenUtil().setWidth(2),
-                  blurRadius: ScreenUtil().setWidth(5),
-                  offset: Offset(0, ScreenUtil().setHeight(2)),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
-            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+            padding: StatisticsChartWidgetConstants.containerPadding,
             child: Container(
               height: chartHeight,
               width: double.infinity,
@@ -112,11 +118,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           
           // 次数统计标题
           Padding(
-            padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
+            padding: StatisticsChartWidgetConstants.titlePadding,
             child: Text(
               '习惯完成次数统计',
               style: TextStyle(
-                fontSize: ScreenUtil().setSp(18),
+                fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
                 fontWeight: FontWeight.bold,
                 color: ThemeHelper.onBackground(context),
               ),
@@ -125,10 +131,10 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
 
           // 时间统计图表 - 添加独立的白色背景块
           Container(
-            margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(8)),
+            margin: StatisticsChartWidgetConstants.containerMargin,
             decoration: BoxDecoration(
               color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+              borderRadius: BorderRadius.circular(StatisticsChartWidgetConstants.containerBorderRadius),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -138,7 +144,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                 ),
               ],
             ),
-            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+            padding: StatisticsChartWidgetConstants.containerPadding,
             child: Container(
               height: chartHeight,
               width: double.infinity,
@@ -156,11 +162,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           
           // 时间统计标题
           Padding(
-            padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
+            padding: StatisticsChartWidgetConstants.titlePadding,
             child: Text(
               '习惯专注时间统计 (分钟)',
               style: TextStyle(
-                fontSize: ScreenUtil().setSp(18),
+                fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
                 fontWeight: FontWeight.bold,
                 color: ThemeHelper.onBackground(context),
               ),
@@ -180,18 +186,18 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       isCurved: true, // 曲线样式
       curveSmoothness: 0.3, // 曲线平滑度
       color: color,
-      barWidth: ScreenUtil().setWidth(3), // 线条宽度
+      barWidth: StatisticsChartWidgetConstants.lineWidth,
       isStrokeCapRound: true, // 线条两端为圆形
       dotData: FlDotData(
         show: true,
         getDotPainter: (spot, percent, barData, index) {
           // 根据是否选中显示不同样式的点
           return FlDotCirclePainter(
-            radius: touchedSpot == spot && touchedBarIndex == index ? ScreenUtil().setWidth(6) : ScreenUtil().setWidth(4),
+            radius: touchedSpot == spot && touchedBarIndex == index ? StatisticsChartWidgetConstants.dotRadiusSelected : StatisticsChartWidgetConstants.dotRadiusNormal,
             color: touchedSpot == spot && touchedBarIndex == index 
               ? color.withOpacity(1.0) 
               : color.withOpacity(0.8),
-            strokeWidth: touchedSpot == spot && touchedBarIndex == index ? ScreenUtil().setWidth(2) : 0,
+            strokeWidth: touchedSpot == spot && touchedBarIndex == index ? StatisticsChartWidgetConstants.dotStrokeWidth : 0,
             strokeColor: ThemeHelper.onBackground(context),
           );
         },
@@ -379,8 +385,6 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
   // 根据统计类型生成图表数据
   List<FlSpot> _generateChartDataForType(Habit habit, String statType) {
     final spots = <FlSpot>[];
-    final now = DateTime.now();
-    int count = widget.selectedPeriod == 'week' ? 7 : widget.selectedPeriod == 'month' ? 30 : 12;
 
     if (widget.selectedPeriod == 'week') {
       // 周聚合 - 使用选中的周和年份
@@ -397,7 +401,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
               habit.dailyCompletionStatus[dateOnly] == true ? 1 : 0;
         } else {
           // 时间统计 (分钟)
-          final duration = habit.getTotalDurationForDay(targetDate);
+          final duration = sl<HabitStatisticsService>().getTotalDurationForDay(habit, targetDate);
           value = duration.inMinutes.toDouble();
         }
         spots.add(FlSpot(i.toDouble(), value));
@@ -431,7 +435,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           // 时间统计 (分钟) - 统计整周的总时长
           int weeklyMinutes = 0;
           for (DateTime date = weekStart; date.isBefore(weekEnd.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
-            final duration = habit.getTotalDurationForDay(date);
+            final duration = sl<HabitStatisticsService>().getTotalDurationForDay(habit, date);
             weeklyMinutes += duration.inMinutes.toInt();
           }
           value = weeklyMinutes.toDouble();
@@ -461,7 +465,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           final daysInMonth = DateTime(widget.selectedYear, month + 1, 0).day;
           for (int day = 1; day <= daysInMonth; day++) {
             final date = DateTime(widget.selectedYear, month, day);
-            final duration = habit.getTotalDurationForDay(date);
+            final duration = sl<HabitStatisticsService>().getTotalDurationForDay(habit, date);
             monthlyMinutes += duration.inMinutes.toInt();
           }
           value = monthlyMinutes.toDouble();
@@ -474,19 +478,36 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     return spots;
   }
   
-  // 获取月份包含的所有周范围（确保从周一到周日）
+  // 获取月份包含的所有周范围（根据用户设置的周起始日）
   List<Map<String, dynamic>> _getMonthWeeks(DateTime monthStart, DateTime monthEnd) {
     final weeks = <Map<String, dynamic>>[];
     
-    // 计算月份第一天是星期几，调整到本周一
-    final firstDayWeekday = monthStart.weekday;
-    final daysToMonday = firstDayWeekday == 7 ? 0 : 7 - firstDayWeekday;
-    final startOfFirstWeek = monthStart.subtract(Duration(days: daysToMonday));
+    DateTime startOfFirstWeek;
+    DateTime endOfLastWeek;
     
-    // 计算月份最后一天是星期几，调整到下周日
-    final lastDayWeekday = monthEnd.weekday;
-    final daysToSunday = lastDayWeekday == 7 ? 0 : 7 - lastDayWeekday;
-    final endOfLastWeek = monthEnd.add(Duration(days: daysToSunday));
+    if (widget.weekStartDay == WeekStartDay.monday) {
+      // 周一为起始日
+      // 计算月份第一天是星期几，调整到本周一
+      final firstDayWeekday = monthStart.weekday;
+      final daysToMonday = firstDayWeekday == 7 ? 0 : 7 - firstDayWeekday;
+      startOfFirstWeek = monthStart.subtract(Duration(days: daysToMonday));
+      
+      // 计算月份最后一天是星期几，调整到下周日
+      final lastDayWeekday = monthEnd.weekday;
+      final daysToSunday = lastDayWeekday == 7 ? 0 : 7 - lastDayWeekday;
+      endOfLastWeek = monthEnd.add(Duration(days: daysToSunday));
+    } else {
+      // 周日为起始日
+      // 计算月份第一天是星期几，调整到本周日
+      final firstDayWeekday = monthStart.weekday;
+      final daysToSunday = firstDayWeekday == 7 ? 0 : 7 - firstDayWeekday;
+      startOfFirstWeek = monthStart.subtract(Duration(days: daysToSunday));
+      
+      // 计算月份最后一天是星期几，调整到下周六
+      final lastDayWeekday = monthEnd.weekday;
+      final daysToSaturday = lastDayWeekday == 6 ? 0 : 6 - lastDayWeekday;
+      endOfLastWeek = monthEnd.add(Duration(days: daysToSaturday));
+    }
     
     // 生成每周的开始和结束日期
     DateTime currentWeekStart = startOfFirstWeek;
@@ -508,20 +529,40 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     // 计算日期是当年的第几周
     final firstDayOfYear = DateTime(date.year, 1, 1);
     final days = date.difference(firstDayOfYear).inDays;
-    // 假设每周从周一开始
-    final firstDayOfYearWeekday = firstDayOfYear.weekday;
-    final daysToFirstMonday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-    final adjustedDays = days - daysToFirstMonday;
+    int daysToFirstWeekStart;
+    
+    if (widget.weekStartDay == WeekStartDay.monday) {
+      // 每周从周一开始
+      final firstDayOfYearWeekday = firstDayOfYear.weekday;
+      daysToFirstWeekStart = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
+    } else {
+      // 每周从周日开始
+      final firstDayOfYearWeekday = firstDayOfYear.weekday;
+      daysToFirstWeekStart = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
+    }
+    
+    final adjustedDays = days - daysToFirstWeekStart;
     return adjustedDays >= 0 ? (adjustedDays ~/ 7) + 1 : 1;
   }
 
-  // 获取周的第一天（周一）
+  // 获取周的第一天（根据用户设置）
   DateTime _getStartOfWeek(int weekNumber, int year) {
     final firstDayOfYear = DateTime(year, 1, 1);
-    final firstDayOfYearWeekday = firstDayOfYear.weekday;
-    final daysToFirstMonday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-    final firstMonday = firstDayOfYear.add(Duration(days: daysToFirstMonday));
-    return firstMonday.add(Duration(days: (weekNumber - 1) * 7));
+    DateTime firstWeekStart;
+    
+    if (widget.weekStartDay == WeekStartDay.monday) {
+      // 周一为起始日
+      final firstDayOfYearWeekday = firstDayOfYear.weekday;
+      final daysToFirstMonday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
+      firstWeekStart = firstDayOfYear.add(Duration(days: daysToFirstMonday));
+    } else {
+      // 周日为起始日
+      final firstDayOfYearWeekday = firstDayOfYear.weekday;
+      final daysToFirstSunday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
+      firstWeekStart = firstDayOfYear.add(Duration(days: daysToFirstSunday));
+    }
+    
+    return firstWeekStart.add(Duration(days: (weekNumber - 1) * 7));
   }
 
   List<String> _generateXAxisTitles() {

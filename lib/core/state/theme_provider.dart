@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';
 
 // 使用前缀导入来解决命名冲突
 import '../../shared/models/theme_model.dart' as app_theme;

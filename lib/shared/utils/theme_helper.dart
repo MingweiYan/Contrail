@@ -39,12 +39,12 @@ class ThemeHelper {
 
   /// 背景色
   static Color background(BuildContext context) {
-    return colorScheme(context).background;
+    return colorScheme(context).surface;
   }
 
   /// 背景上的文本颜色
   static Color onBackground(BuildContext context) {
-    return colorScheme(context).onBackground;
+    return colorScheme(context).onSurface;
   }
 
   /// 表面色 - 用于卡片、对话框等
@@ -59,7 +59,7 @@ class ThemeHelper {
 
   /// 变体表面色 - 用于分组列表项、卡片背景等
   static Color surfaceVariant(BuildContext context) {
-    return colorScheme(context).surfaceVariant;
+    return colorScheme(context).surfaceContainerHighest;
   }
 
   /// 变体表面上的文本颜色

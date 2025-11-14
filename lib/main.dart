@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -12,6 +11,8 @@ import 'features/statistics/presentation/providers/statistics_provider.dart';
 import 'core/routing/app_router.dart';
 import 'shared/utils/logger.dart';
 import 'features/habit/presentation/providers/habit_provider.dart';
+import 'features/profile/presentation/providers/backup_provider.dart';
+import 'features/profile/presentation/providers/personalization_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
@@ -73,6 +74,8 @@ class _ContrailAppState extends State<ContrailApp> {
         ChangeNotifierProvider(create: (context) => HabitProvider()..loadHabits()),
         ChangeNotifierProvider(create: (context) => StatisticsProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => BackupProvider()),
+        ChangeNotifierProvider(create: (context) => PersonalizationProvider()..initialize()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

@@ -1,15 +1,12 @@
 import 'dart:math';
-import 'package:contrail/core/state/focus_state.dart';
+import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../utils/theme_helper.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/habit.dart'; // 导入Habit模型以使用TrackingMode枚举
+import '../utils/page_layout_constants.dart';
 
-// 时钟样式枚举 - 只保留数字时钟
-enum ClockStyle {
-  digital,      // 数字时钟
-}
+
 
 // 自定义圆环绘制器
 class CustomCirclePainter extends CustomPainter {
@@ -94,7 +91,6 @@ class ClockWidget extends StatefulWidget {
 
 class _ClockWidgetState extends State<ClockWidget> {
   late Duration _currentDuration;
-  final bool _isDragging = false;
   double _rotationProgress = 0.0;
   Timer? _rotationTimer;
   
@@ -115,7 +111,7 @@ class _ClockWidgetState extends State<ClockWidget> {
   @override
   void didUpdateWidget(ClockWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.duration != oldWidget.duration && !_isDragging) {
+    if (widget.duration != oldWidget.duration) {
       setState(() {
         _currentDuration = widget.duration;
       });
@@ -224,15 +220,15 @@ class _ClockWidgetState extends State<ClockWidget> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  primaryColor.withOpacity(0.9),
+                  primaryColor.withValues(alpha: 0.9),
                   primaryColor,
                 ],
               ),
               boxShadow: [
                 BoxShadow(
                   color: Theme.of(context).colorScheme.shadow,
-                  blurRadius: ScreenUtil().setWidth(15),
-                  offset: Offset(0, ScreenUtil().setHeight(5)),
+                  blurRadius: ClockWidgetConstants.shadowBlurRadius,
+                  offset: Offset(0, ClockWidgetConstants.shadowOffsetY),
                 ),
               ],
             ),
@@ -244,11 +240,9 @@ class _ClockWidgetState extends State<ClockWidget> {
                   size: Size(size, size),
                   painter: CustomCirclePainter(
                     progress: _rotationProgress,
-                    // widget.ise SettingsMod
-                    //   ? _rotationProgress // 在设置模式使用旋转进度
-                      // :  ((_currentDuration.inSeconds % 60) / 60).clamp(0.0, 1.0),
-                    strokeWidth: ScreenUtil().setWidth(14), // 使用响应式宽度
-                    backgroundColor: onPrimaryColor.withOpacity(0.1),
+
+                    strokeWidth: ClockWidgetConstants.circleStrokeWidth,
+                    backgroundColor: onPrimaryColor.withValues(alpha: 0.1),
                     valueColor: onPrimaryColor,
                     isClockwise: true,
                   ),
@@ -260,17 +254,17 @@ class _ClockWidgetState extends State<ClockWidget> {
                     Text(
                       _formatDuration(_currentDuration),
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(48), // 使用响应式字体大小，约为48sp
+                        fontSize: ClockWidgetConstants.timeFontSize,
                         fontWeight: FontWeight.bold,
                         color: onPrimaryColor,
                       ),
                     ),
-                    SizedBox(height: ScreenUtil().setHeight(12)), // 使用响应式高度
+                    SizedBox(height: ClockWidgetConstants.timeModeSpacing),
                     Text(
                       getTrackingModeDescription(),
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(24), // 使用响应式字体大小，约为16sp
-                        color: onPrimaryColor.withOpacity(0.9),
+                        fontSize: ClockWidgetConstants.modeTextFontSize,
+                        color: onPrimaryColor.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -291,7 +285,10 @@ class _ClockWidgetState extends State<ClockWidget> {
         return '正计时';
       case TrackingMode.pomodoro:
         return '番茄钟';
-      }
+      // ignore: unreachable_switch_default
+      default:
+        return '未知模式';
+    }
   }
 
   @override

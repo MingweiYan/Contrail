@@ -1,4 +1,3 @@
-import 'package:hive/hive.dart';
 import 'package:contrail/shared/models/habit.dart';
 
 abstract class HabitRepository {

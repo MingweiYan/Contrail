@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:contrail/features/focus/presentation/pages/focus_selection_page.dart';
+import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
 import 'package:contrail/shared/models/habit.dart';
 
 class FocusRoutes {
@@ -13,7 +12,7 @@ class FocusRoutes {
           path: selection,
           builder: (context, state) {
             final habit = state.extra as Habit;
-            return FocusSelectionPage(habit: habit);
+            return HabitTrackingPage(habit: habit);
           },
         ),
       ];

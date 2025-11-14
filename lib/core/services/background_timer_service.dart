@@ -3,7 +3,7 @@ import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/services/notification_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:contrail/core/state/focus_state.dart';
+import 'package:contrail/core/state/focus_tracking_manager.dart';
 
 // 后台服务回调函数 - 必须是顶级函数
 @pragma('vm:entry-point')
@@ -54,7 +54,7 @@ class BackgroundTimerService {
   BackgroundTimerService._internal();
 
   final _service = FlutterBackgroundService();
-  FocusState? _focusState;
+  FocusTrackingManager? _focusState;
   bool _isInitialized = false;
 
   // 初始化后台服务
@@ -99,7 +99,7 @@ class BackgroundTimerService {
   }
 
   // 设置FocusState引用
-  void setFocusState(FocusState focusState) {
+  void setFocusState(FocusTrackingManager focusState) {
     _focusState = focusState;
   }
 

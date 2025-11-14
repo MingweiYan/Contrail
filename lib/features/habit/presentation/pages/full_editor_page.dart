@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class FullEditorPage extends StatefulWidget {
   final String? initialContent; // 初始富文本内容
@@ -67,11 +67,11 @@ class _FullEditorPageState extends State<FullEditorPage> {
             // 编辑器主体
             Expanded(
               child: Padding(
-                  padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+                  padding: FullEditorPageConstants.editorContainerPadding,
                   child: QuillEditor.basic(
                     controller: _controller,
                     config: QuillEditorConfig(
-                      padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
+                      padding: FullEditorPageConstants.editorPadding,
                       placeholder: widget.placeholder,
                     ),
                   ),

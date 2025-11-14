@@ -8,12 +8,14 @@ import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/presentation/pages/theme_selection_page.dart';
 import 'package:contrail/features/profile/presentation/pages/data_backup_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/features/profile/presentation/pages/personalization_settings_page.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/shared/utils/debug_menu_manager.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:contrail/core/state/focus_state.dart';
+import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -33,9 +35,16 @@ class _ProfilePageState extends State<ProfilePage> {
   // 创建一个引用以便在dispose中移除
   late final VoidCallback _debugModeListener;
   
+
+
+  // 使用依赖注入获取用户设置服务
+  late final IUserSettingsService _userSettingsService;
+
   @override
   void initState() {
     super.initState();
+    // 从依赖注入容器获取服务
+    _userSettingsService = sl<IUserSettingsService>();
     _loadSettings();
     
     // 创建监听器函数
@@ -53,41 +62,25 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      try {
-        _username = prefs.getString('username') ?? '用户';
-        _avatarPath = prefs.getString('avatarPath');
-        _dataBackupEnabled = prefs.getBool('dataBackupEnabled') ?? false;
-        
-        // 安全地获取backupFrequency，处理可能的类型错误
-        final frequencyValue = prefs.get('backupFrequency');
-        if (frequencyValue is String) {
-          _backupFrequency = frequencyValue;
-        } else if (frequencyValue != null) {
-          // 如果存储的值不是String类型，尝试转换或使用默认值
-          _backupFrequency = frequencyValue.toString();
-          logger.warning('backupFrequency存储的值类型不正确，已转换为字符串');
-        } else {
-          _backupFrequency = '每周';
-        }
-      } catch (e) {
-        logger.error('加载设置失败', e);
-        // 设置默认值以确保应用继续运行
-        _username = '用户';
-        _avatarPath = null;
-        _dataBackupEnabled = false;
-        _backupFrequency = '每周';
-      }
-    });
+    final settings = await _userSettingsService.loadSettings();
+    if (mounted) {
+      setState(() {
+        _username = settings.username;
+        _avatarPath = settings.avatarPath;
+        _dataBackupEnabled = settings.dataBackupEnabled;
+        _backupFrequency = settings.backupFrequency;
+      });
+    }
   }
 
   Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('username', _username);
-    await prefs.setString('avatarPath', _avatarPath ?? '');
-    await prefs.setBool('dataBackupEnabled', _dataBackupEnabled);
-    await prefs.setString('backupFrequency', _backupFrequency);
+    final settings = UserSettings(
+      username: _username,
+      avatarPath: _avatarPath,
+      dataBackupEnabled: _dataBackupEnabled,
+      backupFrequency: _backupFrequency,
+    );
+    await _userSettingsService.saveSettings(settings);
   }
 
   Future<void> _pickImage() async {
@@ -108,7 +101,7 @@ class _ProfilePageState extends State<ProfilePage> {
         decoration: ThemeHelper.generateBackgroundDecoration(context) ?? BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
         ),
-        padding: EdgeInsets.all(ScreenUtil().setWidth(16)), // 添加整体页面的边距
+        padding: PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -117,7 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeOut,
               width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(32)),
+              padding: ProfilePageConstants.headerPadding,
               decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -127,7 +120,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Theme.of(context).colorScheme.primary.withOpacity(0.8),
                     ],
                   ),
-                  borderRadius: BorderRadius.all(Radius.circular(ScreenUtil().setWidth(30))),
+                  borderRadius: BorderRadius.all(Radius.circular(ProfilePageConstants.headerBorderRadius)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -148,18 +141,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       '我的',
                       style: ThemeHelper.textStyleWithTheme(
                         context,
-                        fontSize: ScreenUtil().setSp(32),
+                        fontSize: ProfilePageConstants.titleFontSize,
                         fontWeight: FontWeight.bold,
                         color: ThemeHelper.onPrimary(context),
                       ),
                     ),
                   ),
-                  SizedBox(height: ScreenUtil().setHeight(8)),
+                  SizedBox(height: ProfilePageConstants.titleSubtitleSpacing),
                   Text(
                     '设置中心',
                     style: ThemeHelper.textStyleWithTheme(
                       context,
-                      fontSize: ScreenUtil().setSp(20),
+                      fontSize: ProfilePageConstants.subtitleFontSize,
                       color: ThemeHelper.onPrimary(context).withOpacity(0.9),
                     ),
                   ),
@@ -209,7 +202,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            padding: EdgeInsets.all(ScreenUtil().setWidth(24)),
+            padding: ProfilePageConstants.userInfoPadding,
             child: Column(
               children: [
                 // 头像容器带有阴影效果
@@ -228,58 +221,58 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: GestureDetector(
                     onTap: _pickImage,
                     child: CircleAvatar(
-                      radius: ScreenUtil().setWidth(60),
+                      radius: ProfilePageConstants.avatarRadius,
                       backgroundImage: _avatarPath != null && _avatarPath!.isNotEmpty
                           ? FileImage(File(_avatarPath!))
                           : null,
                       backgroundColor: ThemeHelper.primary(context).withOpacity(0.1),
                       child: (_avatarPath == null || _avatarPath!.isEmpty)
-                          ? ThemeHelper.styledIcon(context, Icons.person, size: ScreenUtil().setSp(60), color: ThemeHelper.primary(context))
+                          ? ThemeHelper.styledIcon(context, Icons.person, size: ProfilePageConstants.avatarIconSize, color: ThemeHelper.primary(context))
                           : null,
                     ),
                   ),
                 ),
-                SizedBox(height: ScreenUtil().setHeight(16)),
+                SizedBox(height: ProfilePageConstants.avatarUsernameSpacing),
                 // 用户名输入框带有自定义样式
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                      borderRadius: BorderRadius.circular(ProfilePageConstants.textFieldBorderRadius),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(4)),
+                    padding: ProfilePageConstants.textFieldPadding,
                     child: TextFormField(
                       initialValue: _username,
                       decoration: InputDecoration(
                         labelText: '用户名',
                         labelStyle: TextStyle(
                           color: ThemeHelper.onBackground(context).withOpacity(0.9),
-                          fontSize: ScreenUtil().setSp(26)
+                          fontSize: ProfilePageConstants.labelFontSize
                         ),
                         border: InputBorder.none,
                       ),
                       style: TextStyle(
                         color: ThemeHelper.onBackground(context),
-                        fontSize: ScreenUtil().setSp(24),
+                        fontSize: ProfilePageConstants.inputFontSize,
                         fontWeight: FontWeight.bold
                       ),
                       onChanged: (value) => setState(() => _username = value),
                     ),
                   ),
-                  SizedBox(height: ScreenUtil().setHeight(20)),
+                  SizedBox(height: ProfilePageConstants.usernameButtonSpacing),
                 // 保存按钮使用悬浮效果
                   ElevatedButton(
                     onPressed: _saveSettings,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ThemeHelper.primary(context),
-                      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(32), vertical: ScreenUtil().setHeight(12)),
+                      padding: ProfilePageConstants.buttonPadding,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(30)),
+                        borderRadius: BorderRadius.circular(ProfilePageConstants.buttonBorderRadius),
                       ),
                       elevation: 4,
                       shadowColor: ThemeHelper.primary(context).withOpacity(0.3),
                     ),
                     child: Text('保存', style: TextStyle(
-                      fontSize: ScreenUtil().setSp(18),
+                      fontSize: ProfilePageConstants.buttonFontSize,
                       fontWeight: FontWeight.bold,
                       color: ThemeHelper.onPrimary(context)
                     )),
@@ -290,10 +283,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
           // 设置分组卡片
           Container(
-            margin: EdgeInsets.all(ScreenUtil().setWidth(16)),
+            margin: ProfilePageConstants.settingsContainerMargin,
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
+              borderRadius: BorderRadius.circular(ProfilePageConstants.settingsContainerBorderRadius),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -309,28 +302,52 @@ class _ProfilePageState extends State<ProfilePage> {
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(ScreenUtil().setWidth(20)),
-                      topRight: Radius.circular(ScreenUtil().setWidth(20)),
+                      topLeft: Radius.circular(ProfilePageConstants.settingsCardTopBorderRadius),
+                      topRight: Radius.circular(ProfilePageConstants.settingsCardTopBorderRadius),
                     ),
                   ),
                   child: ListTile(
                     title: Text('主题设置', style: TextStyle(
-                      fontSize: ScreenUtil().setSp(20),
+                      fontSize: ProfilePageConstants.listTileTitleFontSize,
                       fontWeight: FontWeight.w500,
                       color: ThemeHelper.onBackground(context)
                     )),
                     subtitle: Text('选择应用的外观风格', style: TextStyle(
-                      fontSize: ScreenUtil().setSp(16),
+                      fontSize: ProfilePageConstants.listTileSubtitleFontSize,
                       color: ThemeHelper.onBackground(context).withOpacity(0.7)
                     )),
                     trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
                     onTap: () {
                       Navigator.push(
-                        context, 
+                        context,
                         MaterialPageRoute(builder: (context) => ThemeSelectionPage())
                       );
                     },
                   ),
+                ),
+                
+                // 分隔线
+                Divider(height: 1, color: ThemeHelper.onBackground(context).withOpacity(0.1)),
+                
+                // 个性化设置
+                ListTile(
+                  title: Text('个性化设置', style: TextStyle(
+                    fontSize: ProfilePageConstants.listTileTitleFontSize,
+                    fontWeight: FontWeight.w500,
+                    color: ThemeHelper.onBackground(context)
+                  )),
+                  subtitle: Text('自定义应用的行为和显示方式', style: TextStyle(
+                      fontSize: ProfilePageConstants.listTileSubtitleFontSize,
+                    color: ThemeHelper.onBackground(context).withOpacity(0.7)
+                  )),
+                  trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
+                  onTap: () {
+                    // 导航到个性化设置页面
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PersonalizationSettingsPage())
+                    );
+                  },
                 ),
 
                 // 分隔线
@@ -339,12 +356,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 // 数据备份
                 ListTile(
                   title: Text('数据备份', style: TextStyle(
-                    fontSize: ScreenUtil().setSp(20),
+                    fontSize: ProfilePageConstants.listTileTitleFontSize,
                     fontWeight: FontWeight.w500,
                     color: ThemeHelper.onBackground(context)
                   )),
                   subtitle: Text('备份和恢复应用数据', style: TextStyle(
-                    fontSize: ScreenUtil().setSp(16),
+                    fontSize: ProfilePageConstants.listTileSubtitleFontSize,
                     color: ThemeHelper.onBackground(context).withOpacity(0.7)
                   )),
                   trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
@@ -362,7 +379,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 // 关于
                 ListTile(
                   title: Text('关于', style: TextStyle(
-                    fontSize: ScreenUtil().setSp(20),
+                    fontSize: ProfilePageConstants.listTileTitleFontSize,
                     fontWeight: FontWeight.w500,
                     color: ThemeHelper.onBackground(context)
                   )),
@@ -492,7 +509,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             await Hive.box<Habit>('habits').clear();
                             
                             // 清除专注状态单例中的内存状态
-                            final focusState = sl<FocusState>();
+                            final focusState = sl<FocusTrackingManager>();
                             focusState.endFocus();
                             
                             // 重新加载习惯数据，确保内存中的数据与数据库一致

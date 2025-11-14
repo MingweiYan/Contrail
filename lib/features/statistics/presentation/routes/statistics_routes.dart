@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:contrail/features/statistics/presentation/pages/statistics_page.dart';
-import 'package:contrail/features/statistics/presentation/pages/stats_result_page.dart' show StatsResultPage, KeepAliveStatsResultPage; // 导入StatsResultPage和KeepAliveStatsResultPage
+import 'package:contrail/features/statistics/presentation/pages/stats_share_result_page.dart'
+    show StatsResultPage, KeepAliveStatsResultPage; // 导入StatsResultPage和KeepAliveStatsResultPage
 
 class StatisticsRoutes {
   static const String root = 'statistics';

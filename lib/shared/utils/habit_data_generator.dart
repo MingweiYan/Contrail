@@ -3,8 +3,10 @@ import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'dart:convert';
+import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
+import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/shared/services/habit_service.dart';
 
 /// 习惯数据生成器，用于创建测试数据
 class HabitDataGenerator {
@@ -75,7 +77,7 @@ class HabitDataGenerator {
         icon: _icons[i],
         descriptionJson: _generateDefaultRichTextDescription(_habitNames[i]), // 添加富文本描述
         trackTime: true, // 所有习惯都跟踪时间
-        colorValue: _colors[i].value,
+        colorValue: _colors[i].toARGB32(),
         trackingDurations: {},
         dailyCompletionStatus: {},
       );
@@ -129,22 +131,9 @@ class HabitDataGenerator {
     return habits;
   }
   
-  /// 获取一个随机习惯名称
-  static String getRandomHabitName() {
-    return _habitNames[_random.nextInt(_habitNames.length)];
-  }
-  
-  /// 获取一个随机图标
-  static String getRandomIcon() {
-    return _icons[_random.nextInt(_icons.length)];
-  }
-  
-  /// 获取一个随机颜色
-  static Color getRandomColor() {
-    return _colors[_random.nextInt(_colors.length)];
-  }
-    
 
+  
+  
   
   /// 生成测试数据并保存到HabitProvider
   /// 这个方法可以直接在应用中调用，用于快速创建测试数据
@@ -211,7 +200,8 @@ class HabitDataGenerator {
           final duration = Duration(minutes: minutes);
           
           // 直接在Habit对象上添加专注记录
-          habit.addTrackingRecord(randomDate, duration);
+          // 使用HabitService添加追踪记录
+      sl<HabitService>().addTrackingRecord(habit, randomDate, duration);
         }
       }
     }

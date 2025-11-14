@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:contrail/features/focus/presentation/pages/focus_selection_page.dart';
 import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 
 void main() {
-  group('FocusSelectionPage', () {
+  group('HabitTrackingPage (used in focus selection route)', () {
     final testHabit = Habit(
       id: '1',
       name: '晨跑',
@@ -19,23 +18,23 @@ void main() {
       cycleType: CycleType.daily,
     );
 
-    testWidgets('should return HabitTrackingPage', (WidgetTester tester) async {
-      // 安排 - 直接创建FocusSelectionPage
+    testWidgets('should render correctly with habit', (WidgetTester tester) async {
+      // 安排 - 直接创建HabitTrackingPage（与路由配置一致）
       await tester.pumpWidget(
         MaterialApp(
-          home: FocusSelectionPage(habit: testHabit),
+          home: HabitTrackingPage(habit: testHabit),
         ),
       );
 
-      // 断言 - 验证是否返回HabitTrackingPage
+      // 断言 - 验证HabitTrackingPage正确渲染
       expect(find.byType(HabitTrackingPage), findsOneWidget);
     });
 
-    testWidgets('should pass habit to HabitTrackingPage', (WidgetTester tester) async {
-      // 安排 - 直接创建FocusSelectionPage
+    testWidgets('should receive correct habit data', (WidgetTester tester) async {
+      // 安排 - 直接创建HabitTrackingPage
       await tester.pumpWidget(
         MaterialApp(
-          home: FocusSelectionPage(habit: testHabit),
+          home: HabitTrackingPage(habit: testHabit),
         ),
       );
 

@@ -3,9 +3,6 @@ import 'package:contrail/shared/models/habit.dart' show Habit, TrackingMode;
 import 'package:contrail/shared/services/notification_service.dart';
 import 'package:contrail/core/services/background_timer_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
 
 // 运行状态枚举类
 enum FocusStatus {
@@ -22,28 +19,18 @@ enum PomodoroStatus {
 }
 
 // 专注状态管理类
-class FocusState {
-  // 构造函数
-  FocusState() {
-    // 初始化后台计时器服务
-    _backgroundTimerService = BackgroundTimerService();
-    // 将自身引用传递给后台服务
-    _backgroundTimerService.setFocusState(this);
-    // 初始化后台服务（异步执行，不阻塞主线程）
-    _backgroundTimerService.start();
-  }
+class FocusTrackingManager {
+
+  FocusTrackingManager() : _backgroundTimerService = BackgroundTimerService() {
+  _backgroundTimerService.setFocusState(this);
+  _backgroundTimerService.start();
+}
 
   // 后台计时器服务实例
-  late BackgroundTimerService _backgroundTimerService;
+  final BackgroundTimerService _backgroundTimerService;
 
   // 当前专注的习惯
   Habit? _currentFocusHabit;
-  
-  // 专注开始时间
-  DateTime? _focusStartTime;
-  
-  // 上次更新时间戳（用于计算后台流逝的时间）
-  DateTime? _lastUpdateTime;
   
   // 专注模式
   TrackingMode? _focusMode;
@@ -81,15 +68,12 @@ class FocusState {
   
   FocusStatus get focusStatus => _focusStatus;
   
-  // 是否正在专注
-
   // 获取当前专注的习惯
   Habit? get currentFocusHabit => _currentFocusHabit;
 
   // 获取专注模式
   TrackingMode? get focusMode => _focusMode;
 
-  //
   Duration get defaultTime => _defaultTime;
   
   // 获取番茄钟当前状态
@@ -100,30 +84,11 @@ class FocusState {
     _pomodoroStatus = status;
   }
 
-
   // 获取已流逝的时间
   Duration get elapsedTime {
-    // 计算应用在后台时流逝的时间
-    // if (_focusStatus == FocusStatus.run && _focusStartTime != null && _lastUpdateTime != null) {
-    //   final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
-    //   // 只在超过1秒时更新，避免频繁计算
-    //   if (timeSinceLastUpdate.inSeconds > 0) {
-    //     _updateElapsedTime();
-    //   }
-    // }
     return _elapsedTime;
   }
   
-  // 更新已流逝的时间（考虑后台时间）
-  void _updateElapsedTime() {
-    // if (_focusStatus == FocusStatus.run && _focusStartTime != null && _lastUpdateTime != null) {
-    //   final timeSinceLastUpdate = DateTime.now().difference(_lastUpdateTime!);
-    //   logger.debug('更新已流逝的时间 $timeSinceLastUpdate, last update time is $_lastUpdateTime: ');
-    //   tik(timeSinceLastUpdate);
-    //   _lastUpdateTime = DateTime.now();
-    // }
-  }
-
   // 更新时间，广播时间变化
   void tik([Duration deltaTime = const Duration(seconds: 1)]) {
     if (_focusMode == TrackingMode.stopwatch) {
@@ -139,7 +104,6 @@ class FocusState {
         });
       }
     }
-    _lastUpdateTime = DateTime.now();
 
     // 通知时间变化
     _notifyTimeUpdate();
@@ -176,8 +140,6 @@ class FocusState {
   void startFocus(Habit habit, TrackingMode mode, [Duration initialTime = Duration.zero]) {
     _currentFocusHabit = habit;
     _focusMode = mode;
-    _focusStartTime = DateTime.now();
-    _lastUpdateTime = DateTime.now();
     _elapsedTime = initialTime;
     _defaultTime = initialTime;
     // 重置倒计时结束标志
@@ -205,8 +167,6 @@ class FocusState {
   // 恢复专注
   void resumeFocus() {
     if (_focusStatus == FocusStatus.pause) {
-      // 恢复前不更新时间，避免显示跳变
-      _lastUpdateTime = DateTime.now();
       // 重新启动后台计时器
       _backgroundTimerService.startTimer();
       
@@ -231,7 +191,6 @@ class FocusState {
     _backgroundTimerService.stopTimer();
     
     _currentFocusHabit = null;
-    _focusStartTime = null;
     _focusMode = null;
     _elapsedTime = _defaultTime;
 
@@ -253,8 +212,7 @@ class FocusState {
     try {
       final isServiceRunning = await _backgroundTimerService.isRunning();
       if (!isServiceRunning) {
-        // 如果后台服务未运行，更新流逝的时间
-        _updateElapsedTime();
+        // 如果后台服务未运行，通知时间更新
         _notifyTimeUpdate();
         // 恢复后台计时器
         _backgroundTimerService.start();

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class JsonEditorPage extends StatefulWidget {
   const JsonEditorPage({Key? key}) : super(key: key);
@@ -73,12 +73,12 @@ class _JsonEditorPageState extends State<JsonEditorPage> {
           children: [
             // 编辑说明
             Padding(
-              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+              padding: JsonEditorPageConstants.containerPadding,
               child: Text(
                 '编辑以下JSON数据，点击右上角保存按钮输出并返回',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: ScreenUtil().setSp(18),
+                  fontSize: JsonEditorPageConstants.descriptionFontSize,
                 ),
               ),
             ),
@@ -91,11 +91,11 @@ class _JsonEditorPageState extends State<JsonEditorPage> {
             // 富文本编辑区域
             Expanded(
               child: Padding(
-                padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+                padding: JsonEditorPageConstants.containerPadding,
                 child: QuillEditor.basic(
                   controller: _controller,
                   config: QuillEditorConfig(
-                    padding: EdgeInsets.all(ScreenUtil().setWidth(8)),
+                    padding: JsonEditorPageConstants.editorPadding,
                     placeholder: '在此编辑富文本内容...',
                     autoFocus: true,
                     expands: false,
@@ -107,21 +107,21 @@ class _JsonEditorPageState extends State<JsonEditorPage> {
             ),
             // 输出按钮
             Padding(
-              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+              padding: JsonEditorPageConstants.containerPadding,
               child: ElevatedButton(
                 onPressed: _outputAndExit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(16)),
+                  padding: EdgeInsets.symmetric(vertical: JsonEditorPageConstants.buttonVerticalPadding),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                    borderRadius: BorderRadius.circular(JsonEditorPageConstants.buttonBorderRadius),
                   ),
                   minimumSize: Size(double.infinity, 0),
                 ),
                 child: Text(
                   '📋 输出JSON并返回',
                   style: TextStyle(
-                    fontSize: ScreenUtil().setSp(20),
+                    fontSize: JsonEditorPageConstants.buttonFontSize,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),

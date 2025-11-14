@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class IconSelectorPage extends StatefulWidget {
   final String? selectedIcon;
@@ -66,19 +66,8 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 查找选中图标的图标数据
-    IconData findSelectedIconData() {
-      if (_currentSelectedIcon != null && _currentSelectedIcon!.isNotEmpty) {
-        for (var icon in filteredIcons) {
-          if (IconHelper.getIconName(icon) == _currentSelectedIcon) {
-            return icon;
-          }
-        }
-      }
-      return Icons.book; // 默认图标
-    }
     
-    final IconData selectedIconData = findSelectedIconData();
+
 
     // 定义一些预设颜色用于图标背景
     final List<Color> presetColors = [
@@ -110,7 +99,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+          padding: IconSelectorPageConstants.pagePadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -120,17 +109,17 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                   hintText: '搜索图标...',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                    borderRadius: BorderRadius.circular(IconSelectorPageConstants.searchBorderRadius),
                   ),
                 ),
                 onChanged: searchIcons,
               ),
-              SizedBox(height: ScreenUtil().setHeight(16)),
+              SizedBox(height: IconSelectorPageConstants.largeSpacing),
               
               // 图标按类型分组显示
               Expanded(
                 child: filteredIcons.isEmpty
-                    ? Center(child: Text('没有找到匹配的图标', style: TextStyle(fontSize: ScreenUtil().setSp(18))))
+                    ? Center(child: Text('没有找到匹配的图标', style: TextStyle(fontSize: IconSelectorPageConstants.emptyStateFontSize)))
                     : ListView.builder(
                         itemCount: filteredIconsByCategory.length,
                         itemBuilder: (context, categoryIndex) {
@@ -142,11 +131,11 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                             children: [
                               // 类别标题
                               Padding(
-                                padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(12), horizontal: ScreenUtil().setWidth(8)),
+                                padding: EdgeInsets.symmetric(vertical: IconSelectorPageConstants.mediumSpacing, horizontal: IconSelectorPageConstants.smallSpacing),
                                 child: Text(
                                   category,
                                   style: TextStyle(
-                                    fontSize: ScreenUtil().setSp(20),
+                                    fontSize: IconSelectorPageConstants.categoryTitleFontSize,
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).textTheme.titleLarge?.color,
                                   ),
@@ -157,10 +146,10 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 5, // 每行显示5个图标
-                                  crossAxisSpacing: ScreenUtil().setWidth(16),
-                                  mainAxisSpacing: ScreenUtil().setHeight(16),
-                                  childAspectRatio: 0.8, // 调整图标项的宽高比
+                                  crossAxisCount: IconSelectorPageConstants.gridCrossAxisCount, // 每行显示5个图标
+                                  crossAxisSpacing: IconSelectorPageConstants.gridCrossAxisSpacing,
+                                  mainAxisSpacing: IconSelectorPageConstants.gridMainAxisSpacing,
+                                  childAspectRatio: IconSelectorPageConstants.gridChildAspectRatio, // 调整图标项的宽高比
                                 ),
                                 itemCount: categoryIcons.length,
                                 itemBuilder: (context, index) {
@@ -185,21 +174,21 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                     child: Column(
                                       children: <Widget>[
                                         Container(
-                                          width: ScreenUtil().setWidth(56),
-                                          height: ScreenUtil().setHeight(56),
+                                          width: IconSelectorPageConstants.iconContainerSize,
+                                        height: IconSelectorPageConstants.iconContainerSize,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: isSelected 
                                               ? Theme.of(context).primaryColor
                                               : iconBackgroundColor.withOpacity(0.1),
                                             border: isSelected
-                                              ? Border.all(width: ScreenUtil().setWidth(2), color: Theme.of(context).primaryColor)
+                                              ? Border.all(width: IconSelectorPageConstants.selectedBorderWidth, color: Theme.of(context).primaryColor)
                                               : null,
                                           ),
                                           child: Center(
                                             child: Icon(
                                               icon,
-                                              size: ScreenUtil().setSp(28),
+                                              size: IconSelectorPageConstants.iconSize,
                                               color: isSelected 
                                                 ? Colors.white
                                                 : iconBackgroundColor,
@@ -211,7 +200,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                   );
                                 },
                               ),
-                              Divider(height: ScreenUtil().setHeight(16)),
+                              Divider(height: IconSelectorPageConstants.dividerHeight),
                             ],
                           );
                         },
