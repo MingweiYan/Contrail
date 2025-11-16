@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:contrail/core/state/focus_tracking_manager.dart';
+import 'package:contrail/shared/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../utils/theme_helper.dart';
@@ -196,6 +197,7 @@ class _ClockWidgetState extends State<ClockWidget> {
         newMinutes = newMinutes.clamp(1, 120); // 限制在1-120分钟
         _currentDuration = Duration(minutes: newMinutes);
         widget.onDurationChanged(_currentDuration);
+        logger.debug('数字时钟滑动调整，分钟数改变 $minutesChanged，新时间: $_currentDuration');
       });
     }
   }

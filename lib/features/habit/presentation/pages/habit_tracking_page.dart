@@ -30,15 +30,11 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   Duration _elapsedTime = Duration.zero;
   int _timerDuration = 30; // 默认25分钟
   TrackingMode _selectedMode = TrackingMode.stopwatch;
-
-  // 番茄钟相关设置
-  int _pomodoroRounds = 4;
-  int _currentRound = 1;
-  int _workDuration = 25;
-  int _shortBreakDuration = 5;
   
-  // 番茄钟总工作时长
-  Duration _totalPomodoroWorkDuration = Duration.zero;
+  // FocusTrackingManager实例
+  late FocusTrackingManager _focusManager;
+  
+  // 番茄钟相关设置通过FocusTrackingManager管理
   
   // 屏幕常亮状态
   bool _isScreenAlwaysOn = false;
@@ -50,45 +46,42 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   @override
   void initState() {
     super.initState();
+    // 初始化FocusTrackingManager
+    _focusManager = sl<FocusTrackingManager>();
     logger.debug('HabitTrackingPage初始化，习惯名称: ${widget.habit.name}');
-    _initializeDescriptionController();
-    
+    _initializeDescriptionController();  
     // 检查是否有正在进行的专注会话，并且是当前习惯
-    final focusState = sl<FocusTrackingManager>();
-    if (focusState.focusStatus != FocusStatus.stop && focusState.currentFocusHabit != null &&
-        focusState.currentFocusHabit!.id == widget.habit.id) {
+    if (_focusManager.focusStatus != FocusStatus.stop && _focusManager.currentFocusHabit != null &&
+        _focusManager.currentFocusHabit!.id == widget.habit.id) {
       // 如果有正在进行的专注会话且是当前习惯，恢复状态
       setState(() {
-        _focusStatus = focusState.focusStatus;
+        _focusStatus = _focusManager.focusStatus;
         _showSettings = false;
-        _elapsedTime = focusState.elapsedTime;
-        _selectedMode = focusState.focusMode ?? TrackingMode.pomodoro;
+        _elapsedTime = _focusManager.elapsedTime;
+        _selectedMode = _focusManager.focusMode ?? TrackingMode.pomodoro;
       });
     }
-    
     // 添加FocusState的监听器
-    sl<FocusTrackingManager>().addListener(_onFocusStateChanged);
+    _focusManager.addListener(_onFocusStateChanged);
     // 添加时间更新监听器
-    sl<FocusTrackingManager>().addTimeUpdateListener(_onTimeUpdate);
+    _focusManager.addTimeUpdateListener(_onTimeUpdate);
     // 添加倒计时结束监听器
-    sl<FocusTrackingManager>().addCountdownEndListener(_onCountdownEnd);
+    _focusManager.addCountdownEndListener(_onCountdownEnd);
   }
 
   @override
   void dispose() {
     // 移除FocusState的监听器
-    sl<FocusTrackingManager>().removeListener(_onFocusStateChanged);
+    _focusManager.removeListener(_onFocusStateChanged);
     // 移除时间更新监听器
-    sl<FocusTrackingManager>().removeTimeUpdateListener(_onTimeUpdate);
+    _focusManager.removeTimeUpdateListener(_onTimeUpdate);
     // 移除倒计时结束监听器
-    sl<FocusTrackingManager>().removeCountdownEndListener(_onCountdownEnd);
-    
+    _focusManager.removeCountdownEndListener(_onCountdownEnd);
     // 如果屏幕常亮是开启的，在组件销毁时关闭它
     if (_isScreenAlwaysOn) {
       WakelockPlus.disable();
       logger.debug('组件销毁，关闭屏幕常亮');
     }
-    
     super.dispose();
   }
 
@@ -101,8 +94,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
         final json = jsonDecode(widget.habit.descriptionJson!);
         // logger.debug('解析成功，JSON数据: $json');
         // 创建文档
-        final document = Document.fromJson(json);
-        
+        final document = Document.fromJson(json); 
         // 创建只读的QuillController
         descriptionController = QuillController(
             document: document,
@@ -123,7 +115,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     setState(() {
       _focusStatus = focusStatus;
       // 当状态变化时，同步一次时间
-      _elapsedTime = sl<FocusTrackingManager>().elapsedTime;
+      _elapsedTime = _focusManager.elapsedTime;
     });
   }
 
@@ -140,39 +132,27 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     // 先执行FocusState的操作，再更新UI状态，避免状态冲突
     if (_focusStatus == FocusStatus.run) {
       // 当前正在计时，需要暂停
-      sl<FocusTrackingManager>().pauseFocus();
-      
+      _focusManager.pauseFocus();
       logger.debug('暂停专注计时');
-      
     } else if (_focusStatus == FocusStatus.stop) {
-      sl<FocusTrackingManager>().startFocus(widget.habit, _selectedMode, _elapsedTime);
+      _focusManager.startFocus(widget.habit, _selectedMode, _elapsedTime);
     } else {
-      sl<FocusTrackingManager>().resumeFocus();
+      _focusManager.resumeFocus();
       logger.debug('恢复专注计时');
     }
   }
 
   // 重置计时器
   void _resetTimer() {
-
-    sl<FocusTrackingManager>().resetFocus();
+    _focusManager.resetFocus();
     logger.debug('重置计时器，新的持续时间: ${_timerDuration}分钟');
-    
   }
 
   // 处理倒计时结束
   void _onCountdownEnd() {
     // 重置倒计时结束标志
-    sl<FocusTrackingManager>().resetCountdownEndedFlag();
-    logger.debug('倒计时结束，当前模式: $_selectedMode');
-    
-    // 如果是番茄钟模式的工作时段结束，累加工作时长
-    if (_selectedMode == TrackingMode.pomodoro && 
-        sl<FocusTrackingManager>().pomodoroStatus == PomodoroStatus.work) {
-      _totalPomodoroWorkDuration += Duration(minutes: _workDuration);
-      logger.debug('累加工作时长，当前总时长: ${_totalPomodoroWorkDuration.inMinutes}分钟');
-    }
-    
+    _focusManager.resetCountdownEndedFlag();
+    logger.debug('倒计时结束，当前模式: $_selectedMode');    
     // 显示弹窗提示用户时间到了
     if (mounted) {
       _showTimeUpDialog();
@@ -208,17 +188,17 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
           title = '倒计时结束';
           content = '您的倒计时时间已结束！';
         } else if (_selectedMode == TrackingMode.pomodoro) {
-          final focusState = sl<FocusTrackingManager>();
+          final focusState = _focusManager;
           if (focusState.pomodoroStatus == PomodoroStatus.work) {
             title = '工作时段结束';
-            if (_currentRound < _pomodoroRounds) {
-              content = '准备开始$_shortBreakDuration分钟的短休息吗？';
+                    if (focusState.currentRound < focusState.pomodoroRounds) {
+              content = '准备开始${focusState.defaultShortBreakDuration}分钟的短休息吗？';
             } else {
-              content = '恭喜！您已完成全部$_pomodoroRounds轮番茄钟！';
+              content = '恭喜！您已完成全部${focusState.pomodoroRounds}轮番茄钟！';
             }
           } else if (focusState.pomodoroStatus == PomodoroStatus.shortBreak) {
             title = '短休息结束';
-            content = '准备开始第$_currentRound轮工作吗？';
+            content = '准备开始第${_focusManager.currentRound}轮工作吗？';
           }
         }
         
@@ -236,18 +216,18 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   logger.debug('用户确认倒计时结束');
                   
                   // 保存专注记录
-                  final duration = sl<FocusTrackingManager>().defaultTime;
+                  final duration = _focusManager.getFocusTime();
                   try {
                     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
                     habitProvider.stopTracking(widget.habit.id, duration).then((_) {
                       logger.debug('专注记录保存成功，时长: ${duration.inMinutes}分钟');
                       
                       // 显示成功提示
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('倒计时结束，专注记录已保存')),
-                        );
-                      }
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('已完成 ${widget.habit.name} 的专注计时，记录已保存')),
+                    );
+                  }
                     });
                   } catch (e) {
                     logger.error('保存专注记录失败', e);
@@ -258,90 +238,45 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                     }
                   }
                   
-                  // 结束专注
-                  sl<FocusTrackingManager>().endFocus();
                   if (mounted) {
                     setState(() {
                       _showSettings = true;
                     });
                   }
                 } else if (_selectedMode == TrackingMode.pomodoro) {
-                  // 番茄钟模式：用户确认后进入下一阶段
-                  logger.debug('用户确认番茄钟阶段结束，进入下一阶段');
-                  
-                  final focusState = sl<FocusTrackingManager>();
-                  if (focusState.pomodoroStatus == PomodoroStatus.work) {
-                    // 工作时段结束
-                    if (_currentRound <= _pomodoroRounds) {
-                      if (_currentRound < _pomodoroRounds) {
-                        // 不是最后一轮，进入短休息
-                        logger.debug('进入短休息时段');
-                        
-                        // 设置番茄钟状态为短休息
-                        focusState.setPomodoroStatus(PomodoroStatus.shortBreak);
-                        
-                        // 重置计时器为短休息时长
-                        _timerDuration = _shortBreakDuration;
-                        _elapsedTime = Duration(minutes: _timerDuration);
-                        
-                        // 开始短休息计时
-                        sl<FocusTrackingManager>().startFocus(widget.habit, _selectedMode, _elapsedTime);
-                      } else {
-                        // 最后一轮工作时段结束，完成全部番茄钟
-                        logger.debug('番茄钟全部完成');
-                        
-                        // 保存专注记录，使用累计的总工作时长
-                        final duration = _totalPomodoroWorkDuration;
-                        _totalPomodoroWorkDuration = Duration.zero;
-                        try {
-                          final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-                          habitProvider.stopTracking(widget.habit.id, duration).then((_) {
-                            logger.debug('番茄钟全部完成，记录已保存，总工作时长: ${duration.inMinutes}分钟');
-                            // 提示用户
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('恭喜！完成了全部$_pomodoroRounds轮番茄钟')),
-                              );
-                            }
-                          });
-                        } catch (e) {
-                          logger.error('保存番茄钟记录失败', e);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('保存番茄钟记录失败: $e')),
-                            );
-                          }
-                        }
-                        
-                        // 结束专注并重置状态
-                        sl<FocusTrackingManager>().endFocus();
+                  // 调用handlePromato方法
+                  if(_focusManager.handlePromato()) {
+                    try {
+                    // 获取总工作时长
+                      final duration = _focusManager.totalPomodoroWorkDuration;
+                      _focusManager.resetPomodoro();
+                      final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+                      habitProvider.stopTracking(widget.habit.id, duration).then((_) {
+                        logger.debug('番茄钟全部完成，记录已保存，总工作时长: ${duration.inMinutes}分钟');
+                        // 提示用户
                         if (mounted) {
-                          setState(() {
-                            _showSettings = true;
-                            _currentRound = 1; // 重置轮次
-                            _totalPomodoroWorkDuration = Duration.zero; // 重置总工作时长
-                          });
-                          logger.debug('番茄钟全部完成，重置总工作时长');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('恭喜！完成了全部${_focusManager.pomodoroRounds}轮番茄钟')),
+                          );
                         }
+                      });
+                    } catch (e) {
+                      logger.error('保存番茄钟记录失败', e);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('保存番茄钟记录失败: $e')),
+                        );
                       }
                     }
-                  } else if (focusState.pomodoroStatus == PomodoroStatus.shortBreak) {
-                    // 短休息结束，进入下一轮工作
-                    logger.debug('短休息结束，进入下一轮工作');
-                    
-                    // 设置番茄钟状态为工作
-                    focusState.setPomodoroStatus(PomodoroStatus.work);
-                    
-                    // 增加轮次计数
-                    _currentRound++;
-                    
-                    // 重置计时器为工作时长
-                    _timerDuration = _workDuration;
-                    _elapsedTime = Duration(minutes: _timerDuration);
-                    
-                    // 开始下一轮工作计时
-                    sl<FocusTrackingManager>().startFocus(widget.habit, _selectedMode, _elapsedTime);
                   }
+                    
+                  if (mounted) {
+                    setState(() {
+                      _showSettings = true;
+                    });
+                    logger.debug('番茄钟全部完成，重置总工作时长');
+                  }
+
                 } else {
                   // 其他模式：不进入下一阶段，只关闭弹窗
                   logger.debug('非倒计时和番茄钟模式，不进入下一阶段');
@@ -375,7 +310,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               onPressed: () async {
                 logger.debug('用户选择不保存停止计时');
                 // 结束专注，但不保存记录
-                sl<FocusTrackingManager>().endFocus();
+                _focusManager.endFocus();
                 setState(() {
                   _showSettings = true;
                 });
@@ -388,7 +323,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 logger.debug('用户选择保存并停止计时');
                 
                 // 获取专注时长
-                final duration = sl<FocusTrackingManager>().elapsedTime;
+                final duration = _focusManager.getFocusTime();
+                logger.debug('尝试保存专注记录，时长: ${duration.inMinutes}分钟');
                 
                 // 保存专注记录
                 try {
@@ -403,8 +339,6 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   );
                 }
                 
-                // 结束专注
-                sl<FocusTrackingManager>().endFocus();
                 setState(() {
                   _showSettings = true;
                 });
@@ -421,24 +355,25 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
 
   // 显示番茄钟设置对话框 - 使用独立组件
   void _showPomodoroSettingsDialog() {
-    logger.debug('调用_showPomodoroSettingsDialog，当前设置：工作时长=$_workDuration, 休息时长=$_shortBreakDuration, 轮数=$_pomodoroRounds');
+    logger.debug('调用_showPomodoroSettingsDialog，当前设置：工作时长=${_focusManager.defaultWorkDuration}, 休息时长=${_focusManager.defaultShortBreakDuration}, 轮数=${_focusManager.pomodoroRounds}');
     PomodoroSettingsDialog.show(
       context: context,
-      workDuration: _workDuration,
-      shortBreakDuration: _shortBreakDuration,
-      pomodoroRounds: _pomodoroRounds,
+      workDuration: _focusManager.defaultWorkDuration,
+      shortBreakDuration: _focusManager.defaultShortBreakDuration,
+      pomodoroRounds: _focusManager.pomodoroRounds,
       isPomodoroMode: _selectedMode == TrackingMode.pomodoro,
       isSettingsVisible: _showSettings,
       onSettingsChanged: (workDuration, shortBreakDuration, pomodoroRounds, timerDuration) {
         logger.debug('onSettingsChanged被调用：工作时长=$workDuration, 休息时长=$shortBreakDuration, 轮数=$pomodoroRounds, 计时器时长=$timerDuration');
         setState(() {
-          // 更新实际的设置变量
-          _workDuration = workDuration;
-          _shortBreakDuration = shortBreakDuration;
-          _pomodoroRounds = pomodoroRounds;
+          // 更新FocusTrackingManager中的设置变量
+          _focusManager.defaultWorkDuration = workDuration;
+          _focusManager.defaultShortBreakDuration = shortBreakDuration;
+          _focusManager.pomodoroRounds = pomodoroRounds;
           // 立即更新计时器时长，确保UI变化
           _timerDuration = timerDuration;
-          logger.debug('设置更新完成：工作时长=$_workDuration, 休息时长=$_shortBreakDuration, 轮数=$_pomodoroRounds, 计时器时长=$_timerDuration');
+          
+          logger.debug('设置更新完成：工作时长=${_focusManager.defaultWorkDuration}, 休息时长=${_focusManager.defaultShortBreakDuration}, 轮数=${_focusManager.pomodoroRounds}, 计时器时长=$_timerDuration');
         });
       },
     );
@@ -450,22 +385,6 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
       onPressed: () {
         setState(() {
           _selectedMode = mode;
-          // 根据不同模式设置默认时长
-          if (mode == TrackingMode.stopwatch) {
-            _timerDuration = 0;
-          } else if (mode == TrackingMode.countdown) {
-            _timerDuration = 25;
-          } else if (mode == TrackingMode.pomodoro) {
-            _timerDuration = _workDuration;
-            _currentRound = 1; // 重置轮次
-          }
-          
-          // 切换模式时重置番茄钟总工作时长
-          if (mode != TrackingMode.pomodoro) {
-            _totalPomodoroWorkDuration = Duration.zero;
-          }
-          
-          logger.debug('选择模式: $label');
         });
       },
       style: ElevatedButton.styleFrom(
@@ -510,6 +429,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 onDurationChanged: (duration) {
                   setState(() {
                     _timerDuration = duration.inMinutes;
+                    _focusManager.defaultWorkDuration = duration.inMinutes;
+                    logger.debug('时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟');
                   });
                 },
                 trackingMode: _selectedMode,
@@ -637,17 +558,17 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                           
                           // 对于番茄钟模式，如果是从设置界面开始，重置总工作时长
                           if (_selectedMode == TrackingMode.pomodoro && _showSettings) {
-                            _totalPomodoroWorkDuration = Duration.zero;
-                            _currentRound = 1;
+                            _focusManager.totalPomodoroWorkDuration = Duration.zero;
+                            _focusManager.currentRound = 1;
                             logger.debug('开始新的番茄钟会话，重置总工作时长');
                             
                             // 设置番茄钟状态为工作
-                            sl<FocusTrackingManager>().setPomodoroStatus(PomodoroStatus.work);
+                            _focusManager.setPomodoroStatus(PomodoroStatus.work);
                           }
                           
                           // 自动开始计时
                           if (_focusStatus == FocusStatus.stop) {
-                            sl<FocusTrackingManager>().startFocus(widget.habit, _selectedMode, _elapsedTime);
+                            _focusManager.startFocus(widget.habit, _selectedMode, _elapsedTime);
                           }
                         });
                       },
@@ -720,6 +641,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   onDurationChanged: (duration) {
                     setState(() {
                       _elapsedTime = duration;
+                      _focusManager.defaultWorkDuration = duration.inMinutes;
+                      logger.debug('时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟');
                     });
                   },
                   trackingMode: _selectedMode,
@@ -776,8 +699,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               // 显示番茄钟信息
               if (_selectedMode == TrackingMode.pomodoro) ...[
                 Text(
-                  sl<FocusTrackingManager>().pomodoroStatus == PomodoroStatus.work
-                    ? '工作时段 ${_currentRound.toString().padLeft(2, '0')}/${_pomodoroRounds.toString().padLeft(2, '0')}'
+                  _focusManager.pomodoroStatus == PomodoroStatus.work
+                    ? '工作时段 ${_focusManager.currentRound.toString().padLeft(2, '0')}/${_focusManager.pomodoroRounds.toString().padLeft(2, '0')}'
                     : '短休息中',
                   style: ThemeHelper.textStyleWithTheme(
                     context,
@@ -871,7 +794,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   @override
   Widget build(BuildContext context) {
     // 检查倒计时是否已结束，如果是，则调用_onCountdownEnd方法
-    if (sl<FocusTrackingManager>().isCountdownEnded) {
+    if (_focusManager.isCountdownEnded) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _onCountdownEnd();
       });

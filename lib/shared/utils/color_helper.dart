@@ -42,10 +42,10 @@ class ColorHelper {
   static Future<void> addCustomColor(Color color) async {
     // 检查是否已经存在相同的颜色
     final customColors = await getCustomColors();
-    if (customColors.any((c) => c.value == color.value)) {
+    if (customColors.any((c) => c.toARGB32() == color.toARGB32())) {
       return; // 如果颜色已存在，不重复添加
     }
-    if (_predefinedColors.any((c) => c.value == color.value)) {
+    if (_predefinedColors.any((c) => c.toARGB32() == color.toARGB32())) {
       return; // 如果是预定义颜色，不添加
     }
 
@@ -54,20 +54,20 @@ class ColorHelper {
     
     // 保存到SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final List<String> colorValues = customColors.map((c) => c.value.toString()).toList();
+    final List<String> colorValues = customColors.map((c) => c.toARGB32().toString()).toList();
     await prefs.setStringList(_customColorsKey, colorValues);
   }
 
   // 删除自定义颜色
   static Future<void> removeCustomColor(Color color) async {
     // 检查是否是预定义颜色
-    if (_predefinedColors.any((c) => c.value == color.value)) {
+    if (_predefinedColors.any((c) => c.toARGB32() == color.toARGB32())) {
       return; // 不能删除预定义颜色
     }
 
     // 从自定义颜色列表中删除
     final customColors = await getCustomColors();
-    customColors.removeWhere((c) => c.value == color.value);
+    customColors.removeWhere((c) => c.toARGB32() == color.toARGB32());
     
     // 保存到SharedPreferences
     final prefs = await SharedPreferences.getInstance();
@@ -77,13 +77,13 @@ class ColorHelper {
 
   // 判断是否是预定义颜色
   static bool isPredefinedColor(Color color) {
-    return _predefinedColors.any((option) => option.value == color.value);
+    return _predefinedColors.any((option) => option.toARGB32() == color.toARGB32());
   }
 
   // 从预定义颜色中获取颜色，如果不存在则返回默认颜色
   static Color getPredefinedColorByValue(int colorValue, {Color defaultColor = Colors.blue}) {
     for (var color in _predefinedColors) {
-      if (color.value == colorValue) {
+      if (color.toARGB32() == colorValue) {
         return color;
       }
     }

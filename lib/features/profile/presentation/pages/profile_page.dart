@@ -508,10 +508,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             // 关闭并删除habits数据库
                             await Hive.box<Habit>('habits').clear();
                             
-                            // 清除专注状态单例中的内存状态
-                            final focusState = sl<FocusTrackingManager>();
-                            focusState.endFocus();
-                            
                             // 重新加载习惯数据，确保内存中的数据与数据库一致
                             final habitProvider = Provider.of<HabitProvider>(context, listen: false);
                             await habitProvider.loadHabits();
