@@ -129,9 +129,16 @@ class _StatsResultPageState extends State<StatsResultPage> {
         [
           Text('习惯目标完成度', style: TextStyle(fontSize: StatsShareResultPageConstants.sectionTitleFontSize, fontWeight: FontWeight.bold)),
           SizedBox(height: StatsShareResultPageConstants.titleChartSpacing),
-          SizedBox(
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.9, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+            builder: (_, scale, child) => Transform.scale(scale: scale, child: child),
+            child: SizedBox(
             height: StatsShareResultPageConstants.chartHeight,
-            child: BarChart(
+            child: Semantics(
+              label: '习惯目标完成度柱状图',
+              child: BarChart(
               BarChartData(
                 barGroups: barGroups,
                 alignment: BarChartAlignment.spaceAround,
@@ -145,10 +152,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         final index = value.toInt();
                         if (index >= 0 && index < goalCompletionData.length) {
                           return SizedBox(
-                            width: ScreenUtil().setWidth(60),
+                            width: ScreenUtil().setWidth(72),
                             child: Text(
                               goalCompletionData[index]['name'].toString(),
-                              style: TextStyle(fontSize: StatsShareResultPageConstants.axisLabelFontSize),
+                              style: TextStyle(fontSize: StatsShareResultPageConstants.axisLabelFontSize, color: ThemeHelper.onBackground(context)),
                               textAlign: TextAlign.center,
                               maxLines: 2,
                             ),
@@ -156,7 +163,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         }
                         return const SizedBox();
                       },
-                      reservedSize: 40,
+                      reservedSize: ScreenUtil().setWidth(48),
                     ),
                   ),
                   leftTitles: AxisTitles(
@@ -165,20 +172,34 @@ class _StatsResultPageState extends State<StatsResultPage> {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           '${(value * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(fontSize: StatsShareResultPageConstants.axisLabelFontSize),
+                          style: TextStyle(fontSize: StatsShareResultPageConstants.axisLabelFontSize, color: ThemeHelper.onBackground(context)),
                         );
                       },
-                      reservedSize: 40,
+                      reservedSize: ScreenUtil().setWidth(48),
                     ),
                   ),
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(show: true, drawHorizontalLine: true, drawVerticalLine: false, horizontalInterval: 0.25, getDrawingHorizontalLine: (value) => FlLine(color: Colors.black.withOpacity(0.06), strokeWidth: ScreenUtil().setWidth(1))),
                 borderData: FlBorderData(show: false),
-                barTouchData: BarTouchData(enabled: true),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final name = goalCompletionData[group.x]['name'];
+                      final pct = (rod.toY * 100).toStringAsFixed(0);
+                      return BarTooltipItem(
+                        '$name\n$pct%',
+                        TextStyle(color: ThemeHelper.onBackground(context), fontSize: ScreenUtil().setSp(14), fontWeight: FontWeight.bold),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
+            ),
+          ),
           ),
         ],
     );

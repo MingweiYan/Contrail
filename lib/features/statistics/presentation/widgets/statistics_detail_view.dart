@@ -119,11 +119,16 @@ class StatisticsDetailView extends StatelessWidget {
                 final habit = entry.value;
                 final isVisible = index < isHabitVisible.length && isHabitVisible[index];
                     
-                return GestureDetector(
+                return Semantics(
+                  label: '切换显示: ${habit.name}',
+                  button: true,
+                  child: GestureDetector(
                   onTap: () {
                     statisticsProvider.toggleHabitVisibility(index);
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
                     padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(6)),
                     decoration: BoxDecoration(
                       color: isVisible ? habit.color : Colors.grey.shade200,
@@ -132,7 +137,25 @@ class StatisticsDetailView extends StatelessWidget {
                         color: isVisible ? habit.color : Colors.grey.shade300,
                         width: ScreenUtil().setWidth(2),
                       ),
+                      boxShadow: isVisible
+                          ? [
+                              BoxShadow(
+                                color: habit.color.withOpacity(0.25),
+                                spreadRadius: 2,
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                spreadRadius: 1,
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                     ),
+                    constraints: BoxConstraints(minHeight: ScreenUtil().setWidth(40)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -148,13 +171,14 @@ class StatisticsDetailView extends StatelessWidget {
                         Text(
                           habit.name,
                           style: TextStyle(
-                            color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade600,
+                            color: isVisible ? ThemeHelper.onPrimary(context) : ThemeHelper.onBackground(context).withOpacity(0.8),
                             fontSize: StatisticsDetailViewConstants.legendFontSize,
                           ),
                         ),
                       ],
                     ),
                   ),
+                ),
                 );
               }).toList(),
             ),

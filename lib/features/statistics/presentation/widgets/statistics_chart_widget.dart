@@ -125,18 +125,39 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
               ],
             ),
             padding: StatisticsChartWidgetConstants.containerPadding,
-            child: Container(
-              height: chartHeight,
-              width: double.infinity,
-              child: LineChart(
-                _createLineChartData(
-                  filteredCountData.isEmpty ? countData : filteredCountData,
-                  titles,
-                  'count',
-                  habitNames,
-                  habitColors,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: chartHeight,
+                  width: double.infinity,
+                  child: Semantics(
+                    label: '习惯完成次数统计折线图，点击数据点查看提示',
+                    child: LineChart(
+                      _createLineChartData(
+                        filteredCountData.isEmpty ? countData : filteredCountData,
+                        titles,
+                        'count',
+                        habitNames,
+                        habitColors,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info_outline, size: ScreenUtil().setSp(14), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
+                      SizedBox(width: ScreenUtil().setWidth(6)),
+                      Text(
+                        '提示：点击数据点查看详细值',
+                        style: TextStyle(fontSize: ScreenUtil().setSp(12), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           
@@ -169,18 +190,39 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
               ],
             ),
             padding: StatisticsChartWidgetConstants.containerPadding,
-            child: Container(
-              height: chartHeight,
-              width: double.infinity,
-              child: LineChart(
-                _createLineChartData(
-                  filteredTimeData.isEmpty ? timeData : filteredTimeData,
-                  titles,
-                  'time',
-                  habitNames,
-                  habitColors,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: chartHeight,
+                  width: double.infinity,
+                  child: Semantics(
+                    label: '习惯专注时间统计折线图，点击数据点查看提示',
+                    child: LineChart(
+                      _createLineChartData(
+                        filteredTimeData.isEmpty ? timeData : filteredTimeData,
+                        titles,
+                        'time',
+                        habitNames,
+                        habitColors,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info_outline, size: ScreenUtil().setSp(14), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
+                      SizedBox(width: ScreenUtil().setWidth(6)),
+                      Text(
+                        '提示：点击数据点查看详细值',
+                        style: TextStyle(fontSize: ScreenUtil().setSp(12), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           
@@ -339,7 +381,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 30,
+            reservedSize: ScreenUtil().setWidth(36),
             getTitlesWidget: (value, meta) {
               if (value.toInt() < titles.length) {
                 return Padding(
@@ -363,7 +405,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 40,
+            reservedSize: ScreenUtil().setWidth(48),
             interval: chartType == 'count' ? 1 : maxY / 5,
             getTitlesWidget: (value, meta) {
               if (value == meta.min || value == meta.max || value % (chartType == 'count' ? 1 : maxY / 5) < 0.01) {
@@ -384,7 +426,14 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       ),
       // 网格线配置 - 关闭背景虚线
       gridData: FlGridData(
-        show: false,
+        show: true,
+        drawHorizontalLine: true,
+        drawVerticalLine: false,
+        horizontalInterval: chartType == 'count' ? 1 : maxY / 5,
+        getDrawingHorizontalLine: (value) => FlLine(
+          color: ThemeHelper.outline(context).withValues(alpha: 0.06),
+          strokeWidth: ScreenUtil().setWidth(1),
+        ),
       ),
       // 边框配置 - 只显示底部和左侧边框
       borderData: FlBorderData(

@@ -204,7 +204,6 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: ProfilePageConstants.userInfoPadding,
             child: Column(
               children: [
-                // 头像容器带有阴影效果
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -215,21 +214,49 @@ class _ProfilePageState extends State<ProfilePage> {
                         blurRadius: 6,
                         offset: const Offset(0, 4),
                       ),
+                      BoxShadow(
+                        color: ThemeHelper.primary(context).withOpacity(0.25),
+                        spreadRadius: 6,
+                        blurRadius: 12,
+                        offset: const Offset(0, 0),
+                      ),
                     ],
                   ),
-                  child: GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: ProfilePageConstants.avatarRadius,
-                      backgroundImage: _avatarPath != null && _avatarPath!.isNotEmpty
-                          ? FileImage(File(_avatarPath!))
-                          : null,
-                      backgroundColor: ThemeHelper.primary(context).withOpacity(0.1),
-                      child: (_avatarPath == null || _avatarPath!.isEmpty)
-                          ? ThemeHelper.styledIcon(context, Icons.person, size: ProfilePageConstants.avatarIconSize, color: ThemeHelper.primary(context))
-                          : null,
+                  child: Semantics(
+                    label: '更换头像',
+                    button: true,
+                    child: Tooltip(
+                      message: '点击头像更换头像',
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: CircleAvatar(
+                          radius: ProfilePageConstants.avatarRadius,
+                          backgroundImage: _avatarPath != null && _avatarPath!.isNotEmpty
+                              ? FileImage(File(_avatarPath!))
+                              : null,
+                          backgroundColor: ThemeHelper.primary(context).withOpacity(0.1),
+                          child: (_avatarPath == null || _avatarPath!.isEmpty)
+                              ? ThemeHelper.styledIcon(context, Icons.person, size: ProfilePageConstants.avatarIconSize, color: ThemeHelper.primary(context))
+                              : null,
+                        ),
+                      ),
                     ),
                   ),
+                ),
+                SizedBox(height: ScreenUtil().setHeight(8)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.info_outline, size: ScreenUtil().setSp(16), color: ThemeHelper.onBackground(context).withOpacity(0.6)),
+                    SizedBox(width: ScreenUtil().setWidth(6)),
+                    Text(
+                      '点击头像更换头像',
+                      style: TextStyle(
+                        fontSize: ScreenUtil().setSp(14),
+                        color: ThemeHelper.onBackground(context).withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: ProfilePageConstants.avatarUsernameSpacing),
                 // 用户名输入框带有自定义样式
@@ -306,6 +333,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   child: ListTile(
+                    leading: Container(
+                      width: ScreenUtil().setWidth(40),
+                      height: ScreenUtil().setWidth(40),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.color_lens, color: ThemeHelper.primary(context)),
+                    ),
                     title: Text('主题设置', style: TextStyle(
                       fontSize: ProfilePageConstants.listTileTitleFontSize,
                       fontWeight: FontWeight.w500,
@@ -330,6 +366,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 
                 // 个性化设置
                 ListTile(
+                  leading: Container(
+                    width: ScreenUtil().setWidth(40),
+                    height: ScreenUtil().setWidth(40),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.tune, color: ThemeHelper.primary(context)),
+                  ),
                   title: Text('个性化设置', style: TextStyle(
                     fontSize: ProfilePageConstants.listTileTitleFontSize,
                     fontWeight: FontWeight.w500,
@@ -354,6 +399,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 // 数据备份
                 ListTile(
+                  leading: Container(
+                    width: ScreenUtil().setWidth(40),
+                    height: ScreenUtil().setWidth(40),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.cloud_upload, color: ThemeHelper.primary(context)),
+                  ),
                   title: Text('数据备份', style: TextStyle(
                     fontSize: ProfilePageConstants.listTileTitleFontSize,
                     fontWeight: FontWeight.w500,
@@ -377,6 +431,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 // 关于
                 ListTile(
+                  leading: Container(
+                    width: ScreenUtil().setWidth(40),
+                    height: ScreenUtil().setWidth(40),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.info_outline, color: ThemeHelper.primary(context)),
+                  ),
                   title: Text('关于', style: TextStyle(
                     fontSize: ProfilePageConstants.listTileTitleFontSize,
                     fontWeight: FontWeight.w500,
