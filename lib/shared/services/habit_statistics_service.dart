@@ -1,59 +1,13 @@
 import 'dart:math';
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/habit.dart';
 import '../models/cycle_type.dart';
 import '../../features/profile/presentation/providers/personalization_provider.dart';
+import 'package:contrail/shared/utils/time_management_util.dart';
 
 class HabitStatisticsService {
-  /// 获取习惯在指定日期的总持续时间
-  /// 
-  /// 参数:
-  /// - habit: 要获取统计的习惯对象
-  /// - date: 要查询的日期
-  /// 
-  /// 返回值:
-  /// - 指定日期的总持续时间
-  Duration getTotalDurationForDay(Habit habit, DateTime date) {
-    final targetDate = DateTime(date.year, date.month, date.day);
-    Duration total = Duration.zero;
 
-    // 遍历所有记录，累加目标日期的持续时间
-    habit.trackingDurations.forEach((recordDate, durations) {
-      final recordDateOnly = DateTime(recordDate.year, recordDate.month, recordDate.day);
-      if (recordDateOnly == targetDate) {
-        total += durations.fold(
-          Duration.zero,
-          (sum, duration) => sum + duration,
-        );
-      }
-    });
-
-    return total;
-  }
-
-  /// 获取习惯在指定日期所在周的总持续时间
-  /// 
-  /// 参数:
-  /// - habit: 要获取统计的习惯对象
-  /// - date: 要查询的日期，用于确定周范围
-  /// - weekStartDay: 周起始日设置，默认为周一
-  /// 
-  /// 返回值:
-  /// - 指定日期所在周的总持续时间
-  Duration getTotalDurationForWeek(Habit habit, DateTime date, {WeekStartDay weekStartDay = WeekStartDay.monday}) {
-    // 根据周起始日计算本周的开始日期
-    final startOfWeek = _getWeekStartDate(date, weekStartDay);
-    Duration total = Duration.zero;
-
-    for (int i = 0; i < 7; i++) {
-      final currentDate = startOfWeek.add(Duration(days: i));
-      total += getTotalDurationForDay(habit, currentDate);
-    }
-
-    return total;
-  }
   
   /// 获取指定日期所在周的开始日期
   /// 根据周起始日参数确定一周的开始
@@ -340,363 +294,55 @@ class HabitStatisticsService {
     };
   }
 
-  // 生成鼓励用户的文本
-  String generateEncouragementMessage(double completionRate) {
-    if (completionRate >= 1.0) {
-      return '太棒了！你完美完成了所有目标！继续保持！';
-    } else if (completionRate >= 0.8) {
-      return '做得很好！你已经完成了大部分目标，再接再厉！';
-    } else if (completionRate >= 0.6) {
-      return '不错的进步！继续努力，你会做得更好！';
-    } else if (completionRate >= 0.3) {
-      return '已经开始了，继续坚持，你一定能达成目标！';
-    } else {
-      return '别灰心，新的一周/月是新的开始，加油！';
-    }
-  }
-  
-  // 生成统一的统计报告通知内容
-  String generateReportContent(Map<String, dynamic> statistics) {
-    final cycleType = statistics['cycleType'] as CycleType;
-    final formatter = DateFormat('yyyy-MM-dd');
-      final monthFormatter = DateFormat('yyyy年MM月');
-    
-    String content;
-    String avgRate = (statistics['averageCompletionRate'] * 100).toStringAsFixed(0);
-    String encouragement = generateEncouragementMessage(statistics['averageCompletionRate']);
-    
-    // 根据周期类型生成不同的标题和日期格式
-    if (cycleType == CycleType.weekly) {
-      final startDateStr = formatter.format(statistics['startDate']);
-      final endDateStr = formatter.format(statistics['endDate']);
-      content = '$startDateStr 至 $endDateStr\n';
-    } else if (cycleType == CycleType.annual) {
-      final startMonthStr = monthFormatter.format(statistics['startDate']);
-      final endMonthStr = monthFormatter.format(statistics['endDate']);
-      content = '$startMonthStr 至 $endMonthStr 习惯总结\n';
-    } else {
-      final monthStr = monthFormatter.format(statistics['startDate']);
-      content = '$monthStr 习惯总结\n';
-    }
-    
-    // 添加上下文相关的完成情况统计
-    content += '平均完成率: $avgRate%\n';
-    
-    // 统计不同周期类型习惯的完成情况
-    final Map<String, Map<String, dynamic>> detailedCompletion = 
-        statistics['detailedCompletion'] as Map<String, Map<String, dynamic>>;
-    
-    // 按习惯周期类型分组统计
-    Map<CycleType, List<String>> cycleTypeStats = {}
-      ..[CycleType.daily] = []
-      ..[CycleType.weekly] = []
-      ..[CycleType.monthly] = []
-      ..[CycleType.annual] = [];
-    
-    detailedCompletion.forEach((habitName, stats) {
-      // 这里需要从习惯对象中获取周期类型
-      // 由于我们只有名称，这里简化处理
-      // 实际应用中需要关联到具体的习惯对象
-      // 暂时根据统计结果判断
-      if (stats['totalRequiredDays'] > 0) {
-        // 默认按每日习惯处理
-        cycleTypeStats[CycleType.daily]?.add(habitName);
-      }
-    });
-    
-    // 添加上下文相关的习惯完成情况
-    if (cycleType == CycleType.weekly) {
-      // 周报告强调每日和每周习惯
-      if (cycleTypeStats[CycleType.daily]?.isNotEmpty ?? false) {
-        content += '\n每日习惯表现:\n';
-        cycleTypeStats[CycleType.daily]?.forEach((habitName) {
-          if (detailedCompletion.containsKey(habitName)) {
-            final habitRate = (detailedCompletion[habitName]!['completionRate'] * 100).toStringAsFixed(0);
-            content += '- $habitName: $habitRate%\n';
-          }
-        });
-      }
-    } else if (cycleType == CycleType.annual) {
-      // 年报告强调所有类型习惯
-      if (detailedCompletion.isNotEmpty) {
-        content += '\n各习惯年度完成情况:\n';
-        detailedCompletion.forEach((habitName, stats) {
-          if (stats['completionRate'] > 0) {
-            final habitRate = (stats['completionRate'] * 100).toStringAsFixed(0);
-            content += '- $habitName: $habitRate%\n';
-          }
-        });
-      }
-    } else {
-      // 月报告强调所有类型习惯
-      if (detailedCompletion.isNotEmpty) {
-        content += '\n各习惯完成情况:\n';
-        detailedCompletion.forEach((habitName, stats) {
-          if (stats['completionRate'] > 0) {
-            final habitRate = (stats['completionRate'] * 100).toStringAsFixed(0);
-            content += '- $habitName: $habitRate%\n';
-          }
-        });
-      }
-    }
-    
-    // 添加表现最佳的习惯（如果有）
-    if (statistics['topHabits'].isNotEmpty) {
-      content += '\n表现最佳的习惯:\n';
-      statistics['topHabits'].forEach((name, rate) {
-        final habitRate = (rate * 100).toStringAsFixed(0);
-        content += '- $name: $habitRate%'; // 添加上百分比符号并修正格式
-      });
-    }
-    
-    content += '\n$encouragement';
-    
-    return content;
-  }
 
-  // 生成周报告通知内容（调用统一方法）
-  String generateWeeklyReportContent(Map<String, dynamic> statistics) {
-    return generateReportContent(statistics);
-  }
-
-  // 生成月报告通知内容（调用统一方法）
-  String generateMonthlyReportContent(Map<String, dynamic> statistics) {
-    return generateReportContent(statistics);
-  }
   
-  // 生成年度报告通知内容（调用统一方法）
-  String generateYearlyReportContent(Map<String, dynamic> statistics) {
-    return generateReportContent(statistics);
-  }
   
-  // 计算单个习惯在当前周期内的完成情况
-  Map<String, dynamic> calculateHabitStats(Habit habit, String timeRange) {
-    final now = DateTime.now();
-    DateTime startDate, endDate;
-    int totalRequiredDays = 0;
-    int completedDays = 0;
-    
-    // 根据习惯的目标类型和选择的时间范围确定统计时间段
-    if (habit.cycleType == CycleType.weekly) {
-      // 周目标：固定显示本周进展，考虑用户设置的周起始日
-      // 这里使用默认值，实际应用中可以通过Provider获取用户设置
-      WeekStartDay weekStartDay = WeekStartDay.monday;
-      startDate = _getWeekStartDate(now, weekStartDay);
-      endDate = startDate.add(const Duration(days: 6));
-      totalRequiredDays = habit.targetDays ?? 3; // 每周目标天数
-    } else if (habit.cycleType == CycleType.monthly) {
-      // 月目标：固定显示本月进展
-      startDate = DateTime(now.year, now.month, 1);
-      endDate = DateTime(now.year, now.month + 1, 0);
-      totalRequiredDays = habit.targetDays ?? 1; // 每月目标天数
-    } else {
-      // 对于每日和年度目标，保持与趋势按钮联动的逻辑
-      if (timeRange == 'week') {
-        startDate = now.subtract(Duration(days: now.weekday - 1));
-        endDate = startDate.add(const Duration(days: 6));
-        
-        if (habit.cycleType == CycleType.daily) {
-          totalRequiredDays = 7; // 每周7天
-        }
-      } else if (timeRange == 'month') {
-        startDate = DateTime(now.year, now.month, 1);
-        endDate = DateTime(now.year, now.month + 1, 0);
-        
-        if (habit.cycleType == CycleType.daily) {
-          totalRequiredDays = endDate.day; // 当月总天数
-        }
-      } else { // year
-        startDate = DateTime(now.year, 1, 1);
-        endDate = now;
-        
-        if (habit.cycleType == CycleType.daily) {
-          totalRequiredDays = now.difference(startDate).inDays + 1;
-        }
-      }
-    }
-    
-    // 计算已完成的天数
-    habit.dailyCompletionStatus.forEach((date, isCompleted) {
-      final dateOnly = DateTime(date.year, date.month, date.day);
-      if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
-          dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
-          isCompleted) {
-        completedDays++;
-      }
-    });
-    
-    return {
-      'completedDays': completedDays,
-      'totalRequiredDays': totalRequiredDays,
-      'remainingDays': max(0, totalRequiredDays - completedDays),
-      'completionRate': totalRequiredDays > 0 ? completedDays / totalRequiredDays : 0.0
-    };
-  }
   
 
   
-  // 生成次数趋势图数据
-  List<FlSpot> generateCountTrendData(Habit habit, String timeRange) {
-    final now = DateTime.now();
-    final List<FlSpot> spots = [];
-    
-    if (timeRange == 'week') {
-      // 生成周次数趋势数据
-      for (int i = 0; i < 7; i++) {
-        final date = now.subtract(Duration(days: 6 - i));
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        final isCompleted = habit.dailyCompletionStatus.containsKey(dateOnly) &&
-                           habit.dailyCompletionStatus[dateOnly] == true;
-        
-        spots.add(FlSpot(i.toDouble(), isCompleted ? 1.0 : 0.0));
-      }
-    } else if (timeRange == 'month') {
-      // 生成月次数趋势数据（按周显示）
-      final weeksInMonth = (DateTime(now.year, now.month + 1, 0).day / 7).ceil();
-      for (int i = 0; i < weeksInMonth; i++) {
-        final weekStart = DateTime(now.year, now.month, 1).add(Duration(days: i * 7));
-        int weekCompleted = 0;
-        
-        for (int j = 0; j < 7; j++) {
-          final date = weekStart.add(Duration(days: j));
-          if (date.month != now.month) break;
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-              habit.dailyCompletionStatus[dateOnly] == true) {
-            weekCompleted++;
-          }
-        }
-        
-        spots.add(FlSpot(i.toDouble(), weekCompleted.toDouble()));
-      }
-    } else { // year
-      // 生成年次数趋势数据（按月份显示）
-      for (int i = 1; i <= now.month; i++) {
-        int monthCompleted = 0;
-        final daysInMonth = DateTime(now.year, i + 1, 0).day;
-        
-        for (int j = 1; j <= daysInMonth; j++) {
-          final date = DateTime(now.year, i, j);
-          if (date.isAfter(now)) break;
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          
-          if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-              habit.dailyCompletionStatus[dateOnly] == true) {
-            monthCompleted++;
-          }
-        }
-        
-        spots.add(FlSpot((i - 1).toDouble(), monthCompleted.toDouble()));
-      }
-    }
-   return spots;
-  }
   
-  // 生成时间趋势图数据
-  List<FlSpot> generateTimeTrendData(Habit habit, String timeRange) {
-    final now = DateTime.now();
-    final List<FlSpot> spots = [];
-    
-    if (timeRange == 'week') {
-      // 考虑用户设置的周起始日
-      WeekStartDay weekStartDay = WeekStartDay.monday;
-      // 获取本周的开始日期
-      final weekStart = _getWeekStartDate(now, weekStartDay);
-      
-      for (int i = 0; i < 7; i++) {
-        final date = weekStart.add(Duration(days: i));
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        int duration = 0;
-        
-        if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-            habit.dailyCompletionStatus[dateOnly] == true) {
-          duration = 30; // 假设每次完成专注30分钟
-        }
-        
-        spots.add(FlSpot(i.toDouble(), duration.toDouble()));
-      }
-    } else if (timeRange == 'month') {
-      final weeksInMonth = (DateTime(now.year, now.month + 1, 0).day / 7).ceil();
-      for (int i = 0; i < weeksInMonth; i++) {
-        final weekStart = DateTime(now.year, now.month, 1).add(Duration(days: i * 7));
-        int weekDuration = 0;
-        
-        for (int j = 0; j < 7; j++) {
-          final date = weekStart.add(Duration(days: j));
-          if (date.month != now.month) break;
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          
-          if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-              habit.dailyCompletionStatus[dateOnly] == true) {
-            weekDuration += 30;
-          }
-        }
-        
-        spots.add(FlSpot(i.toDouble(), weekDuration.toDouble()));
-      }
-    } else { // year
-      for (int i = 1; i <= now.month; i++) {
-        int monthDuration = 0;
-        final daysInMonth = DateTime(now.year, i + 1, 0).day;
-        
-        for (int j = 1; j <= daysInMonth; j++) {
-          final date = DateTime(now.year, i, j);
-          if (date.isAfter(now)) break;
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          
-          if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-              habit.dailyCompletionStatus[dateOnly] == true) {
-            monthDuration += 30;
-          }
-        }
-        
-        spots.add(FlSpot((i - 1).toDouble(), monthDuration.toDouble()));
-      }
-    }
-    
-    return spots;
-  }
-  
-  /// 生成图表标题数据
-  List<String> generateTitlesData(String timeRange) {
-    final now = DateTime.now();
+  /// 生成图表标题数据（支持选中时间与周起始日）
+  List<String> generateTitlesData(
+    String timeRange, {
+    int? selectedYear,
+    int? selectedMonth,
+    int? selectedWeek,
+    WeekStartDay weekStartDay = WeekStartDay.monday,
+  }) {
     final List<String> titles = [];
+    final now = DateTime.now();
+    final year = selectedYear ?? now.year;
+    final week = selectedWeek ?? TimeManagementUtil.getWeekNumber(now, weekStartDay: weekStartDay);
     
     if (timeRange == 'week') {
-      // 生成周标题（周一到周日）
+      final range = TimeManagementUtil.getWeekDateRange(year, week, weekStartDay: weekStartDay);
       for (int i = 0; i < 7; i++) {
-        final date = now.subtract(Duration(days: 6 - i));
+        final date = range.start.add(Duration(days: i));
         titles.add('${date.month}/${date.day}');
       }
     } else if (timeRange == 'month') {
-      // 生成月标题（按周）
-      final weeksInMonth = (DateTime(now.year, now.month + 1, 0).day / 7).ceil();
-      for (int i = 0; i < weeksInMonth; i++) {
-        titles.add('第${i + 1}周');
+      final m = selectedMonth ?? now.month;
+      final monthStart = DateTime(year, m, 1);
+      final monthEnd = DateTime(year, m + 1, 0);
+      final weeks = _getMonthWeeks(monthStart, monthEnd, weekStartDay);
+      for (final w in weeks) {
+        final DateTime s = w['start'] as DateTime;
+        final DateTime e = w['end'] as DateTime;
+        if (s.month == e.month) {
+          titles.add('${s.month}/${s.day}-${e.day}');
+        } else {
+          titles.add('${s.month}/${s.day}-${e.month}/${e.day}');
+        }
       }
     } else { // year
-      // 生成年标题（按月）
-      for (int i = 1; i <= now.month; i++) {
-        titles.add('${i}月');
+      for (int m = 1; m <= 12; m++) {
+        titles.add('$m月');
       }
     }
     return titles;
-    
   }
   
-  /// 获取次数统计提示标签
-  String getCountTooltipLabel(int x, double value, String timeRange) {
-    final now = DateTime.now();
-    
-    if (timeRange == 'week') {
-      final date = now.subtract(Duration(days: 6 - x));
-      return '${date.month}/${date.day}: 完成${value.toInt()}次';
-    } else if (timeRange == 'month') {
-      return '第${x + 1}周: 完成${value.toInt()}次';
-    } else { // year
-        return '${x + 1}月: 完成${value.toInt()}次';
-      }
-  }
+  
   
   /// 获取当前月的习惯完成次数数据（用于饼状图）
   Map<String, int> getMonthlyHabitCompletionCounts(List<Habit> habits) {
@@ -866,7 +512,7 @@ class HabitStatisticsService {
           'completedDays': completedDays,
           'requiredDays': requiredDays,
           'completionRate': completionRate,
-          'color': habit.color != null ? habit.color : Colors.blue // 提供默认颜色，避免null
+          'color': habit.color // habit.color is always non-null
         });
       }
     }
@@ -877,18 +523,129 @@ class HabitStatisticsService {
     return goalCompletionData;
   }
   
-  /// 获取时间统计提示标签
-  String getTimeTooltipLabel(int x, double value, String timeRange) {
+
+  /// 统一获取统计提示标签（支持选中时间与周起始日）
+  String getTooltipLabel(
+    String chartType,
+    int x,
+    double value,
+    String timeRange, {
+    int? selectedYear,
+    int? selectedMonth,
+    int? selectedWeek,
+    WeekStartDay weekStartDay = WeekStartDay.monday,
+  }) {
+    final unit = chartType == 'count' ? '次' : '分钟';
+    final showCompletion = chartType == 'count';
     final now = DateTime.now();
+    final year = selectedYear ?? now.year;
+    final week = selectedWeek ?? TimeManagementUtil.getWeekNumber(now, weekStartDay: weekStartDay);
     
     if (timeRange == 'week') {
-      final date = now.subtract(Duration(days: 6 - x));
-      return '${date.month}/${date.day}: ${value.toInt()}分钟';
+      final range = TimeManagementUtil.getWeekDateRange(year, week, weekStartDay: weekStartDay);
+      final date = range.start.add(Duration(days: x));
+      final completionText = showCompletion ? '完成' : '';
+      return '${date.month}月${date.day}日: ${completionText}${value.toInt()}$unit';
     } else if (timeRange == 'month') {
-      return '第${x + 1}周: ${value.toInt()}分钟';
-    } else { // year
-      return '${x + 1}月: ${value.toInt()}分钟';
+      final completionText = showCompletion ? '完成' : '';
+      return '第${x + 1}周: ${completionText}${value.toInt()}$unit';
+    } else {
+      final completionText = showCompletion ? '完成' : '';
+      return '${x + 1}月: ${completionText}${value.toInt()}$unit';
     }
+  }
+
+  /// 统一生成趋势点（支持次数/时间、周/月/年、选中时间与周起始日）
+  List<FlSpot> generateTrendSpots(
+    Habit habit,
+    String chartType,
+    String timeRange,
+    int selectedYear,
+    int selectedMonth,
+    int selectedWeek,
+    WeekStartDay weekStartDay,
+  ) {
+    final List<FlSpot> spots = [];
+    if (timeRange == 'week') {
+      final range = TimeManagementUtil.getWeekDateRange(selectedYear, selectedWeek, weekStartDay: weekStartDay);
+      for (int i = 0; i < 7; i++) {
+        final date = range.start.add(Duration(days: i));
+        final dayKey = DateTime(date.year, date.month, date.day);
+        double value;
+        if (chartType == 'count') {
+          final completed = habit.dailyCompletionStatus[dayKey] ?? false;
+          value = completed ? 1.0 : 0.0;
+        } else {
+          final durations = habit.trackingDurations[dayKey] ?? [];
+          value = durations.isNotEmpty ? durations.fold(0, (sum, d) => sum + d.inMinutes).toDouble() : 0.0;
+        }
+        spots.add(FlSpot(i.toDouble(), value));
+      }
+    } else if (timeRange == 'month') {
+      final monthStart = DateTime(selectedYear, selectedMonth, 1);
+      final monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
+      final weeks = _getMonthWeeks(monthStart, monthEnd, weekStartDay);
+      for (int i = 0; i < weeks.length; i++) {
+        final weekStart = weeks[i]['start'] as DateTime;
+        final weekEnd = weeks[i]['end'] as DateTime;
+        double sum = 0;
+        for (DateTime d = weekStart; d.isBefore(weekEnd.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+          if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
+          final dayKey = DateTime(d.year, d.month, d.day);
+          if (chartType == 'count') {
+            final completed = habit.dailyCompletionStatus[dayKey] ?? false;
+            if (completed) sum += 1;
+          } else {
+            final durations = habit.trackingDurations[dayKey] ?? [];
+            if (durations.isNotEmpty) sum += durations.fold(0, (s, dd) => s + dd.inMinutes).toDouble();
+          }
+        }
+        spots.add(FlSpot(i.toDouble(), sum));
+      }
+    } else { // year
+      for (int m = 1; m <= 12; m++) {
+        double sum = 0;
+        final daysInMonth = DateTime(selectedYear, m + 1, 0).day;
+        for (int d = 1; d <= daysInMonth; d++) {
+          final date = DateTime(selectedYear, m, d);
+          final dayKey = DateTime(date.year, date.month, date.day);
+          if (chartType == 'count') {
+            final completed = habit.dailyCompletionStatus[dayKey] ?? false;
+            if (completed) sum += 1;
+          } else {
+            final durations = habit.trackingDurations[dayKey] ?? [];
+            if (durations.isNotEmpty) sum += durations.fold(0, (s, dd) => s + dd.inMinutes).toDouble();
+          }
+        }
+        spots.add(FlSpot((m - 1).toDouble(), sum));
+      }
+    }
+    return spots;
+  }
+
+  /// 计算月份包含的所有周范围（根据用户设置的周起始日）
+  List<Map<String, dynamic>> _getMonthWeeks(DateTime monthStart, DateTime monthEnd, WeekStartDay weekStartDay) {
+    final weeks = <Map<String, dynamic>>[];
+    late DateTime startOfFirstWeek;
+    late DateTime endOfLastWeek;
+    if (weekStartDay == WeekStartDay.monday) {
+      final backToMonday = monthStart.weekday - 1;
+      startOfFirstWeek = monthStart.subtract(Duration(days: backToMonday));
+      final forwardToSunday = 7 - (monthEnd.weekday % 7);
+      endOfLastWeek = monthEnd.add(Duration(days: forwardToSunday));
+    } else {
+      final backToSunday = monthStart.weekday % 7;
+      startOfFirstWeek = monthStart.subtract(Duration(days: backToSunday));
+      final forwardToSaturday = (6 - (monthEnd.weekday % 7));
+      endOfLastWeek = monthEnd.add(Duration(days: forwardToSaturday));
+    }
+    DateTime currentWeekStart = startOfFirstWeek;
+    while (currentWeekStart.isBefore(endOfLastWeek.add(const Duration(days: 1)))) {
+      final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+      weeks.add({'start': currentWeekStart, 'end': currentWeekEnd});
+      currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
+    }
+    return weeks;
   }
   
   /// 生成带偏移量的次数趋势图数据点
@@ -916,30 +673,28 @@ class HabitStatisticsService {
         break;
         
       case 'month':
-        // 月视图：根据偏移量计算对应月的30天
         int targetMonth = now.month - timeOffset;
         int targetYear = now.year;
-        
-        // 调整月份和年份
-        while (targetMonth > 12) {
-          targetMonth -= 12;
-          targetYear++;
-        }
-        while (targetMonth < 1) {
-          targetMonth += 12;
-          targetYear--;
-        }
-        
-        // 获取目标月份的天数
-        int daysInMonth = DateTime(targetYear, targetMonth + 1, 0).day;
-        DateTime monthStart = DateTime(targetYear, targetMonth, 1);
-        
-        // 生成该月的数据
-        for (int i = daysInMonth - 1; i >= 0; i--) {
-          final date = monthStart.add(Duration(days: i));
-          final dayKey = DateTime(date.year, date.month, date.day);
-          final completed = habit.dailyCompletionStatus[dayKey] ?? false;
-          spots.add(FlSpot((daysInMonth - 1 - i).toDouble(), completed ? 1.0 : 0.0));
+        while (targetMonth > 12) { targetMonth -= 12; targetYear++; }
+        while (targetMonth < 1) { targetMonth += 12; targetYear--; }
+
+        final monthStart = DateTime(targetYear, targetMonth, 1);
+        final monthEnd = DateTime(targetYear, targetMonth + 1, 0);
+        WeekStartDay weekStartDay = WeekStartDay.monday;
+        DateTime currentWeekStart = _getWeekStartDate(monthStart, weekStartDay);
+        int index = 0;
+        while (currentWeekStart.isBefore(monthEnd.add(const Duration(days: 1)))) {
+          final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+          int weeklyCount = 0;
+          for (DateTime d = currentWeekStart; d.isBefore(currentWeekEnd.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+            if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
+            final dayKey = DateTime(d.year, d.month, d.day);
+            final completed = habit.dailyCompletionStatus[dayKey] ?? false;
+            if (completed) weeklyCount++;
+          }
+          spots.add(FlSpot(index.toDouble(), weeklyCount.toDouble()));
+          index++;
+          currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
         }
         break;
         
@@ -996,34 +751,30 @@ class HabitStatisticsService {
         break;
         
       case 'month':
-        // 月视图：根据偏移量计算对应月的天数
         int targetMonth = now.month - timeOffset;
         int targetYear = now.year;
-        
-        // 调整月份和年份
-        while (targetMonth > 12) {
-          targetMonth -= 12;
-          targetYear++;
-        }
-        while (targetMonth < 1) {
-          targetMonth += 12;
-          targetYear--;
-        }
-        
-        // 获取目标月份的天数
-        int daysInMonth = DateTime(targetYear, targetMonth + 1, 0).day;
-        DateTime monthStart = DateTime(targetYear, targetMonth, 1);
-        
-        // 生成该月的数据
-        for (int i = daysInMonth - 1; i >= 0; i--) {
-          final date = monthStart.add(Duration(days: i));
-          final dayKey = DateTime(date.year, date.month, date.day);
-          final durations = habit.trackingDurations[dayKey] ?? [];
-        int totalMinutes = 0;
-        if (durations.isNotEmpty) {
-          totalMinutes = durations.fold(0, (sum, duration) => sum + duration.inMinutes);
-        }
-          spots.add(FlSpot((daysInMonth - 1 - i).toDouble(), totalMinutes.toDouble()));
+        while (targetMonth > 12) { targetMonth -= 12; targetYear++; }
+        while (targetMonth < 1) { targetMonth += 12; targetYear--; }
+
+        final monthStart = DateTime(targetYear, targetMonth, 1);
+        final monthEnd = DateTime(targetYear, targetMonth + 1, 0);
+        WeekStartDay weekStartDay = WeekStartDay.monday;
+        DateTime currentWeekStart = _getWeekStartDate(monthStart, weekStartDay);
+        int index = 0;
+        while (currentWeekStart.isBefore(monthEnd.add(const Duration(days: 1)))) {
+          final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+          int weeklyMinutes = 0;
+          for (DateTime d = currentWeekStart; d.isBefore(currentWeekEnd.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+            if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
+            final dayKey = DateTime(d.year, d.month, d.day);
+            final durations = habit.trackingDurations[dayKey] ?? [];
+            if (durations.isNotEmpty) {
+              weeklyMinutes += durations.fold(0, (sum, duration) => sum + duration.inMinutes);
+            }
+          }
+          spots.add(FlSpot(index.toDouble(), weeklyMinutes.toDouble()));
+          index++;
+          currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
         }
         break;
         
@@ -1097,9 +848,5 @@ class HabitStatisticsService {
     ];
   }
   
-  /// 修复颜色透明度使用
-  /// 使用withAlpha替代withOpacity以避免精度丢失
-  Color getColorWithOpacity(Color color, double opacity) {
-    return color.withAlpha((opacity * 255).round());
-  }
+  
 }

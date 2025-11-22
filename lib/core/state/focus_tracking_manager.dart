@@ -322,29 +322,7 @@ class FocusTrackingManager {
     _notifyListeners(_focusStatus);
   }
 
-  // 应用从后台返回前台时调用
-  void appResumed() {
-    if (_focusStatus == FocusStatus.run) {
-      // 检查后台服务是否在运行（异步）
-      _checkBackgroundServiceStatus();
-    }
-  }
-
-  // 异步检查后台服务状态
-  void _checkBackgroundServiceStatus() async {
-    try {
-      final isServiceRunning = await _backgroundTimerService.isRunning();
-      if (!isServiceRunning) {
-        // 如果后台服务未运行，通知时间更新
-        _notifyTimeUpdate();
-        // 恢复后台计时器
-        _backgroundTimerService.start();
-        _backgroundTimerService.startTimer();
-      }
-    } catch (e) {
-      logger.error('Failed to check background service status: $e');
-    }
-  }
+  
 
   // 添加状态变化监听器
   void addListener(Function(FocusStatus) listener) {

@@ -29,7 +29,7 @@ class TimelineViewWidget extends StatelessWidget {
     List<Map<String, dynamic>> focusSessions = [];
 
     for (final habit in habits) {
-      final color = habit.color ?? Colors.grey;
+      final color = habit.color;
 
       // 遍历习惯的所有专注记录
       habit.trackingDurations.forEach((startTime, durations) {

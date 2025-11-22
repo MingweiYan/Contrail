@@ -80,18 +80,5 @@ class ColorHelper {
     return _predefinedColors.any((option) => option.toARGB32() == color.toARGB32());
   }
 
-  // 从预定义颜色中获取颜色，如果不存在则返回默认颜色
-  static Color getPredefinedColorByValue(int colorValue, {Color defaultColor = Colors.blue}) {
-    for (var color in _predefinedColors) {
-      if (color.toARGB32() == colorValue) {
-        return color;
-      }
-    }
-    return defaultColor;
-  }
-
-  // 获取默认颜色
-  static Color getDefaultColor() {
-    return Colors.blue;
-  }
+  
 }

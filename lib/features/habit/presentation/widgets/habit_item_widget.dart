@@ -15,6 +15,7 @@ class HabitItemWidget extends StatelessWidget {
   final void Function(Habit) onNavigateToTracking;
   final String Function(Habit) formatDescription;
   final double Function(Habit) getFinalProgress;
+  final bool isFirst;
 
   const HabitItemWidget({
     Key? key,
@@ -24,6 +25,7 @@ class HabitItemWidget extends StatelessWidget {
     required this.onNavigateToTracking,
     required this.formatDescription,
     required this.getFinalProgress,
+    this.isFirst = false,
   }) : super(key: key);
 
   @override
@@ -131,7 +133,9 @@ class HabitItemWidget extends StatelessWidget {
         },
         child: AnimatedContainer(
           duration: Duration(milliseconds: 300),
-          margin: HabitItemWidgetConstants.cardMargin,
+          margin: isFirst
+              ? HabitItemWidgetConstants.firstCardMargin
+              : HabitItemWidgetConstants.cardMargin,
           child: Stack(
             children: [
               // 卡片背景

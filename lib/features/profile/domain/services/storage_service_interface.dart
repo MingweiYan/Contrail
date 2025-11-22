@@ -37,6 +37,8 @@ abstract class StorageServiceInterface {
   
   /// 获取文件最后修改时间
   Future<DateTime> getFileLastModified(BackupFileInfo file);
+
+  String getStorageId();
 }
 
 /// 存储服务工厂，用于创建不同类型的存储服务实例

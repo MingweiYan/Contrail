@@ -35,3 +35,22 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+
+analyzer:
+  plugins:
+    - dart_code_metrics
+
+dart_code_metrics:
+  rules:
+    - duplicate_code: 
+        lines: 10
+        exclude:
+          - 'test/**'
+          - 'lib/generated/**'
+  metrics:
+    cyclomatic-complexity:
+      threshold: 20
+    number-of-arguments:
+      threshold: 5
+    maximum-nesting-depth:
+      threshold: 4

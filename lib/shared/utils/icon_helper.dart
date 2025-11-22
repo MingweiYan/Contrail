@@ -232,10 +232,7 @@ class IconHelper {
     return Icons.book; // 默认图标
   }
   
-  /// 获取图标分类映射表
-  static Map<String, List<String>> get iconsByCategory {
-    return _iconsByCategory;
-  }
+  
   
   /// 根据IconData获取图标名称（优化版）
   static String getIconName(IconData? iconData) {

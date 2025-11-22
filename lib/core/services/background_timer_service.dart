@@ -159,12 +159,7 @@ class BackgroundTimerService {
   }
 
   // 获取服务是否在运行
-  Future<bool> isRunning() async {
-    if (!_isInitialized) {
-      return false;
-    }
-    return await _service.isRunning();
-  }
+  
 
   
 }

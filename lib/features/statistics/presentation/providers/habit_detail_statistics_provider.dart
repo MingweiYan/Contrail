@@ -7,7 +7,6 @@ import 'package:contrail/shared/services/habit_statistics_service.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/core/state/base_stats_provider.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
-import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 
 class HabitDetailStatisticsProvider extends BaseStatsProvider {
   // 移除重复的getter，直接使用基类的selectedPeriod
@@ -213,38 +212,7 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   
   // 生成次数趋势图数据 - 调用服务类方法
   LineChartBarData generateCountTrendData() {
-    // 调用服务层的方法获取数据点
     final spots = _statisticsService.generateCountTrendDataWithOffset(_habit, selectedPeriod, _timeOffset);
-    
-    return LineChartBarData(
-      spots: spots,
-      isCurved: true, // 曲线样式
-      curveSmoothness: 0.3, // 曲线平滑度
-      color: _habit.color,
-      barWidth: 3.0, // 线条宽度
-      isStrokeCapRound: true, // 线条两端为圆形
-      dotData: FlDotData(show: true),
-      // 添加背景填充
-      belowBarData: BarAreaData(
-        show: true,
-        color: _habit.color.withValues(alpha: 26), // 半透明背景色
-        gradient: LinearGradient(
-          colors: [
-            _habit.color.withValues(alpha: 51),
-            _habit.color.withValues(alpha: 0),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-    );
-  }
-  
-  // 生成时间趋势图数据 - 调用服务类方法
-  LineChartBarData generateTimeTrendData() {
-    // 调用服务层的方法获取数据点
-    final spots = _statisticsService.generateTimeTrendDataWithOffset(_habit, selectedPeriod, _timeOffset);
-    
     return LineChartBarData(
       spots: spots,
       isCurved: true,
@@ -253,18 +221,22 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
       barWidth: 3.0,
       isStrokeCapRound: true,
       dotData: FlDotData(show: true),
-      belowBarData: BarAreaData(
-        show: true,
-        color: getColorWithOpacity(_habit.color, 0.1),
-        gradient: LinearGradient(
-          colors: [
-            getColorWithOpacity(_habit.color, 0.2),
-            getColorWithOpacity(_habit.color, 0.0),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      belowBarData: BarAreaData(show: false),
+    );
+  }
+  
+  // 生成时间趋势图数据 - 调用服务类方法
+  LineChartBarData generateTimeTrendData() {
+    final spots = _statisticsService.generateTimeTrendDataWithOffset(_habit, selectedPeriod, _timeOffset);
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      curveSmoothness: 0.3,
+      color: _habit.color,
+      barWidth: 3.0,
+      isStrokeCapRound: true,
+      dotData: FlDotData(show: true),
+      belowBarData: BarAreaData(show: false),
     );
   }
   
@@ -274,67 +246,7 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
       return color.withValues(alpha: (opacity * 255).round().toDouble());
     }
   
-  /// 获取次数统计提示标签
-  /// 根据x坐标和值生成次数趋势图的提示文本
-  String getCountTooltipLabel(int x, double value) {
-    String label;
-    final now = DateTime.now();
-    
-    switch (selectedPeriod) {
-      case 'week':
-        // 周视图：显示具体日期
-        final date = now.subtract(Duration(days: 6 - x));
-        label = '${date.month}月${date.day}日: ${value.toInt()}次';
-        break;
-      case 'month':
-        // 月视图：显示具体日期
-        final date = now.subtract(Duration(days: 29 - x));
-        label = '${date.month}月${date.day}日: ${value.toInt()}次';
-        break;
-      case 'year':
-        // 年视图：显示月份
-        final monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-        final monthIndex = (now.month - 1 - (11 - x)) % 12;
-        final adjustedMonthIndex = monthIndex < 0 ? monthIndex + 12 : monthIndex;
-        label = '${monthNames[adjustedMonthIndex]}: ${value.toInt()}次';
-        break;
-      default:
-        label = '${value.toInt()}次';
-    }
-    
-    return label;
-  }
-  
-  /// 获取时间统计提示标签
-  /// 根据x坐标和值生成时间趋势图的提示文本
-  String getTimeTooltipLabel(int x, double value) {
-    String label;
-    final now = DateTime.now();
-    
-    switch (selectedPeriod) {
-      case 'week':
-        // 周视图：显示具体日期
-        final date = now.subtract(Duration(days: 6 - x));
-        label = '${date.month}月${date.day}日: ${value.toInt()}分钟';
-        break;
-      case 'month':
-        // 月视图：显示具体日期
-        final date = now.subtract(Duration(days: 29 - x));
-        label = '${date.month}月${date.day}日: ${value.toInt()}分钟';
-        break;
-      case 'year':
-        // 年视图：显示月份
-        final monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-        final monthIndex = (now.month - 1 - (11 - x)) % 12;
-        final adjustedMonthIndex = monthIndex < 0 ? monthIndex + 12 : monthIndex;
-        label = '${monthNames[adjustedMonthIndex]}: ${value.toInt()}分钟';
-        break;
-      default:
-        label = '${value.toInt()}分钟';
-    }
-    
-    return label;
-  }
+  // 提示标签统一由服务层生成，Provider 保持最小职责
   
   /// 上一个月 - 用于日历视图的月份切换，使用基类方法
   void previousMonth() {
@@ -346,57 +258,9 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     navigateToNextMonth();
   }
   
-  /// 切换到上一个时间范围（向前，减少时间偏移）
-  void previousTimeRange() {
-    _timeOffset++;
-    notifyListeners();
-  }
+  // 时间范围偏移由 navigateToPrevious/Next* 系列方法统一管理
   
-  /// 切换到下一个时间范围（向后，增加时间偏移）
-  void nextTimeRange() {
-    _timeOffset--;
-    notifyListeners();
-  }
-  
-  /// 获取当前时间范围的显示标签
-  String getTimeRangeLabel() {
-    final now = DateTime.now();
-    DateTime targetDate = now;
-    
-    // 获取用户设置的周起始日（使用默认值）
-    WeekStartDay weekStartDay = WeekStartDay.monday;
-    
-    // 根据偏移量计算目标日期
-    switch (selectedPeriod) {
-      case 'week':
-        targetDate = now.subtract(Duration(days: _timeOffset * 7));
-        // 计算是今年的第几周，考虑用户设置的周起始日
-        int weekNumber = TimeManagementUtil.getWeekNumber(targetDate, weekStartDay: weekStartDay);
-        return '${targetDate.year}年 第$weekNumber周';
-      
-      case 'month':
-        // 计算目标月份
-        int newMonth = now.month - _timeOffset;
-        int newYear = now.year;
-        
-        while (newMonth > 12) {
-          newMonth -= 12;
-          newYear++;
-        }
-        while (newMonth < 1) {
-          newMonth += 12;
-          newYear--;
-        }
-        
-        return '$newYear年$newMonth月';
-      
-      case 'year':
-        return '${now.year - _timeOffset}年';
-      
-      default:
-        return '';
-    }
-  }
+  // 时间范围标签由视图层直接计算或调用服务层生成
   
 
   
@@ -404,5 +268,25 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   void setTimeRange(String range) {
     setSelectedPeriod(range);
     _timeOffset = 0; // 切换时间类型时重置偏移量
+  }
+
+  void navigateToNextTimeUnit() {
+    if (selectedPeriod == 'year') {
+      navigateToNextYear();
+    } else if (selectedPeriod == 'week') {
+      navigateToNextWeek();
+    } else {
+      navigateToNextMonth();
+    }
+  }
+
+  void navigateToPreviousTimeUnit() {
+    if (selectedPeriod == 'year') {
+      navigateToPreviousYear();
+    } else if (selectedPeriod == 'week') {
+      navigateToPreviousWeek();
+    } else {
+      navigateToPreviousMonth();
+    }
   }
 }

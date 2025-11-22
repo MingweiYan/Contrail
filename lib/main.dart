@@ -16,9 +16,6 @@ import 'features/profile/presentation/providers/personalization_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
-// 全局变量，用于跟踪通知点击状态
-bool isNotificationClicked = false;
-
 void main() async {
   logger.info('开始初始化应用...');
   // 确保WidgetsBinding已初始化

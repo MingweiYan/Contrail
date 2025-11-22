@@ -13,7 +13,6 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/shared/utils/debug_menu_manager.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 

@@ -324,4 +324,9 @@ class LocalStorageService implements StorageServiceInterface {
       return DateTime.now();
     }
   }
+
+  @override
+  String getStorageId() {
+    return 'local';
+  }
 }

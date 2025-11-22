@@ -4,11 +4,13 @@ import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/features/statistics/presentation/widgets/calendar_view_widget.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/services/habit_statistics_service.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/statistics/presentation/providers/habit_detail_statistics_provider.dart';
 import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/features/statistics/presentation/widgets/statistics_chart_widget.dart';
 
 
 // 直接使用CycleType枚举，不再需要额外的TimePeriodEnum
@@ -165,180 +167,11 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     );
   }
 
-  // 生成图表标题数据 - 使用服务类方法
-  FlTitlesData _generateTitlesData(BuildContext context, String timeRange) {
-    final titles = _statisticsService.generateTitlesData(timeRange);
-        return FlTitlesData(
-      show: true,
-      bottomTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          getTitlesWidget: (value, meta) {
-            final index = value.toInt();
-            if (index >= 0 && index < titles.length) {
-              return Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  titles[index],
-                  style: const TextStyle(fontSize: 12),
-                ),
-              );
-            }
-            return Container();
-          },
-          reservedSize: 40,
-        ),
-      ),
-      leftTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          getTitlesWidget: (value, meta) {
-            // 移除ScreenUtil的使用，直接返回简单文本
-            return Text('${value.toInt()}');
-          },
-          reservedSize: 40,
-        ),
-      ),
-      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-    );
-  }
+  // 已不再需要自定义 TitlesData，统一由 StatisticsChartWidget 内部生成
   
-  /// 构建习惯完成次数趋势模块
-  /// 显示习惯在不同时间范围（周/月/年）内的完成次数趋势
-  Widget _buildCountTrendModule(BuildContext context) {
-    final provider = Provider.of<HabitDetailStatisticsProvider>(context);
-    
-    return Container(
-      margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(HabitDetailStatisticsPageConstants.moduleContainerBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: ThemeHelper.outline(context).withValues(alpha: 10.0),
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      padding: HabitDetailStatisticsPageConstants.moduleContainerPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '习惯完成次数统计',
-            style: TextStyle(
-              fontSize: HabitDetailStatisticsPageConstants.sectionTitleFontSize,
-              fontWeight: FontWeight.bold,
-              color: ThemeHelper.onBackground(context),
-            ),
-          ),
-          SizedBox(height: HabitDetailStatisticsPageConstants.smallSectionSpacing),
-          Container(
-            height: HabitDetailStatisticsPageConstants.chartContainerHeight,
-            child: LineChart(
-              LineChartData(
-                lineBarsData: [provider.generateCountTrendData()],
-                titlesData: _generateTitlesData(context, provider.timeRange),
-                borderData: FlBorderData(
-                  show: false,
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                ),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((touchedSpot) {
-                        final value = touchedSpot.y;
-                        final index = touchedSpot.x.toInt();
-                        return LineTooltipItem(
-                          '${provider.getCountTooltipLabel(index, value)}',
-                          TextStyle(color: Colors.black),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // 移除自定义次数趋势模块，统一使用 StatisticsChartWidget
   
-  /// 构建习惯完成时间趋势模块
-  /// 显示习惯在不同时间范围（周/月/年）内的完成时间趋势
-  Widget _buildTimeTrendModule(BuildContext context) {
-    final provider = Provider.of<HabitDetailStatisticsProvider>(context);
-    
-    return Container(
-      margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(HabitDetailStatisticsPageConstants.moduleContainerBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: ThemeHelper.outline(context).withValues(alpha: 10.0),
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      padding: HabitDetailStatisticsPageConstants.moduleContainerPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '习惯专注时间统计 (分钟)',
-            style: TextStyle(
-              fontSize: HabitDetailStatisticsPageConstants.sectionTitleFontSize,
-              fontWeight: FontWeight.bold,
-              color: ThemeHelper.onBackground(context),
-            ),
-          ),
-          SizedBox(height: HabitDetailStatisticsPageConstants.smallSectionSpacing),
-          Container(
-            height: HabitDetailStatisticsPageConstants.chartContainerHeight,
-            child: LineChart(
-              LineChartData(
-                lineBarsData: [provider.generateTimeTrendData()],
-                titlesData: _generateTitlesData(context, provider.timeRange),
-                borderData: FlBorderData(
-                  show: false,
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                ),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((touchedSpot) {
-                        final value = touchedSpot.y;
-                        final index = touchedSpot.x.toInt();
-                        return LineTooltipItem(
-                          '${provider.getTimeTooltipLabel(index, value)}',
-                          TextStyle(color: Colors.black),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // 移除自定义时间趋势模块，统一使用 StatisticsChartWidget
   
   /// 构建打卡日历模块
   /// 显示月度打卡记录，支持月份切换
@@ -410,87 +243,109 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     final provider = Provider.of<HabitDetailStatisticsProvider>(context);
     
     return Container(
-      margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
-      padding: HabitDetailStatisticsPageConstants.moduleContainerPadding,
+      margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+      padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(HabitDetailStatisticsPageConstants.moduleContainerBorderRadius),
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
         boxShadow: [
           BoxShadow(
-            color: ThemeHelper.outline(context).withValues(alpha: 10.0),
-            spreadRadius: 1,
-            blurRadius: 2,
-            offset: const Offset(0, 1),
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            '时间范围',
-            style: TextStyle(
-              fontSize: HabitDetailStatisticsPageConstants.timeRangeTitleFontSize,
-              fontWeight: FontWeight.bold,
+          IconButton(
+            onPressed: () => provider.navigateToPreviousTimeUnit(),
+            icon: Icon(
+              Icons.arrow_left,
               color: ThemeHelper.onBackground(context),
             ),
           ),
-          SizedBox(height: HabitDetailStatisticsPageConstants.titleSectionSpacing),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () => provider.setTimeRange('week'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: provider.timeRange == 'week' ? habit.color : Colors.grey,
-                ),
-                child: Text('周'),
-              ),
-              SizedBox(width: HabitDetailStatisticsPageConstants.buttonSpacing),
-              ElevatedButton(
-                onPressed: () => provider.setTimeRange('month'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: provider.timeRange == 'month' ? habit.color : Colors.grey,
-                ),
-                child: Text('月'),
-              ),
-              SizedBox(width: HabitDetailStatisticsPageConstants.buttonSpacing),
-              ElevatedButton(
-                onPressed: () => provider.setTimeRange('year'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: provider.timeRange == 'year' ? habit.color : Colors.grey,
-                ),
-                child: Text('年'),
-              ),
-            ],
+          Text(
+            provider.selectedPeriod == 'week'
+              ? '${provider.selectedYear}年第${provider.selectedWeek}周'
+              : provider.selectedPeriod == 'month'
+                ? '${provider.selectedYear}年${provider.selectedMonth}月'
+                : '${provider.selectedYear}年',
+            style: TextStyle(
+              fontSize: ScreenUtil().setSp(20),
+              fontWeight: FontWeight.bold,
+              color: ThemeHelper.onBackground(context)
+            ),
           ),
-          SizedBox(height: HabitDetailStatisticsPageConstants.titleSectionSpacing),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.chevron_left),
-                onPressed: provider.previousTimeRange, // 左边是上一个时间范围（减少偏移）
-                color: habit.color,
-              ),
-              SizedBox(width: HabitDetailStatisticsPageConstants.contentSpacing),
-              Text(
-                provider.getTimeRangeLabel(),
-                style: TextStyle(
-                  fontSize: HabitDetailStatisticsPageConstants.timeRangeLabelFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onBackground(context),
-                ),
-              ),
-              SizedBox(width: HabitDetailStatisticsPageConstants.contentSpacing),
-              IconButton(
-                icon: Icon(Icons.chevron_right),
-                onPressed: provider.nextTimeRange, // 右边是下一个时间范围（增加偏移）
-                color: habit.color,
-              ),
-            ],
+          IconButton(
+            onPressed: () => provider.navigateToNextTimeUnit(),
+            icon: Icon(
+              Icons.arrow_right,
+              color: ThemeHelper.onBackground(context),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodSelector(BuildContext context) {
+    final provider = Provider.of<HabitDetailStatisticsProvider>(context);
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+      padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildPeriodButton(context, '周', provider.selectedPeriod == 'week', () {
+            provider.setSelectedPeriod('week');
+          }),
+          SizedBox(width: ScreenUtil().setWidth(16)),
+          _buildPeriodButton(context, '月', provider.selectedPeriod == 'month', () {
+            provider.setSelectedPeriod('month');
+          }),
+          SizedBox(width: ScreenUtil().setWidth(16)),
+          _buildPeriodButton(context, '年', provider.selectedPeriod == 'year', () {
+            provider.setSelectedPeriod('year');
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodButton(BuildContext context, String label, bool isSelected, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.white,
+        foregroundColor: isSelected ? ThemeHelper.onPrimary(context) : ThemeHelper.onBackground(context),
+        padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(20), vertical: ScreenUtil().setHeight(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
+        ),
+        elevation: isSelected ? 3 : 1,
+        shadowColor: Colors.black.withOpacity(0.1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: ScreenUtil().setSp(20),
+        ),
       ),
     );
   }
@@ -527,14 +382,35 @@ class _HabitDetailStatisticsView extends StatelessWidget {
               // 月度完成日历
               _buildCalendarModule(context, singleHabitList, habitColors),
               
-              // 统一的时间范围选择器
               _buildTimeRangeSelector(context),
+              _buildPeriodSelector(context),
               
-              // 完成次数统计图表
-              _buildCountTrendModule(context),
-              
-              // 专注时间统计图表
-              _buildTimeTrendModule(context),
+              // 统一图表组件（次数+时间），与趋势视图完全一致
+              Container(
+                margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
+                padding: HabitDetailStatisticsPageConstants.moduleContainerPadding,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(HabitDetailStatisticsPageConstants.moduleContainerBorderRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ThemeHelper.outline(context).withValues(alpha: 10.0),
+                      spreadRadius: 1,
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: StatisticsChartWidget(
+                  habits: [habit],
+                  selectedPeriod: Provider.of<HabitDetailStatisticsProvider>(context, listen: false).selectedPeriod,
+                  selectedYear: Provider.of<HabitDetailStatisticsProvider>(context, listen: false).selectedYear,
+                  selectedMonth: Provider.of<HabitDetailStatisticsProvider>(context, listen: false).selectedMonth,
+                  selectedWeek: Provider.of<HabitDetailStatisticsProvider>(context, listen: false).selectedWeek,
+                  isHabitVisible: const [true],
+                  weekStartDay: Provider.of<PersonalizationProvider>(context, listen: false).weekStartDay,
+                ),
+              ),
               
               SizedBox(height: HabitDetailStatisticsPageConstants.bottomSpacing),
             ],

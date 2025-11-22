@@ -324,6 +324,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         onNavigateToTracking: _navigateToTrackingPage,
                         formatDescription: _formatHabitDescription,
                         getFinalProgress: _getFinalProgress,
+                        isFirst: index == 0,
                       );
                     },
                   ),

@@ -277,6 +277,31 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                           ],
                         ),
                         SizedBox(height: BaseLayoutConstants.spacingMedium),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('本地保留数量:', style: TextStyle(fontSize: DataBackupPageConstants.fontSize_18)),
+                            DropdownButton<int>(
+                              value: backupProvider.retentionCount,
+                              items: const [
+                                DropdownMenuItem(value: 3, child: Text('3')),
+                                DropdownMenuItem(value: 5, child: Text('5')),
+                                DropdownMenuItem(value: 10, child: Text('10')),
+                                DropdownMenuItem(value: 20, child: Text('20')),
+                                DropdownMenuItem(value: 50, child: Text('50')),
+                              ],
+                              onChanged: (value) async {
+                                if (value != null) {
+                                  await backupProvider.saveRetentionCount(value);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('保留数量已设置为: ${backupProvider.retentionCount}')),
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: BaseLayoutConstants.spacingMedium),
                         ElevatedButton(
                           onPressed: () async {
                             final success = await backupProvider.performBackup();

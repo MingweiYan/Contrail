@@ -21,6 +21,7 @@ class BackupProvider extends ChangeNotifier {
   bool _autoBackupEnabled = false;
   int _backupFrequency = 1; // 默认每天备份
   DateTime? _lastBackupTime;
+  int _retentionCount = 10;
   
   // 错误信息
   String? _errorMessage;
@@ -38,6 +39,7 @@ class BackupProvider extends ChangeNotifier {
   bool get autoBackupEnabled => _autoBackupEnabled;
   int get backupFrequency => _backupFrequency;
   DateTime? get lastBackupTime => _lastBackupTime;
+  int get retentionCount => _retentionCount;
   String? get errorMessage => _errorMessage;
   
   /// 初始化
@@ -82,6 +84,8 @@ class BackupProvider extends ChangeNotifier {
       
       // 加载备份路径
       _localBackupPath = await _backupService.loadOrCreateBackupPath();
+
+      _retentionCount = await _backupService.loadRetentionCount();
     } catch (e) {
       _setError('加载设置失败: $e');
     }
@@ -253,6 +257,19 @@ class BackupProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _setError('保存自动备份设置失败: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> saveRetentionCount(int count) async {
+    try {
+      _setLoading(true);
+      await _backupService.saveRetentionCount(count);
+      _retentionCount = await _backupService.loadRetentionCount();
+      notifyListeners();
+    } catch (e) {
+      _setError('保存保留数量失败: $e');
     } finally {
       _setLoading(false);
     }

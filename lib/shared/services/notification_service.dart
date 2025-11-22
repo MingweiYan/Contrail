@@ -82,19 +82,7 @@ class NotificationService {
       }
   }
 
-    // 取消特定通知
-  Future<void> cancelNotification(int id) async {
-    await flutterLocalNotificationsPlugin.cancel(id);
-  }
-
-  // 取消所有通知
-  Future<void> cancelAllNotifications() async {
-    try {
-      await flutterLocalNotificationsPlugin.cancelAll();
-    } catch (e) {
-      logger.error('取消所有通知失败', e);
-    }
-  }
+  
 
   // 创建必要的通知通道
   Future<void> _createNotificationChannels() async {

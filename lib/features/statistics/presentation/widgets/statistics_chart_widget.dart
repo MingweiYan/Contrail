@@ -5,8 +5,9 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/services/habit_statistics_service.dart';
-import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+
+import '../../../profile/presentation/providers/personalization_provider.dart' show WeekStartDay;
 
 class StatisticsChartWidget extends StatefulWidget {
   final List<Habit> habits;
@@ -48,13 +49,28 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     final List<String> habitNames = widget.habits.map((habit) => habit.name).toList();
     final List<Color> habitColors = widget.habits.map((habit) => habit.color).toList();
 
-    final titles = _generateXAxisTitles();
+    final statsService = sl<HabitStatisticsService>();
+    final titles = statsService.generateTitlesData(
+      widget.selectedPeriod,
+      selectedYear: widget.selectedYear,
+      selectedMonth: widget.selectedMonth,
+      selectedWeek: widget.selectedWeek,
+      weekStartDay: widget.weekStartDay,
+    );
 
     // 为每个习惯生成次数统计数据
     final List<LineChartBarData> countData = widget.habits.asMap().entries.map((entry) {
       final index = entry.key;
       final habit = entry.value;
-      final data = _generateChartDataForType(habit, 'count');
+      final data = statsService.generateTrendSpots(
+        habit,
+        'count',
+        widget.selectedPeriod,
+        widget.selectedYear,
+        widget.selectedMonth,
+        widget.selectedWeek,
+        widget.weekStartDay,
+      );
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
 
@@ -62,7 +78,15 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     final List<LineChartBarData> timeData = widget.habits.asMap().entries.map((entry) {
       final index = entry.key;
       final habit = entry.value;
-      final data = _generateChartDataForType(habit, 'time');
+      final data = statsService.generateTrendSpots(
+        habit,
+        'time',
+        widget.selectedPeriod,
+        widget.selectedYear,
+        widget.selectedMonth,
+        widget.selectedWeek,
+        widget.weekStartDay,
+      );
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
 
@@ -271,15 +295,21 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           },
           touchTooltipData: LineTouchTooltipData(
             getTooltipItems: (touchedSpots) {
+              final statsService = sl<HabitStatisticsService>();
               return touchedSpots.map((touchedSpot) {
                 final habitName = habitNames[touchedSpot.barIndex];
-                final value = chartType == 'count' 
-                  ? touchedSpot.y.toInt().toString() 
-                  : touchedSpot.y.toStringAsFixed(1);
-                final label = chartType == 'count' ? '完成次数' : '专注时间(分钟)';
-                
+                final text = statsService.getTooltipLabel(
+                  chartType,
+                  touchedSpot.x.toInt(),
+                  touchedSpot.y,
+                  widget.selectedPeriod,
+                  selectedYear: widget.selectedYear,
+                  selectedMonth: widget.selectedMonth,
+                  selectedWeek: widget.selectedWeek,
+                  weekStartDay: widget.weekStartDay,
+                );
                 return LineTooltipItem(
-                  '$habitName: $value $label\n',
+                  '$habitName: $text\n',
                   TextStyle(color: habitColors[touchedSpot.barIndex]),
                 );
               }).toList();
@@ -382,228 +412,5 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     );
   }
 
-  // 根据统计类型生成图表数据
-  List<FlSpot> _generateChartDataForType(Habit habit, String statType) {
-    final spots = <FlSpot>[];
-
-    if (widget.selectedPeriod == 'week') {
-      // 周聚合 - 使用选中的周和年份
-      // 获取选中周的第一天（周一）
-      final firstDayOfWeek = _getStartOfWeek(widget.selectedWeek, widget.selectedYear);
-      for (int i = 0; i < 7; i++) {
-        double value = 0;
-        final targetDate = firstDayOfWeek.add(Duration(days: i));
-        final dateOnly = DateTime(targetDate.year, targetDate.month, targetDate.day);
-
-        if (statType == 'count') {
-          // 次数统计
-          value = habit.dailyCompletionStatus.containsKey(dateOnly) &&
-              habit.dailyCompletionStatus[dateOnly] == true ? 1 : 0;
-        } else {
-          // 时间统计 (分钟)
-          final duration = sl<HabitStatisticsService>().getTotalDurationForDay(habit, targetDate);
-          value = duration.inMinutes.toDouble();
-        }
-        spots.add(FlSpot(i.toDouble(), value));
-      }
-    } else if (widget.selectedPeriod == 'month') {
-      // 月维度：按周聚合数据
-      // 获取当月的周范围
-      final monthStartDate = DateTime(widget.selectedYear, widget.selectedMonth, 1);
-      final monthEndDate = DateTime(widget.selectedYear, widget.selectedMonth + 1, 0);
-      
-      // 获取月份包含的周范围（确保从周一到周日）
-      final weeks = _getMonthWeeks(monthStartDate, monthEndDate);
-      
-      for (int i = 0; i < weeks.length; i++) {
-        double value = 0;
-        final weekStart = weeks[i]['start'] as DateTime;
-        final weekEnd = weeks[i]['end'] as DateTime;
-        
-        if (statType == 'count') {
-          // 次数统计 - 统计整周的完成次数
-          int weeklyCount = 0;
-          for (DateTime date = weekStart; date.isBefore(weekEnd.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
-            final dateOnly = DateTime(date.year, date.month, date.day);
-            if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-                habit.dailyCompletionStatus[dateOnly] == true) {
-              weeklyCount++;
-            }
-          }
-          value = weeklyCount.toDouble();
-        } else {
-          // 时间统计 (分钟) - 统计整周的总时长
-          int weeklyMinutes = 0;
-          for (DateTime date = weekStart; date.isBefore(weekEnd.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
-            final duration = sl<HabitStatisticsService>().getTotalDurationForDay(habit, date);
-            weeklyMinutes += duration.inMinutes.toInt();
-          }
-          value = weeklyMinutes.toDouble();
-        }
-        spots.add(FlSpot(i.toDouble(), value));
-      }
-    } else { // year
-      // 年维度：显示选中年份的12个月数据
-      for (int month = 1; month <= 12; month++) {
-        double value = 0;
-
-        if (statType == 'count') {
-          // 月度完成次数统计
-          int monthlyCount = 0;
-          final daysInMonth = DateTime(widget.selectedYear, month + 1, 0).day;
-          for (int day = 1; day <= daysInMonth; day++) {
-            final dateOnly = DateTime(widget.selectedYear, month, day);
-            if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-                habit.dailyCompletionStatus[dateOnly] == true) {
-              monthlyCount++;
-            }
-          }
-          value = monthlyCount.toDouble();
-        } else {
-          // 月度总时间统计 (分钟)
-          int monthlyMinutes = 0;
-          final daysInMonth = DateTime(widget.selectedYear, month + 1, 0).day;
-          for (int day = 1; day <= daysInMonth; day++) {
-            final date = DateTime(widget.selectedYear, month, day);
-            final duration = sl<HabitStatisticsService>().getTotalDurationForDay(habit, date);
-            monthlyMinutes += duration.inMinutes.toInt();
-          }
-          value = monthlyMinutes.toDouble();
-        }
-
-        spots.add(FlSpot((month - 1).toDouble(), value));
-      }
-    }
-
-    return spots;
-  }
   
-  // 获取月份包含的所有周范围（根据用户设置的周起始日）
-  List<Map<String, dynamic>> _getMonthWeeks(DateTime monthStart, DateTime monthEnd) {
-    final weeks = <Map<String, dynamic>>[];
-    
-    DateTime startOfFirstWeek;
-    DateTime endOfLastWeek;
-    
-    if (widget.weekStartDay == WeekStartDay.monday) {
-      // 周一为起始日
-      // 计算月份第一天是星期几，调整到本周一
-      final firstDayWeekday = monthStart.weekday;
-      final daysToMonday = firstDayWeekday == 7 ? 0 : 7 - firstDayWeekday;
-      startOfFirstWeek = monthStart.subtract(Duration(days: daysToMonday));
-      
-      // 计算月份最后一天是星期几，调整到下周日
-      final lastDayWeekday = monthEnd.weekday;
-      final daysToSunday = lastDayWeekday == 7 ? 0 : 7 - lastDayWeekday;
-      endOfLastWeek = monthEnd.add(Duration(days: daysToSunday));
-    } else {
-      // 周日为起始日
-      // 计算月份第一天是星期几，调整到本周日
-      final firstDayWeekday = monthStart.weekday;
-      final daysToSunday = firstDayWeekday == 7 ? 0 : 7 - firstDayWeekday;
-      startOfFirstWeek = monthStart.subtract(Duration(days: daysToSunday));
-      
-      // 计算月份最后一天是星期几，调整到下周六
-      final lastDayWeekday = monthEnd.weekday;
-      final daysToSaturday = lastDayWeekday == 6 ? 0 : 6 - lastDayWeekday;
-      endOfLastWeek = monthEnd.add(Duration(days: daysToSaturday));
-    }
-    
-    // 生成每周的开始和结束日期
-    DateTime currentWeekStart = startOfFirstWeek;
-    while (currentWeekStart.isBefore(endOfLastWeek.add(const Duration(days: 1)))) {
-      final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
-      weeks.add({
-        'start': currentWeekStart,
-        'end': currentWeekEnd,
-        'label': '第${_getWeekNumber(currentWeekStart)}周'
-      });
-      currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
-    }
-    
-    return weeks;
-  }
-
-  // 计算日期是当年的第几周
-  int _getWeekNumber(DateTime date) {
-    // 计算日期是当年的第几周
-    final firstDayOfYear = DateTime(date.year, 1, 1);
-    final days = date.difference(firstDayOfYear).inDays;
-    int daysToFirstWeekStart;
-    
-    if (widget.weekStartDay == WeekStartDay.monday) {
-      // 每周从周一开始
-      final firstDayOfYearWeekday = firstDayOfYear.weekday;
-      daysToFirstWeekStart = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-    } else {
-      // 每周从周日开始
-      final firstDayOfYearWeekday = firstDayOfYear.weekday;
-      daysToFirstWeekStart = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-    }
-    
-    final adjustedDays = days - daysToFirstWeekStart;
-    return adjustedDays >= 0 ? (adjustedDays ~/ 7) + 1 : 1;
-  }
-
-  // 获取周的第一天（根据用户设置）
-  DateTime _getStartOfWeek(int weekNumber, int year) {
-    final firstDayOfYear = DateTime(year, 1, 1);
-    DateTime firstWeekStart;
-    
-    if (widget.weekStartDay == WeekStartDay.monday) {
-      // 周一为起始日
-      final firstDayOfYearWeekday = firstDayOfYear.weekday;
-      final daysToFirstMonday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-      firstWeekStart = firstDayOfYear.add(Duration(days: daysToFirstMonday));
-    } else {
-      // 周日为起始日
-      final firstDayOfYearWeekday = firstDayOfYear.weekday;
-      final daysToFirstSunday = firstDayOfYearWeekday == 7 ? 0 : 7 - firstDayOfYearWeekday;
-      firstWeekStart = firstDayOfYear.add(Duration(days: daysToFirstSunday));
-    }
-    
-    return firstWeekStart.add(Duration(days: (weekNumber - 1) * 7));
-  }
-
-  List<String> _generateXAxisTitles() {
-    final titles = <String>[];
-
-    if (widget.selectedPeriod == 'week') {
-      // 周聚合 - 使用选中的周和年份
-      final firstDayOfWeek = _getStartOfWeek(widget.selectedWeek, widget.selectedYear);
-      for (int i = 0; i < 7; i++) {
-        final date = firstDayOfWeek.add(Duration(days: i));
-        titles.add('${date.month}/${date.day}'); // 月/日
-      }
-    } else if (widget.selectedPeriod == 'month') {
-      // 月维度：按周显示，确保从周一到周日
-      final monthStartDate = DateTime(widget.selectedYear, widget.selectedMonth, 1);
-      final monthEndDate = DateTime(widget.selectedYear, widget.selectedMonth + 1, 0);
-      
-      // 获取月份包含的周范围
-      final weeks = _getMonthWeeks(monthStartDate, monthEndDate);
-      
-      // 生成每周的标题（显示周数和日期范围）
-      for (var week in weeks) {
-        final weekStart = week['start'] as DateTime;
-        final weekEnd = week['end'] as DateTime;
-        
-        // 生成简洁的日期范围显示
-        if (weekStart.month == weekEnd.month) {
-          // 同月显示：月/日-日
-          titles.add('${weekStart.month}/${weekStart.day}-${weekEnd.day}');
-        } else {
-          // 跨月显示：月/日-月/日
-          titles.add('${weekStart.month}/${weekStart.day}-${weekEnd.month}/${weekEnd.day}');
-        }
-      }
-    } else { // year
-      // 年维度：显示选中年份的12个月
-      for (int month = 1; month <= 12; month++) {
-        titles.add('$month月');
-      }
-    }
-
-    return titles;
-  }
 }

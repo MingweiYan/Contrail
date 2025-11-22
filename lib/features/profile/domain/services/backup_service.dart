@@ -26,6 +26,7 @@ class BackupService {
   static const String _autoBackupChannelDescription = '自动备份通知';
   
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  static const String _backupRetentionPrefix = 'backupRetention_';
   
   /// 初始化服务
   Future<void> initialize() async {
@@ -131,8 +132,8 @@ class BackupService {
       final success = await _storageService.writeData(backupFileName, backupData);
       
       if (success) {
-        // 更新最后备份时间
         await _updateLastBackupTime();
+        await _applyRetentionPolicy();
       }
       
       return success;
@@ -274,6 +275,8 @@ class BackupService {
             await scheduleAutoBackup(frequency);
           }
         }
+
+        await _applyRetentionPolicy();
       }
       
       return success;
@@ -385,5 +388,41 @@ class BackupService {
   Future<void> _updateLastBackupTime() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastBackupTimeKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  Future<int> _loadRetentionCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '$_backupRetentionPrefix${_storageService.getStorageId()}';
+    final value = prefs.getInt(key) ?? 10;
+    if (value < 1) return 10;
+    if (value > 100) return 100;
+    return value;
+  }
+
+  Future<void> saveRetentionCount(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '$_backupRetentionPrefix${_storageService.getStorageId()}';
+    int c = count;
+    if (c < 1) c = 10;
+    if (c > 100) c = 100;
+    await prefs.setInt(key, c);
+  }
+
+  Future<int> loadRetentionCount() async {
+    return await _loadRetentionCount();
+  }
+
+  Future<void> _applyRetentionPolicy() async {
+    try {
+      final n = await _loadRetentionCount();
+      final files = await _storageService.listFiles();
+      final filtered = files.where((f) => f.name.startsWith('contrail_backup_') && f.name.endsWith('.json')).toList();
+      if (filtered.length <= n) return;
+      for (int i = n; i < filtered.length; i++) {
+        await _storageService.deleteFile(filtered[i]);
+      }
+    } catch (e) {
+      logger.warning('应用保留策略失败: $e');
+    }
   }
 }

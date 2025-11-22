@@ -25,7 +25,6 @@ final sl = GetIt.instance;
 
 Future<void> init() async {
   // 核心服务
-  sl.registerLazySingleton(() => logger);
 
   final statisticsService = HabitStatisticsService();
   final habitManagemetnService = HabitManagementService();

@@ -109,10 +109,10 @@ class HabitManagementPageConstants extends BaseLayoutConstants {
   
   // 列表相关参数
   static final EdgeInsets listPadding = EdgeInsets.symmetric(
-    horizontal: ScreenUtil().setWidth(16),
+    horizontal: ScreenUtil().setWidth(0),
     vertical: ScreenUtil().setHeight(8),
   );
-  static final EdgeInsets contentPadding = EdgeInsets.only(top: ScreenUtil().setHeight(24));
+  static final EdgeInsets contentPadding = EdgeInsets.only(top: ScreenUtil().setHeight(0));
 }
 
 /// 添加习惯页面专用常量
@@ -369,6 +369,10 @@ class HabitItemWidgetConstants extends BaseLayoutConstants {
   static final EdgeInsets cardMargin = EdgeInsets.symmetric(
     horizontal: ScreenUtil().setWidth(16),
     vertical: ScreenUtil().setHeight(10),
+  );
+  static final EdgeInsets firstCardMargin = EdgeInsets.symmetric(
+    horizontal: ScreenUtil().setWidth(16),
+    vertical: ScreenUtil().setHeight(8),
   );
   static final EdgeInsets backgroundContainerMargin = EdgeInsets.symmetric(
     horizontal: ScreenUtil().setWidth(16),

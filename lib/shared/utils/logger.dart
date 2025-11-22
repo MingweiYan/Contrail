@@ -26,10 +26,7 @@ class AppLogger {
     );
   }
 
-  // 详细日志
-  void verbose(String message) {
-    _logger.v(message);
-  }
+  
 
   // 调试日志
   void debug(String message) {
