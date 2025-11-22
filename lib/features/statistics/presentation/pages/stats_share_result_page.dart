@@ -111,8 +111,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
             BarChartRodData(
               toY: completionRate,
               color: color,
-              width: 20,
-              borderRadius: const BorderRadius.all(Radius.circular(4)),
+              width: ScreenUtil().setWidth(20),
+              borderRadius: BorderRadius.all(Radius.circular(ScreenUtil().setWidth(4))),
               backDrawRodData: BackgroundBarChartRodData(
                 toY: maxValue,
                 color: Colors.grey[200],
@@ -145,7 +145,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         final index = value.toInt();
                         if (index >= 0 && index < goalCompletionData.length) {
                           return SizedBox(
-                            width: 60,
+                            width: ScreenUtil().setWidth(60),
                             child: Text(
                               goalCompletionData[index]['name'].toString(),
                               style: TextStyle(fontSize: StatsShareResultPageConstants.axisLabelFontSize),

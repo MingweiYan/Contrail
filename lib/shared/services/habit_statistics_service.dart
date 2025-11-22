@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/habit.dart';
 import '../models/cycle_type.dart';
@@ -814,7 +815,7 @@ class HabitStatisticsService {
           title: '$completedDays',
           radius: 60,
           titleStyle: TextStyle(
-                      fontSize: 20,
+                      fontSize: ScreenUtil().setSp(20),
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -829,7 +830,7 @@ class HabitStatisticsService {
         title: '$completedDays',
         radius: 60,
         titleStyle: TextStyle(
-          fontSize: 20,
+          fontSize: ScreenUtil().setSp(20),
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
@@ -840,7 +841,7 @@ class HabitStatisticsService {
         title: '$remainingDays',
         radius: 60,
         titleStyle: TextStyle(
-                    fontSize: 20,
+                    fontSize: ScreenUtil().setSp(20),
                     fontWeight: FontWeight.bold,
                     color: Colors.black54,
                   ),

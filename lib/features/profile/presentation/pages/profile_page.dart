@@ -326,7 +326,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 
                 // 分隔线
-                Divider(height: 1, color: ThemeHelper.onBackground(context).withOpacity(0.1)),
+                Divider(height: ScreenUtil().setHeight(1), color: ThemeHelper.onBackground(context).withOpacity(0.1)),
                 
                 // 个性化设置
                 ListTile(
@@ -350,7 +350,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 // 分隔线
-                Divider(height: 1, color: ThemeHelper.onBackground(context).withOpacity(0.1)),
+                Divider(height: ScreenUtil().setHeight(1), color: ThemeHelper.onBackground(context).withOpacity(0.1)),
 
                 // 数据备份
                 ListTile(
@@ -373,7 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 
                 // 分隔线
-                Divider(height: 1, color: ThemeHelper.onBackground(context).withOpacity(0.1)),
+                Divider(height: ScreenUtil().setHeight(1), color: ThemeHelper.onBackground(context).withOpacity(0.1)),
 
                 // 关于
                 ListTile(
@@ -395,7 +395,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Debug菜单选项 - 仅在debug模式激活时显示
                 if (_debugMenuManager.showDebugTab) ...[
                   // 分隔线
-                  Divider(height: 1, color: ThemeHelper.onBackground(context).withOpacity(0.1)),
+                  Divider(height: ScreenUtil().setHeight(1), color: ThemeHelper.onBackground(context).withOpacity(0.1)),
                   
                   // Debug菜单
                     Container(

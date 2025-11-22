@@ -195,7 +195,7 @@ class StatisticsTrendView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
                       border: Border.all(
                         color: isVisible ? habit.color : Colors.grey.shade300,
-                        width: 2,
+                        width: ScreenUtil().setWidth(2),
                       ),
                     ),
                     child: Row(

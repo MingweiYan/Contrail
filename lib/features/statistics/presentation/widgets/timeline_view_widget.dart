@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
@@ -77,7 +78,7 @@ class TimelineViewWidget extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).dividerColor,
-                borderRadius: BorderRadius.circular(1.5),
+                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(1.5)),
               ),
             ),
           ),

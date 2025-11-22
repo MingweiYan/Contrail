@@ -393,9 +393,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
                       Theme.of(context).colorScheme.primary.withOpacity(0.8),
                     ],
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(ScreenUtil().setWidth(30)),
+                    bottomRight: Radius.circular(ScreenUtil().setWidth(30)),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -551,7 +551,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 ] else ...[
                                   // 没有富文本时显示提示
                                   ConstrainedBox(
-                                    constraints: BoxConstraints(minHeight: 120, maxHeight: 240), // 设置最小高度为120，最大高度为240
+                                    constraints: BoxConstraints(minHeight: ScreenUtil().setHeight(120), maxHeight: ScreenUtil().setHeight(240)), // 设置最小高度为120，最大高度为240
                                     child: Center(
                                       child: Text(
                                         '暂无描述内容',

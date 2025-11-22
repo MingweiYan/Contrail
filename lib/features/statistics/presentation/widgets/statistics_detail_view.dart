@@ -130,7 +130,7 @@ class StatisticsDetailView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
                       border: Border.all(
                         color: isVisible ? habit.color : Colors.grey.shade300,
-                        width: 2,
+                        width: ScreenUtil().setWidth(2),
                       ),
                     ),
                     child: Row(
@@ -160,7 +160,7 @@ class StatisticsDetailView extends StatelessWidget {
             ),
           ),
           // 确保容器宽度充足，即使习惯数量较少
-          allHabits.length < 3 ? Container(width: 80) : Container(),
+          allHabits.length < 3 ? Container(width: ScreenUtil().setWidth(80)) : Container(),
         ],
       ),
     );

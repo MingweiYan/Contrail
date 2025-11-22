@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart' show ScreenUtil;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:contrail/core/routing/app_router.dart';
 
@@ -32,19 +33,19 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               // 显示SVG图像
               SizedBox(
-                width: 800,
-                height: 800,
+                width: ScreenUtil().setWidth(800),
+                height: ScreenUtil().setHeight(800),
                 child: SvgPicture.asset(
                   'assets/images/cover.svg',
                   fit: BoxFit.contain,
                 ),
               ),
-              SizedBox(height: 40),
+              SizedBox(height: ScreenUtil().setHeight(40)),
               // 应用名称或其他文字
               Text(
                 'Contrail',
                 style: TextStyle(
-                  fontSize: 36,
+                  fontSize: ScreenUtil().setSp(36),
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -56,4 +57,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-

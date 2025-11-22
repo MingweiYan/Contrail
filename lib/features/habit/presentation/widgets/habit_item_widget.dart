@@ -159,7 +159,7 @@ class HabitItemWidget extends StatelessWidget {
                       color: isDarkMode
                           ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
                           : Colors.transparent,
-                      width: 1,
+                      width: ScreenUtil().setWidth(1),
                     ),
                   ),
                   padding: HabitItemWidgetConstants.containerPadding,
@@ -247,7 +247,7 @@ class HabitItemWidget extends StatelessWidget {
                                     backgroundColor: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                                     valueColor: AlwaysStoppedAnimation<Color>(gradientColors[0]),
                                     minHeight: HabitItemWidgetConstants.progressIndicatorHeight,
-                                  borderRadius: BorderRadius.circular(2),
+                                  borderRadius: BorderRadius.circular(ScreenUtil().setWidth(2)),
                                   ),
                                   SizedBox(height: HabitItemWidgetConstants.nameDescriptionSpacing),
                                 ],
