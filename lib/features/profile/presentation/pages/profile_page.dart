@@ -259,50 +259,33 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
                 SizedBox(height: ProfilePageConstants.avatarUsernameSpacing),
-                // 用户名输入框带有自定义样式
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(ProfilePageConstants.textFieldBorderRadius),
-                    ),
-                    padding: ProfilePageConstants.textFieldPadding,
-                    child: TextFormField(
-                      initialValue: _username,
-                      decoration: InputDecoration(
-                        labelText: '用户名',
-                        labelStyle: TextStyle(
-                          color: ThemeHelper.onBackground(context).withOpacity(0.9),
-                          fontSize: ProfilePageConstants.labelFontSize
-                        ),
-                        border: InputBorder.none,
-                      ),
-                      style: TextStyle(
-                        color: ThemeHelper.onBackground(context),
-                        fontSize: ProfilePageConstants.inputFontSize,
-                        fontWeight: FontWeight.bold
-                      ),
-                      onChanged: (value) => setState(() => _username = value),
-                    ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(ProfilePageConstants.textFieldBorderRadius),
                   ),
-                  SizedBox(height: ProfilePageConstants.usernameButtonSpacing),
-                // 保存按钮使用悬浮效果
-                  ElevatedButton(
-                    onPressed: _saveSettings,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ThemeHelper.primary(context),
-                      padding: ProfilePageConstants.buttonPadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ProfilePageConstants.buttonBorderRadius),
-                      ),
-                      elevation: 4,
-                      shadowColor: ThemeHelper.primary(context).withOpacity(0.3),
+                  padding: ProfilePageConstants.textFieldPadding,
+                  child: TextFormField(
+                    initialValue: _username,
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
                     ),
-                    child: Text('保存', style: TextStyle(
-                      fontSize: ProfilePageConstants.buttonFontSize,
+                    style: TextStyle(
+                      color: ThemeHelper.onBackground(context),
+                      fontSize: ProfilePageConstants.inputFontSize,
                       fontWeight: FontWeight.bold,
-                      color: ThemeHelper.onPrimary(context)
-                    )),
+                    ),
+                    onChanged: (value) {
+                      setState(() => _username = value);
+                      _saveSettings();
+                    },
+                    onEditingComplete: () {
+                      FocusScope.of(context).unfocus();
+                      _saveSettings();
+                    },
                   ),
+                ),
               ],
             ),
           ),
@@ -448,6 +431,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   onTap: () {
                     showAboutDialog(
                       context: context,
+                      applicationIcon: Icon(
+                        Icons.info_outline,
+                        color: ThemeHelper.primary(context),
+                        size: ScreenUtil().setSp(28),
+                      ),
                       applicationName: 'Contrail',
                       applicationVersion: '1.0.0',
                       applicationLegalese: '© 吃葡萄不吃葡萄皮. 保留所有权利.',

@@ -197,5 +197,57 @@ defaultAppThemes() {
       patternAsset: 'assets/patterns/amber_pattern.png',
       iconStyle: IconStyle.gradient,
     ),
+    AppTheme(
+      name: '深邃红色',
+      lightTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.red,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      lightBackgroundStyle: BackgroundStyle.gradient,
+      darkBackgroundStyle: BackgroundStyle.gradient,
+      gradientColors: [Colors.red.shade100, Colors.red.shade50],
+      iconStyle: IconStyle.defaultStyle,
+    ),
+    AppTheme(
+      name: '沉稳蓝灰',
+      lightTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blueGrey,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      lightBackgroundStyle: BackgroundStyle.none,
+      darkBackgroundStyle: BackgroundStyle.none,
+      iconStyle: IconStyle.defaultStyle,
+    ),
+    AppTheme(
+      name: '浓郁咖啡',
+      lightTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.brown,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      lightBackgroundStyle: BackgroundStyle.none,
+      darkBackgroundStyle: BackgroundStyle.none,
+      iconStyle: IconStyle.outlined,
+    ),
   ];
 }

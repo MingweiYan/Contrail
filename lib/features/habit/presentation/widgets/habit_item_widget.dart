@@ -203,10 +203,19 @@ class HabitItemWidget extends StatelessWidget {
                                 children:[
                                   Text(
                                     habit.name,
-                                    style: ThemeHelper.textStyleWithTheme(
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontSize: HabitItemWidgetConstants.habitNameFontSize + 2,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.15,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ) ?? ThemeHelper.textStyleWithTheme(
                                       context,
-                                      fontSize: HabitItemWidgetConstants.habitNameFontSize,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: HabitItemWidgetConstants.habitNameFontSize + 2,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   if (isCompletedToday)
@@ -231,6 +240,8 @@ class HabitItemWidget extends StatelessWidget {
                               SizedBox(height: HabitItemWidgetConstants.progressIndicatorSpacing),
                               Text(
                                 formatDescription(habit),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: ThemeHelper.textStyleWithTheme(
                                   context,
                                   fontSize: HabitItemWidgetConstants.habitDescriptionFontSize,
@@ -242,12 +253,24 @@ class HabitItemWidget extends StatelessWidget {
                               Column(
                                 children: [
                                   // 主进度条（根据规则计算最终进度）
-                                  LinearProgressIndicator(
-                                    value: getFinalProgress(habit).clamp(0.0, 1.0),
-                                    backgroundColor: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                                    valueColor: AlwaysStoppedAnimation<Color>(gradientColors[0]),
-                                    minHeight: HabitItemWidgetConstants.progressIndicatorHeight,
-                                  borderRadius: BorderRadius.circular(ScreenUtil().setWidth(2)),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(4)),
+                                          child: LinearProgressIndicator(
+                                            value: getFinalProgress(habit).clamp(0.0, 1.0),
+                                            backgroundColor: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                                            valueColor: AlwaysStoppedAnimation<Color>(gradientColors[0]),
+                                            minHeight: HabitItemWidgetConstants.progressIndicatorHeight,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: ScreenUtil().setWidth(8)),
+                                      Text('${(getFinalProgress(habit).clamp(0.0, 1.0) * 100).round()}%',
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      ),
+                                    ],
                                   ),
                                   SizedBox(height: HabitItemWidgetConstants.nameDescriptionSpacing),
                                 ],
@@ -287,7 +310,6 @@ class HabitItemWidget extends StatelessWidget {
                       size: HabitItemWidgetConstants.actionButtonIconSize,
                     ),
                     onPressed: () {
-                      // 播放按钮点击事件，阻止事件冒泡到卡片的onTap
                       onNavigateToTracking(habit);
                     },
                     tooltip: '开始',

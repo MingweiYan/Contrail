@@ -250,7 +250,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     return LineChartBarData(
       spots: spots,
       isCurved: true, // 曲线样式
-      curveSmoothness: 0.3, // 曲线平滑度
+      curveSmoothness: 0.3, // 降低平滑度以减少过冲
       color: color,
       barWidth: StatisticsChartWidgetConstants.lineWidth,
       isStrokeCapRound: true, // 线条两端为圆形
@@ -304,19 +304,12 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     }
     
     // 根据图表类型和最大值设置不同的边距策略
-    if (chartType == 'count') {
-      // 次数统计：如果最大值不超过5次，直接使用习惯的最大值
-      if (maxY > 0 && maxY <= 5) {
-        // 直接使用习惯的最大值，不增加额外边距
-        // maxY = maxY;  // 这是一个空操作，可以省略
-      } else {
-        // 添加一些边距
-        maxY = maxY == 0 ? 10 : maxY * 1.1;
-      }
-    } else {
-      // 时间统计保持原逻辑
-      maxY = maxY == 0 ? 10 : maxY * 1.1;
-    }
+
+
+    maxY = maxY == 0 ? 10 : maxY * 1.1;
+
+    // 向上取整到整数，以获得更规整的坐标上限
+    maxY = maxY.ceil().toDouble();
 
     return LineChartData(
       // 启用交互功能
@@ -451,6 +444,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           right: BorderSide.none,
         ),
       ),
+      clipData: const FlClipData(top: true, bottom: true, left: true, right: true),
       // 限制范围
       minX: 0,
       maxX: (titles.length - 1).toDouble(),
