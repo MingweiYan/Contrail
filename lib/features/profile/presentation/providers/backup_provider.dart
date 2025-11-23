@@ -127,6 +127,19 @@ class BackupProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
+
+  Future<void> resetBackupPathToDefault() async {
+    try {
+      _setLoading(true);
+      final path = await _backupService.resetBackupPathToDefault();
+      _localBackupPath = path;
+      await _loadBackupFiles();
+    } catch (e) {
+      _setError('回退到默认目录失败: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
   
   /// 执行本地备份
   Future<bool> performBackup() async {
@@ -140,6 +153,17 @@ class BackupProvider extends ChangeNotifier {
         return false;
       }
       
+      if (Platform.isAndroid && await _backupService.hasExternalAuthorizedDirectory()) {
+        final successSaf = await _backupService.performBackup(_localBackupPath);
+        if (successSaf) {
+          final settings = await _backupService.loadAutoBackupSettings();
+          _lastBackupTime = settings['lastBackupTime'] as DateTime?;
+          await _loadBackupFiles();
+          return true;
+        }
+        _setError('备份失败，请检查目录授权');
+        return false;
+      }
       // 验证备份路径是否存在且可写
       final directory = Directory(_localBackupPath);
       if (!await directory.exists()) {
@@ -157,7 +181,7 @@ class BackupProvider extends ChangeNotifier {
         await testFile.writeAsString('test', flush: true);
         await testFile.delete();
       } catch (testError) {
-        _setError('备份目录不可写，请更换备份路径');
+        _setError('备份目录不可写：请更换备份路径或选择外部目录并授权访问');
         return false;
       }
       

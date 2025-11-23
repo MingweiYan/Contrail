@@ -39,6 +39,16 @@ class BackupService {
     // 委托给存储服务处理权限检查
     return await _storageService.checkPermissions();
   }
+
+  Future<bool> hasExternalAuthorizedDirectory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final uri = prefs.getString('localBackupTreeUri');
+    return uri != null && uri.startsWith('content://');
+  }
+
+  Future<String> resetBackupPathToDefault() async {
+    return await (_storageService as dynamic).resetToDefaultPath();
+  }
   
   
   /// 加载自动备份设置
@@ -46,7 +56,8 @@ class BackupService {
     final prefs = await SharedPreferences.getInstance();
     
     final autoBackupEnabled = prefs.getBool(_autoBackupEnabledKey) ?? false;
-    final backupFrequency = prefs.getInt(_backupFrequencyKey) ?? 1;
+    final dynamic rawFreq = prefs.get(_backupFrequencyKey);
+    final int backupFrequency = _normalizeBackupFrequency(rawFreq);
     
     final lastBackupMillis = prefs.getInt(_lastBackupTimeKey);
     final lastBackupTime = lastBackupMillis != null 
@@ -377,6 +388,29 @@ class BackupService {
     } catch (e) {
       logger.error('安排自动备份失败', e);
     }
+  }
+
+  int _normalizeBackupFrequency(dynamic raw) {
+    if (raw is int) {
+      return raw;
+    }
+    if (raw is String) {
+      final s = raw.trim();
+      switch (s) {
+        case '每天':
+        case 'daily':
+          return 1;
+        case '每周':
+        case 'weekly':
+          return 7;
+        case '每月':
+        case 'monthly':
+          return 30;
+      }
+      final parsed = int.tryParse(s);
+      if (parsed != null) return parsed;
+    }
+    return 1;
   }
   
   /// 取消自动备份

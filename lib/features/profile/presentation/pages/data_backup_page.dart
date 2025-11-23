@@ -274,6 +274,18 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                               },
                               child: Text('更换', style: TextStyle(fontSize: DataBackupPageConstants.fontSize_18)),
                             ),
+                            SizedBox(width: BaseLayoutConstants.spacingSmall),
+                            TextButton(
+                              onPressed: () async {
+                                await backupProvider.resetBackupPathToDefault();
+                                if (backupProvider.errorMessage == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('已回退到默认备份目录')),
+                                  );
+                                }
+                              },
+                              child: Text('使用默认目录', style: TextStyle(fontSize: DataBackupPageConstants.fontSize_18)),
+                            ),
                           ],
                         ),
                         SizedBox(height: BaseLayoutConstants.spacingMedium),

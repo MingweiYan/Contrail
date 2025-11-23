@@ -8,17 +8,23 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
+import 'package:contrail/shared/services/android_saf_storage.dart';
+import 'package:saf/src/storage_access_framework/api.dart' as saf_api;
 
 /// 本地存储服务实现类，处理文件系统操作
 class LocalStorageService implements StorageServiceInterface {
   static const String _localBackupPathKey = 'localBackupPath';
+  static const String _localBackupTreeUriKey = 'localBackupTreeUri';
   String? _currentPath;
+  String? _treeUri;
   
   @override
   Future<void> initialize() async {
     try {
       // 确保有有效的备份路径
       _currentPath = await getReadPath();
+      final prefs = await SharedPreferences.getInstance();
+      _treeUri = prefs.getString(_localBackupTreeUriKey);
     } catch (e) {
       logger.error('初始化本地存储服务失败', e);
       throw Exception('初始化本地存储服务失败: $e');
@@ -28,6 +34,9 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<Map<String, dynamic>?> readData(BackupFileInfo file) async {
     try {
+      if (Platform.isAndroid && file.path.startsWith('content://')) {
+        return await AndroidSafStorage.readJson(file.path);
+      }
       final filePath = File(file.path);
       if (!await filePath.exists()) {
         logger.warning('备份文件不存在: ${file.path}');
@@ -45,6 +54,29 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<bool> writeData(String fileName, Map<String, dynamic> data) async {
     try {
+      if (Platform.isAndroid) {
+        final prefs = await SharedPreferences.getInstance();
+        _treeUri ??= prefs.getString(_localBackupTreeUriKey);
+        if (_treeUri != null && _treeUri!.startsWith('content://')) {
+          final uri = Uri.parse(_treeUri!);
+          final persisted = await saf_api.isPersistedUri(uri);
+          final writable = (await saf_api.canWrite(uri)) ?? false;
+          logger.info('SAF授权状态 persisted=$persisted writable=$writable uri=$_treeUri');
+          if (!persisted || !writable) {
+            final newUri = await AndroidSafStorage.pickDirectoryUri();
+            if (newUri != null && newUri.startsWith('content://')) {
+              await prefs.setString(_localBackupTreeUriKey, newUri);
+              _treeUri = newUri;
+              logger.info('已获取新的SAF授权: $_treeUri');
+            } else {
+              throw Exception('未获得目录授权');
+            }
+          }
+          await AndroidSafStorage.writeJson(_treeUri!, fileName, data);
+          logger.info('数据已成功写入(SAF): $fileName');
+          return true;
+        }
+      }
       // 再次检查权限，确保在写入前有足够的权限
       final hasPermission = await checkPermissions();
       if (!hasPermission) {
@@ -116,6 +148,14 @@ class LocalStorageService implements StorageServiceInterface {
       }
       
       final prefs = await SharedPreferences.getInstance();
+      _treeUri = prefs.getString(_localBackupTreeUriKey);
+
+      if (Platform.isAndroid && _treeUri != null && _treeUri!.startsWith('content://')) {
+        final decoded = saf_api.makeDirectoryPath(_treeUri!);
+        final displayPath = '/storage/emulated/0/$decoded';
+        _currentPath = displayPath;
+        return displayPath;
+      }
       
       final savedPath = prefs.getString(_localBackupPathKey);
       if (savedPath != null) {
@@ -124,8 +164,15 @@ class LocalStorageService implements StorageServiceInterface {
         if (!backupDir.existsSync()) {
           backupDir.createSync(recursive: true);
         }
-        _currentPath = savedPath;
-        return savedPath;
+        try {
+          final testFile = File('$savedPath/.trae_write_check');
+          testFile.writeAsStringSync('test', flush: true);
+          if (testFile.existsSync()) {
+            testFile.deleteSync();
+          }
+          _currentPath = savedPath;
+          return savedPath;
+        } catch (_) {}
       }
       
       // 设置默认备份路径
@@ -152,20 +199,44 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<String> setWritePath(String path) async {
     try {
+      if (Platform.isAndroid && path.startsWith('content://')) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_localBackupTreeUriKey, path);
+        _treeUri = path;
+        final decoded = saf_api.makeDirectoryPath(path);
+        final displayPath = '/storage/emulated/0/$decoded';
+        logger.info('备份目录授权为(SAF): $displayPath');
+        return displayPath;
+      }
       // 确保目录存在
       final backupDir = Directory(path);
       if (!backupDir.existsSync()) {
         backupDir.createSync(recursive: true);
       }
       
-      // 保存路径
+      String finalPath = path;
+      try {
+        final testFile = File('$path/.trae_write_check');
+        testFile.writeAsStringSync('test', flush: true);
+        if (testFile.existsSync()) {
+          testFile.deleteSync();
+        }
+      } catch (_) {
+        final directory = await getApplicationDocumentsDirectory();
+        finalPath = '${directory.path}/backups';
+        final fallbackDir = Directory(finalPath);
+        if (!fallbackDir.existsSync()) {
+          fallbackDir.createSync(recursive: true);
+        }
+        logger.warning('所选备份目录不可写，已回退到默认路径: $finalPath');
+      }
+      
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_localBackupPathKey, path);
-      
-      _currentPath = path;
-      logger.info('备份路径已设置为: $path');
-      
-      return path;
+      await prefs.remove(_localBackupTreeUriKey);
+      await prefs.setString(_localBackupPathKey, finalPath);
+      _currentPath = finalPath;
+      logger.info('备份路径已设置为: $finalPath');
+      return finalPath;
     } catch (e) {
       logger.error('设置备份路径失败', e);
       throw Exception('设置备份路径失败: $e');
@@ -175,16 +246,34 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<List<BackupFileInfo>> listFiles() async {
     try {
+      if (Platform.isAndroid) {
+        final prefs = await SharedPreferences.getInstance();
+        _treeUri ??= prefs.getString(_localBackupTreeUriKey);
+        if (_treeUri != null && _treeUri!.startsWith('content://')) {
+          final entries = await AndroidSafStorage.listJsonFiles(_treeUri!);
+          final files = entries.map((e) => BackupFileInfo(
+                name: e['name'] as String,
+                path: e['uri'] as String,
+                lastModified: DateTime.fromMillisecondsSinceEpoch(e['lastModified'] as int),
+                size: (e['size'] as num).toInt(),
+              )).toList();
+          logger.info('SAF备份文件数: ${files.length}');
+          files.sort((a, b) => b.lastModified.compareTo(a.lastModified));
+          return files;
+        }
+      }
       final path = _currentPath ?? await getReadPath();
       final backupDir = Directory(path);
       
       if (!backupDir.existsSync()) {
+        logger.info('备份目录不存在: $path');
         return [];
       }
       
       final List<FileSystemEntity> entities = await backupDir.list().toList();
       final files = entities.where((entity) => entity is File).cast<File>().toList();
       files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+      logger.info('本地备份文件数: ${files.length}');
       
       return files.map((file) => BackupFileInfo(
         name: file.path.split('/').last,
@@ -201,6 +290,11 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<bool> deleteFile(BackupFileInfo file) async {
     try {
+      if (Platform.isAndroid && file.path.startsWith('content://')) {
+        await AndroidSafStorage.deleteFile(file.path);
+        logger.info('备份文件已删除(SAF): ${file.path}');
+        return true;
+      }
       final filePath = File(file.path);
       if (await filePath.exists()) {
         await filePath.delete();
@@ -224,25 +318,7 @@ class LocalStorageService implements StorageServiceInterface {
         final sdkInt = androidInfo.version.sdkInt;
         
         if (sdkInt >= 33) {
-          // Android 13+ 需要不同的权限处理
-          // 对于备份功能，我们需要存储权限而不仅仅是照片权限
-          var mediaStatus = await Permission.photos.status;
-          var storageStatus = await Permission.storage.status;
-          var mediaLibraryStatus = await Permission.mediaLibrary.status;
-          
-          // 请求所有可能需要的存储相关权限
-          if (!mediaStatus.isGranted) {
-            mediaStatus = await Permission.photos.request();
-          }
-          if (!storageStatus.isGranted) {
-            storageStatus = await Permission.storage.request();
-          }
-          if (!mediaLibraryStatus.isGranted) {
-            mediaLibraryStatus = await Permission.mediaLibrary.request();
-          }
-          
-          // 只要有一个权限被授予就可以尝试继续
-          return mediaStatus.isGranted || storageStatus.isGranted || mediaLibraryStatus.isGranted;
+          return true;
         } else if (sdkInt >= 30) {
           // Android 11-12
           var status = await Permission.storage.status;
@@ -288,16 +364,37 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<String?> openDirectorySelector() async {
     try {
+      if (Platform.isAndroid) {
+        return await AndroidSafStorage.pickDirectoryUri();
+      }
       return await FilePicker.platform.getDirectoryPath();
     } catch (e) {
       logger.error('打开目录选择器失败', e);
       return null;
     }
   }
+
+  Future<String> resetToDefaultPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_localBackupTreeUriKey);
+    final directory = await getApplicationDocumentsDirectory();
+    final defaultPath = '${directory.path}/backups';
+    final backupDir = Directory(defaultPath);
+    if (!backupDir.existsSync()) {
+      backupDir.createSync(recursive: true);
+    }
+    await prefs.setString(_localBackupPathKey, defaultPath);
+    _treeUri = null;
+    _currentPath = defaultPath;
+    return defaultPath;
+  }
   
   @override
   Future<int> getFileSize(BackupFileInfo file) async {
     try {
+      if (Platform.isAndroid && file.path.startsWith('content://')) {
+        return file.size;
+      }
       final filePath = File(file.path);
       if (await filePath.exists()) {
         final stat = await filePath.stat();
@@ -313,6 +410,9 @@ class LocalStorageService implements StorageServiceInterface {
   @override
   Future<DateTime> getFileLastModified(BackupFileInfo file) async {
     try {
+      if (Platform.isAndroid && file.path.startsWith('content://')) {
+        return file.lastModified;
+      }
       final filePath = File(file.path);
       if (await filePath.exists()) {
         final stat = await filePath.stat();
