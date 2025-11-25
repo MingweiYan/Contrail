@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
-import 'package:contrail/features/profile/domain/services/backup_service.dart';
+import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
 
 import 'package:contrail/features/profile/domain/services/local_storage_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
 
 /// 备份Provider，管理备份页面的状态并连接UI与服务层
 class BackupProvider extends ChangeNotifier {
-  final BackupService _backupService;
+  final LocalBackupService _backupService;
+  // 自动备份服务不在Provider中常驻，仅在需要时临时调用
   
   // UI状态
   bool _isLoading = false;
@@ -27,8 +29,8 @@ class BackupProvider extends ChangeNotifier {
   String? _errorMessage;
   
   // 构造函数，支持依赖注入
-  BackupProvider([BackupService? backupService]) : 
-    _backupService = backupService ?? BackupService(
+  BackupProvider([LocalBackupService? backupService]) : 
+    _backupService = backupService ?? LocalBackupService(
       storageService: LocalStorageService(), // 默认使用本地存储实现
     );
   
@@ -64,8 +66,7 @@ class BackupProvider extends ChangeNotifier {
       // 加载备份文件
       await _loadBackupFiles();
       
-      // 检查并执行自动备份
-      await _checkAndPerformAutoBackup();
+      // 自动备份在应用启动流程执行，此处不触发
     } catch (e) {
       _setError('初始化失败: $e');
     } finally {
@@ -76,8 +77,8 @@ class BackupProvider extends ChangeNotifier {
   /// 加载设置
   Future<void> _loadSettings() async {
     try {
-      // 加载自动备份设置
-      final settings = await _backupService.loadAutoBackupSettings();
+      // 加载自动备份设置（共享键）
+      final settings = await AutoBackupService().loadAutoBackupSettings();
       _autoBackupEnabled = settings['autoBackupEnabled'] as bool;
       _backupFrequency = settings['backupFrequency'] as int;
       _lastBackupTime = settings['lastBackupTime'] as DateTime?;
@@ -154,9 +155,9 @@ class BackupProvider extends ChangeNotifier {
       }
       
       if (Platform.isAndroid && await _backupService.hasExternalAuthorizedDirectory()) {
-        final successSaf = await _backupService.performBackup(_localBackupPath);
+      final successSaf = await _backupService.performBackup(_localBackupPath);
         if (successSaf) {
-          final settings = await _backupService.loadAutoBackupSettings();
+          final settings = await AutoBackupService().loadAutoBackupSettings();
           _lastBackupTime = settings['lastBackupTime'] as DateTime?;
           await _loadBackupFiles();
           return true;
@@ -189,7 +190,7 @@ class BackupProvider extends ChangeNotifier {
       
       if (success) {
         // 更新最后备份时间
-        final settings = await _backupService.loadAutoBackupSettings();
+        final settings = await AutoBackupService().loadAutoBackupSettings();
         _lastBackupTime = settings['lastBackupTime'] as DateTime?;
         
         // 刷新文件列表
@@ -272,7 +273,7 @@ class BackupProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       
-      await _backupService.saveAutoBackupSettings(enabled, frequency);
+      await AutoBackupService().saveAutoBackupSettings(enabled, frequency);
       
       // 更新状态
       _autoBackupEnabled = enabled;
@@ -300,20 +301,7 @@ class BackupProvider extends ChangeNotifier {
   }
   
   /// 检查并执行自动备份
-  Future<void> _checkAndPerformAutoBackup() async {
-    try {
-      final success = await _backupService.checkAndPerformAutoBackup();
-      
-      if (success) {
-        // 更新最后备份时间
-        final settings = await _backupService.loadAutoBackupSettings();
-        _lastBackupTime = settings['lastBackupTime'] as DateTime?;
-        notifyListeners();
-      }
-    } catch (e) {
-      logger.warning('自动备份检查失败: $e');
-    }
-  }
+  Future<void> _checkAndPerformAutoBackup() async {}
   
   /// 设置加载状态
   void _setLoading(bool loading) {

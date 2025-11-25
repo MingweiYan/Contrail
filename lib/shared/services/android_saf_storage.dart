@@ -22,25 +22,8 @@ class AndroidSafStorage {
   }
 
   static Future<List<Map<String, dynamic>>> listJsonFiles(String treeUri) async {
+    // 使用流式列举并从列数据中直接获取 name/size/lastModified，避免逐文件查询
     final List<Map<String, dynamic>> files = [];
-    final uris = await api.getFilesUri(treeUri, fileType: 'any');
-    if (uris != null && uris.isNotEmpty) {
-      for (final u in uris) {
-        final name = _extractDisplayName(u);
-        if (name != null && name.endsWith('.json')) {
-          final uri = Uri.parse(u);
-          final size = await api.getDocumentLength(uri) ?? 0;
-          final lm = await api.lastModified(uri);
-          files.add({
-            'name': name,
-            'uri': u,
-            'size': size,
-            'lastModified': (lm ?? DateTime.now()).millisecondsSinceEpoch,
-          });
-        }
-      }
-      return files;
-    }
     final tree = Uri.parse(treeUri);
     final stream = api.listFiles(
       tree,
@@ -73,8 +56,9 @@ class AndroidSafStorage {
     }, onDone: () {
       if (!done.isCompleted) done.complete();
     });
-    await Future.any([Future.delayed(const Duration(milliseconds: 100)), done.future]);
-    if (!done.isCompleted) {
+    try {
+      await done.future.timeout(const Duration(milliseconds: 400));
+    } on TimeoutException {
       try {
         await sub.cancel();
       } catch (_) {}

@@ -14,6 +14,7 @@ import 'features/habit/presentation/providers/habit_provider.dart';
 import 'features/profile/presentation/providers/backup_provider.dart';
 import 'features/profile/presentation/providers/personalization_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'features/profile/domain/services/auto_backup_service.dart';
 
 
 void main() async {
@@ -45,6 +46,11 @@ void main() async {
     }
     
     logger.debug('通知服务初始化成功');
+
+    // 自动备份服务独立于UI执行
+    final autoService = AutoBackupService();
+    await autoService.initialize();
+    await autoService.checkAndPerformAutoBackup();
 
     logger.info('启动应用...');
     runApp(const ContrailApp());

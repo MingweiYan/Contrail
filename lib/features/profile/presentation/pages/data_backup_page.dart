@@ -6,6 +6,11 @@ import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
+import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
+import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
+import 'package:contrail/features/profile/presentation/widgets/backup/backup_list_section.dart';
+import 'package:contrail/features/profile/presentation/widgets/backup/webdav_settings_card.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup_delete_confirmation_dialog.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup_restore_confirmation_dialog.dart';
 
@@ -25,6 +30,8 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final backupProvider = Provider.of<BackupProvider>(context, listen: false);
       backupProvider.initialize();
+      // 初始化 WebDAV Provider（仅用于页面内部）
+      // 如果外部已提供，可省略此处
     });
     
     // 添加观察者，监听页面可见性变化
@@ -49,33 +56,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
     }
   }
 
-  // 显示删除确认对话框
-  void _showDeleteConfirmation(BackupFileInfo backupFile) {
-    showDialog(
-      context: context,
-      builder: (context) => BackupDeleteConfirmationDialog(
-        backupFile: backupFile,
-        onCancel: () => Navigator.pop(context),
-        onConfirm: () async {
-          Navigator.pop(context);
-          
-          final backupProvider = Provider.of<BackupProvider>(context, listen: false);
-          final success = await backupProvider.deleteBackupFile(backupFile);
-          
-          if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('备份文件已删除')),
-            );
-          } else if (backupProvider.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(backupProvider.errorMessage!)),
-            );
-            backupProvider.clearError();
-          }
-        },
-      ),
-    );
-  }
+  
 
   // 显示恢复确认对话框
   void _showRestoreConfirmation(BackupFileInfo backupFile) {
@@ -355,6 +336,11 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                             minimumSize: Size(double.infinity, DataBackupPageConstants.buttonHeight),
                           ),
                         ),
+                        SizedBox(height: BaseLayoutConstants.spacingMedium),
+                        Text(
+                          '本地备份文件',
+                          style: TextStyle(fontSize: ScreenUtil().setSp(18), fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                   ),
@@ -486,7 +472,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                                       style: TextStyle(fontSize: DataBackupPageConstants.fontSize_16, fontWeight: FontWeight.w500),
                                     ),
                                     subtitle: Text(
-                                      '修改时间: ' + backupFile.formattedLastModified + ' · 大小: ' + backupFile.formattedSize,
+                              '备份时间: ' + backupFile.formattedLastModified + '\n大小: ' + backupFile.formattedSize,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(fontSize: DataBackupPageConstants.fontSize_14, color: ThemeHelper.onBackground(context).withValues(alpha: 0.7)),
@@ -509,6 +495,105 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                             },
                           ),
                       ],
+                    ),
+                  ),
+
+                  SizedBox(height: BaseLayoutConstants.spacingLarge),
+
+                  // 网络备份（WebDAV）分组
+                  ChangeNotifierProvider<WebDavBackupProvider>(
+                    create: (_) => WebDavBackupProvider(
+                      WebDavBackupService(storageService: WebDavStorageService()),
+                    )..initialize(),
+                    child: Consumer<WebDavBackupProvider>(
+                      builder: (context, webdavProvider, _) {
+                        // 错误提示
+                        if (webdavProvider.errorMessage != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(webdavProvider.errorMessage!)),
+                            );
+                            webdavProvider.clearError();
+                          });
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '网络备份（WebDAV）',
+                              style: TextStyle(fontSize: DataBackupPageConstants.fontSize_29, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: BaseLayoutConstants.spacingSmall),
+                            WebDavSettingsCard(
+                              url: webdavProvider.webdavUrl,
+                              username: webdavProvider.webdavUsername,
+                              password: webdavProvider.webdavPassword,
+                              path: webdavProvider.webdavPath,
+                              retentionCount: webdavProvider.retentionCount,
+                              onUrlChanged: webdavProvider.setWebDavUrl,
+                              onUsernameChanged: webdavProvider.setWebDavUsername,
+                              onPasswordChanged: webdavProvider.setWebDavPassword,
+                              onPathChanged: webdavProvider.setWebDavPath,
+                              onSaveConfig: () async {
+                                await webdavProvider.saveWebDavConfig();
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('WebDAV 配置已保存')));
+                              },
+                              onRetentionChanged: (val) async {
+                                await webdavProvider.saveRetentionCount(val);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('WebDAV 保留数量已设置为: ${webdavProvider.retentionCount}')));
+                              },
+                              onPerformBackup: () async {
+                                final ok = await webdavProvider.performBackup();
+                                if (ok) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('网络备份成功')));
+                                }
+                              },
+                            ),
+                            SizedBox(height: BaseLayoutConstants.spacingLarge),
+                            BackupListSection(
+                              title: '网络备份（WebDAV）文件',
+                              isLoading: webdavProvider.isLoading,
+                              files: webdavProvider.backupFiles,
+                              onRefresh: () { webdavProvider.refreshBackupFiles(); },
+                              onRestore: (file) async {
+                                final shouldRestore = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    backgroundColor: Theme.of(context).cardColor,
+                                    title: Text('确认恢复', style: TextStyle(fontSize: ScreenUtil().setSp(16), fontWeight: FontWeight.bold)),
+                                    content: Text('将用该网络备份覆盖当前数据，确定继续？', style: TextStyle(fontSize: ScreenUtil().setSp(20), color: ThemeHelper.onBackground(context))),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+                                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认')),
+                                    ],
+                                  ),
+                                ) ?? false;
+                                if (!shouldRestore) return;
+                                final ok = await webdavProvider.restoreBackupFile(context, file);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? '网络数据恢复成功' : '恢复失败')));
+                              },
+                              onDelete: (file) async {
+                                final shouldDelete = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    backgroundColor: Theme.of(context).cardColor,
+                                    title: Text('确认删除', style: TextStyle(fontSize: ScreenUtil().setSp(16), fontWeight: FontWeight.bold, color: Colors.red)),
+                                    content: Text('确定要删除备份文件吗？此操作不可撤销！', style: TextStyle(fontSize: ScreenUtil().setSp(20), color: ThemeHelper.onBackground(context))),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+                                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认')),
+                                    ],
+                                  ),
+                                ) ?? false;
+                                if (!shouldDelete) return false;
+                                final ok = await webdavProvider.deleteBackupFile(file);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? '已删除网络备份' : '删除失败')));
+                                return ok;
+                              },
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],

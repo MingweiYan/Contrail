@@ -251,12 +251,20 @@ class LocalStorageService implements StorageServiceInterface {
         _treeUri ??= prefs.getString(_localBackupTreeUriKey);
         if (_treeUri != null && _treeUri!.startsWith('content://')) {
           final entries = await AndroidSafStorage.listJsonFiles(_treeUri!);
-          final files = entries.map((e) => BackupFileInfo(
-                name: e['name'] as String,
-                path: e['uri'] as String,
-                lastModified: DateTime.fromMillisecondsSinceEpoch(e['lastModified'] as int),
-                size: (e['size'] as num).toInt(),
-              )).toList();
+          final re = RegExp(r'^contrail_backup_(\d+)\.json$');
+          final files = entries
+              .where((e) => re.hasMatch((e['name'] as String?) ?? ''))
+              .map((e) {
+                final name = e['name'] as String;
+                final ts = int.parse(re.firstMatch(name)!.group(1)!);
+                return BackupFileInfo(
+                  name: name,
+                  path: e['uri'] as String,
+                  lastModified: DateTime.fromMillisecondsSinceEpoch(ts),
+                  size: (e['size'] as num).toInt(),
+                );
+              })
+              .toList();
           logger.info('SAF备份文件数: ${files.length}');
           files.sort((a, b) => b.lastModified.compareTo(a.lastModified));
           return files;
@@ -271,16 +279,25 @@ class LocalStorageService implements StorageServiceInterface {
       }
       
       final List<FileSystemEntity> entities = await backupDir.list().toList();
-      final files = entities.where((entity) => entity is File).cast<File>().toList();
-      files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+      final re = RegExp(r'^contrail_backup_(\d+)\.json$');
+      final files = entities
+          .where((entity) => entity is File)
+          .cast<File>()
+          .where((file) => re.hasMatch(file.path.split('/').last))
+          .map((file) {
+            final name = file.path.split('/').last;
+            final ts = int.parse(re.firstMatch(name)!.group(1)!);
+            return BackupFileInfo(
+              name: name,
+              path: file.path,
+              lastModified: DateTime.fromMillisecondsSinceEpoch(ts),
+              size: file.lengthSync(),
+            );
+          })
+          .toList();
       logger.info('本地备份文件数: ${files.length}');
-      
-      return files.map((file) => BackupFileInfo(
-        name: file.path.split('/').last,
-        path: file.path,
-        lastModified: file.lastModifiedSync(),
-        size: file.lengthSync(),
-      )).toList();
+      files.sort((a, b) => b.lastModified.compareTo(a.lastModified));
+      return files;
     } catch (e) {
       logger.error('列出备份文件失败', e);
       return [];
