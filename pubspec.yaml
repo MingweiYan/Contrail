@@ -2,7 +2,7 @@ name: contrail
 description: "Contrail is a productivity app that helps you focus on your tasks and achieve your goals."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.8.1
@@ -36,6 +36,7 @@ dependencies:
   device_info_plus: ^9.1.2
   flutter_svg: ^2.0.9
   saf: ^1.0.0
+  open_filex: ^4.3.2
 
 
 dev_dependencies:

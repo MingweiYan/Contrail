@@ -5,6 +5,7 @@ import 'package:contrail/shared/utils/habit_data_generator.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/json_editor_page.dart';
+import 'package:contrail/shared/utils/debug_logs_viewer_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Debug菜单管理器 - 提供作为标签页的调试功能
@@ -242,6 +243,27 @@ class DebugMenuManager with WidgetsBindingObserver {
                 }
               ),
               SizedBox(height: ScreenUtil().setHeight(40)),
+
+              // 打开Debug日志查看器
+              _buildFullWidthDebugButton(
+                context,
+                '📂 打开Debug日志',
+                Colors.green,
+                () async {
+                  try {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DebugLogsViewerPage(),
+                      ),
+                    );
+                  } catch (e) {
+                    logger.error('打开Debug日志查看器失败', e);
+                    _showToast('打开Debug日志查看器失败');
+                  }
+                },
+              ),
+              SizedBox(height: ScreenUtil().setHeight(20)),
               
               // 关闭debug模式按钮
               ElevatedButton(

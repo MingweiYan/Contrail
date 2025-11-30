@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:ui';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -19,46 +22,54 @@ import 'features/profile/domain/services/auto_backup_service.dart';
 
 void main() async {
   logger.info('开始初始化应用...');
-  // 确保WidgetsBinding已初始化
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // 设置状态栏样式，让应用从状态栏下方开始显示
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
-  
-  // 设置UI模式，让应用内容避开状态栏
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: [SystemUiOverlay.bottom]);
-  
-  try {
-    // 初始化依赖注入
-    logger.debug('初始化依赖注入...');
-    await init();
-    logger.debug('依赖注入初始化成功');
-    
-    // 检查并存储首次启动日期
-    final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey('firstLaunchDate')) {
-      final now = DateTime.now();
-      prefs.setString('firstLaunchDate', now.toIso8601String());
-      logger.debug('存储首次启动日期: $now');
+
+  FlutterError.onError = (details) {
+    logger.error('Flutter框架异常', details.exception, details.stack);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    logger.fatal('未捕获异常', error, stack);
+    return true;
+  };
+
+  await runZonedGuarded(() async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ));
+
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: [SystemUiOverlay.bottom]);
+
+      final directory = await getApplicationDocumentsDirectory();
+      final logsPath = '${directory.path}/logs';
+      logger.enableFileLogging(logsPath, maxBytes: 16 * 1024 * 1024);
+      logger.debug('初始化依赖注入...');
+      await init();
+      logger.debug('依赖注入初始化成功');
+
+      final prefs = await SharedPreferences.getInstance();
+      if (!prefs.containsKey('firstLaunchDate')) {
+        final now = DateTime.now();
+        prefs.setString('firstLaunchDate', now.toIso8601String());
+        logger.debug('存储首次启动日期: $now');
+      }
+
+      logger.debug('通知服务初始化成功');
+
+      final autoService = AutoBackupService();
+      await autoService.initialize();
+      await autoService.checkAndPerformAutoBackup();
+
+      logger.info('启动应用...');
+      runApp(const ContrailApp());
+    } catch (e, stackTrace) {
+      logger.error('初始化过程中出错', e, stackTrace);
     }
-    
-    logger.debug('通知服务初始化成功');
-
-    // 自动备份服务独立于UI执行
-    final autoService = AutoBackupService();
-    await autoService.initialize();
-    await autoService.checkAndPerformAutoBackup();
-
-    logger.info('启动应用...');
-    runApp(const ContrailApp());
-  } catch (e, stackTrace) {
-    logger.error('初始化过程中出错', e, stackTrace);
-  }
-
-  
+  }, (error, stack) {
+    logger.fatal('Zone未捕获异常', error, stack);
+  });
 }
 
 

@@ -62,24 +62,24 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
   void _showRestoreConfirmation(BackupFileInfo backupFile) {
     showDialog(
       context: context,
-      builder: (context) => BackupRestoreConfirmationDialog(
+      builder: (dialogContext) => BackupRestoreConfirmationDialog(
         backupFile: backupFile,
-        onCancel: () => Navigator.pop(context),
+        onCancel: () => Navigator.pop(dialogContext),
         onConfirm: () async {
-          Navigator.pop(context);
-          
-          final backupProvider = Provider.of<BackupProvider>(context, listen: false);
-          final success = await backupProvider.restoreFromBackup(backupFile, context);
-          
+          Navigator.pop(dialogContext);
+
+          final backupProvider = Provider.of<BackupProvider>(this.context, listen: false);
+          final success = await backupProvider.restoreFromBackup(backupFile, this.context);
+
+          if (!mounted) return;
+
           if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            ScaffoldMessenger.of(this.context).showSnackBar(
               const SnackBar(content: Text('从本地备份恢复成功')),
             );
-            
-            // 恢复成功后返回上一页
-            Navigator.pop(context);
+            Navigator.pop(this.context);
           } else if (backupProvider.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            ScaffoldMessenger.of(this.context).showSnackBar(
               SnackBar(content: Text(backupProvider.errorMessage!)),
             );
             backupProvider.clearError();
@@ -266,6 +266,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                               TextButton(
                                 onPressed: () async {
                                   await backupProvider.changeBackupPath();
+                                  if (!mounted) return;
                                   if (backupProvider.errorMessage == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('备份路径已更改为: ${backupProvider.localBackupPath}')),
@@ -278,6 +279,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                               TextButton(
                                 onPressed: () async {
                                   await backupProvider.resetBackupPathToDefault();
+                                  if (!mounted) return;
                                   if (backupProvider.errorMessage == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('已回退到默认备份目录')),
@@ -324,6 +326,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                         ElevatedButton.icon(
                           onPressed: () async {
                             final success = await backupProvider.performBackup();
+                            if (!mounted) return;
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('本地备份成功')),
@@ -439,16 +442,17 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                                         ],
                                       ),
                                     ) ?? false;
-                                    if (shouldDelete) {
-                                      final bp = Provider.of<BackupProvider>(context, listen: false);
-                                      final success = await bp.deleteBackupFile(backupFile);
-                                      if (success) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('备份文件已删除')));
-                                      } else if (bp.errorMessage != null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(bp.errorMessage!)));
-                                        bp.clearError();
-                                      }
+                                  if (shouldDelete) {
+                                    final bp = Provider.of<BackupProvider>(context, listen: false);
+                                    final success = await bp.deleteBackupFile(backupFile);
+                                    if (!mounted) return false;
+                                    if (success) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('备份文件已删除')));
+                                    } else if (bp.errorMessage != null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(bp.errorMessage!)));
+                                      bp.clearError();
                                     }
+                                  }
                                     return false;
                                   },
                                   child: ListTile(
@@ -536,14 +540,17 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                               onPathChanged: webdavProvider.setWebDavPath,
                               onSaveConfig: () async {
                                 await webdavProvider.saveWebDavConfig();
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('WebDAV 配置已保存')));
                               },
                               onRetentionChanged: (val) async {
                                 await webdavProvider.saveRetentionCount(val);
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('WebDAV 保留数量已设置为: ${webdavProvider.retentionCount}')));
                               },
                               onPerformBackup: () async {
                                 final ok = await webdavProvider.performBackup();
+                                if (!mounted) return;
                                 if (ok) {
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('网络备份成功')));
                                 }
@@ -570,6 +577,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                                 ) ?? false;
                                 if (!shouldRestore) return;
                                 final ok = await webdavProvider.restoreBackupFile(context, file);
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? '网络数据恢复成功' : '恢复失败')));
                               },
                               onDelete: (file) async {
@@ -587,6 +595,7 @@ class _DataBackupPageState extends State<DataBackupPage> with WidgetsBindingObse
                                 ) ?? false;
                                 if (!shouldDelete) return false;
                                 final ok = await webdavProvider.deleteBackupFile(file);
+                                if (!mounted) return false;
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? '已删除网络备份' : '删除失败')));
                                 return ok;
                               },

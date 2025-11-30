@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- 前台服务类型权限 - Android 13及以上版本需要 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- 网络访问权限 - Release 构建需要显式声明 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     
     <!-- 存储权限声明 - 适用于Android 12及以下版本 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -17,7 +19,8 @@
         android:label="Contrail"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        android:usesCleartextTraffic="true">
         <!-- flutter-quill 配置：支持将图像复制到剪贴板供其他应用访问 -->
         <provider
             android:name="androidx.core.content.FileProvider"
