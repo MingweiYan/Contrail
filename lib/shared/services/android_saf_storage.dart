@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:saf/saf.dart';
 import 'package:saf/src/storage_access_framework/document_file_column.dart';
 import 'package:saf/src/storage_access_framework/api.dart' as api;
+import 'package:contrail/shared/utils/logger.dart';
 
 class AndroidSafStorage {
   static Future<String?> pickDirectoryUri() async {
@@ -86,7 +87,8 @@ class AndroidSafStorage {
       }
       if (sb.isEmpty) return null;
       return json.decode(sb.toString()) as Map<String, dynamic>;
-    } catch (_) {
+    } catch (e, st) {
+      logger.error('SAF读取JSON失败: $fileUri', e, st);
       return null;
     }
   }

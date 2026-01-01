@@ -74,7 +74,6 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
 
-    // 为每个习惯生成时间统计数据
     final List<LineChartBarData> timeData = widget.habits.asMap().entries.map((entry) {
       final index = entry.key;
       final habit = entry.value;
@@ -90,13 +89,17 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
 
+    final bool hasTrackTime = widget.habits.any((h) => h.trackTime);
+    
     // 过滤显示的数据
     final List<LineChartBarData> filteredCountData = [];
     final List<LineChartBarData> filteredTimeData = [];
     for (int i = 0; i < widget.habits.length; i++) {
       if (widget.isHabitVisible[i]) {
         filteredCountData.add(countData[i]);
-        filteredTimeData.add(timeData[i]);
+        if (widget.habits[i].trackTime) {
+          filteredTimeData.add(timeData[i]);
+        }
       }
     }
 
@@ -174,7 +177,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             ),
           ),
 
-          // 时间统计图表 - 添加独立的白色背景块
+          if (hasTrackTime)
           Container(
             margin: StatisticsChartWidgetConstants.containerMargin,
             decoration: BoxDecoration(
@@ -198,13 +201,13 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                   child: Semantics(
                     label: '习惯专注时间统计折线图，点击数据点查看提示',
                     child: LineChart(
-                      _createLineChartData(
-                        filteredTimeData.isEmpty ? timeData : filteredTimeData,
+                       _createLineChartData(
+                        filteredTimeData.isEmpty ? [] : filteredTimeData,
                         titles,
                         'time',
                         habitNames,
                         habitColors,
-                      ),
+                       ),
                     ),
                   ),
                 ),
@@ -226,7 +229,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             ),
           ),
           
-          // 时间统计标题
+          if (hasTrackTime)
           Padding(
             padding: StatisticsChartWidgetConstants.titlePadding,
             child: Text(
@@ -329,6 +332,13 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             }).toList();
           },
           touchTooltipData: LineTouchTooltipData(
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
+            tooltipRoundedRadius: ScreenUtil().setWidth(6),
+            tooltipPadding: EdgeInsets.symmetric(
+              horizontal: ScreenUtil().setWidth(8),
+              vertical: ScreenUtil().setHeight(6),
+            ),
             getTooltipItems: (touchedSpots) {
               final statsService = sl<HabitStatisticsService>();
               return touchedSpots.map((touchedSpot) {

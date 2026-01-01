@@ -179,9 +179,12 @@ class HabitManagementService {
     }
     
     int totalMinutes = 0;
-    habit.trackingDurations.forEach((date, durations) {
-      if (date.isAfter(startDate.subtract(const Duration(days: 1))) && date.isBefore(now.add(const Duration(days: 1)))) {
-        for (var duration in durations) {
+    final startOnly = DateTime(startDate.year, startDate.month, startDate.day);
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    habit.trackingDurations.forEach((dt, durations) {
+      final entryDay = DateTime(dt.year, dt.month, dt.day);
+      if (!entryDay.isBefore(startOnly) && !entryDay.isAfter(todayOnly)) {
+        for (final duration in durations) {
           totalMinutes += duration.inMinutes;
         }
       }

@@ -200,7 +200,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${provider.selectedYear}年${provider.selectedMonth}月专注记录',
+                '${provider.calendarSelectedYear}年${provider.calendarSelectedMonth}月专注记录',
                 style: TextStyle(
                   fontSize: HabitDetailStatisticsPageConstants.sectionTitleFontSize,
                   fontWeight: FontWeight.bold,
@@ -211,11 +211,11 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: Icon(Icons.chevron_left),
-                    onPressed: provider.previousMonth,
+                    onPressed: provider.previousCalendarMonth,
                   ),
                   IconButton(
                     icon: Icon(Icons.chevron_right),
-                    onPressed: provider.nextMonth,
+                    onPressed: provider.nextCalendarMonth,
                   ),
                 ],
               ),
@@ -226,8 +226,8 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             height: HabitDetailStatisticsPageConstants.calendarContainerHeight,
             child: CalendarViewWidget(
               habits: habits,
-              selectedYear: provider.selectedYear,
-              selectedMonth: provider.selectedMonth,
+              selectedYear: provider.calendarSelectedYear,
+              selectedMonth: provider.calendarSelectedMonth,
               habitColors: habitColors,
               weekStartDay: Provider.of<PersonalizationProvider>(context, listen: false).weekStartDay,
             ),

@@ -567,6 +567,25 @@ class HabitStatisticsService {
     WeekStartDay weekStartDay,
   ) {
     final List<FlSpot> spots = [];
+    if (chartType == 'time' && !habit.trackTime) {
+      if (timeRange == 'week') {
+        for (int i = 0; i < 7; i++) {
+          spots.add(FlSpot(i.toDouble(), 0.0));
+        }
+      } else if (timeRange == 'month') {
+        final monthStart = DateTime(selectedYear, selectedMonth, 1);
+        final monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
+        final weeks = _getMonthWeeks(monthStart, monthEnd, weekStartDay);
+        for (int i = 0; i < weeks.length; i++) {
+          spots.add(FlSpot(i.toDouble(), 0.0));
+        }
+      } else {
+        for (int m = 1; m <= 12; m++) {
+          spots.add(FlSpot((m - 1).toDouble(), 0.0));
+        }
+      }
+      return spots;
+    }
     if (timeRange == 'week') {
       final range = TimeManagementUtil.getWeekDateRange(selectedYear, selectedWeek, weekStartDay: weekStartDay);
       for (int i = 0; i < 7; i++) {
@@ -577,8 +596,15 @@ class HabitStatisticsService {
           final completed = habit.dailyCompletionStatus[dayKey] ?? false;
           value = completed ? 1.0 : 0.0;
         } else {
-          final durations = habit.trackingDurations[dayKey] ?? [];
-          value = durations.isNotEmpty ? durations.fold(0, (sum, d) => sum + d.inMinutes).toDouble() : 0.0;
+          int totalSeconds = 0;
+          habit.trackingDurations.forEach((dt, durations) {
+            if (dt.year == dayKey.year && dt.month == dayKey.month && dt.day == dayKey.day) {
+              for (final d in durations) {
+                totalSeconds += d.inSeconds;
+              }
+            }
+          });
+          value = totalSeconds > 0 ? (totalSeconds / 60.0) : 0.0;
         }
         spots.add(FlSpot(i.toDouble(), value));
       }
@@ -597,8 +623,15 @@ class HabitStatisticsService {
             final completed = habit.dailyCompletionStatus[dayKey] ?? false;
             if (completed) sum += 1;
           } else {
-            final durations = habit.trackingDurations[dayKey] ?? [];
-            if (durations.isNotEmpty) sum += durations.fold(0, (s, dd) => s + dd.inMinutes).toDouble();
+            int totalSeconds = 0;
+            habit.trackingDurations.forEach((dt, durations) {
+              if (dt.year == dayKey.year && dt.month == dayKey.month && dt.day == dayKey.day) {
+                for (final d in durations) {
+                  totalSeconds += d.inSeconds;
+                }
+              }
+            });
+            if (totalSeconds > 0) sum += (totalSeconds / 60.0);
           }
         }
         spots.add(FlSpot(i.toDouble(), sum));
@@ -614,8 +647,15 @@ class HabitStatisticsService {
             final completed = habit.dailyCompletionStatus[dayKey] ?? false;
             if (completed) sum += 1;
           } else {
-            final durations = habit.trackingDurations[dayKey] ?? [];
-            if (durations.isNotEmpty) sum += durations.fold(0, (s, dd) => s + dd.inMinutes).toDouble();
+            int totalSeconds = 0;
+            habit.trackingDurations.forEach((dt, durations) {
+              if (dt.year == dayKey.year && dt.month == dayKey.month && dt.day == dayKey.day) {
+                for (final d in durations) {
+                  totalSeconds += d.inSeconds;
+                }
+              }
+            });
+            if (totalSeconds > 0) sum += (totalSeconds / 60.0);
           }
         }
         spots.add(FlSpot((m - 1).toDouble(), sum));
@@ -723,8 +763,33 @@ class HabitStatisticsService {
   }
   
   /// 生成带偏移量的时间趋势图数据点
-  List<FlSpot> generateTimeTrendDataWithOffset(Habit habit, String timeRange, int timeOffset) {
+List<FlSpot> generateTimeTrendDataWithOffset(Habit habit, String timeRange, int timeOffset) {
     List<FlSpot> spots = [];
+    if (!habit.trackTime) {
+      if (timeRange == 'week') {
+        for (int i = 0; i < 7; i++) {
+          spots.add(FlSpot(i.toDouble(), 0.0));
+        }
+      } else if (timeRange == 'month') {
+        final now = DateTime.now();
+        int targetMonth = now.month - timeOffset;
+        int targetYear = now.year;
+        while (targetMonth > 12) { targetMonth -= 12; targetYear++; }
+        while (targetMonth < 1) { targetMonth += 12; targetYear--; }
+        final monthStart = DateTime(targetYear, targetMonth, 1);
+        final monthEnd = DateTime(targetYear, targetMonth + 1, 0);
+        WeekStartDay weekStartDay = WeekStartDay.monday;
+        final weeks = _getMonthWeeks(monthStart, monthEnd, weekStartDay);
+        for (int i = 0; i < weeks.length; i++) {
+          spots.add(FlSpot(i.toDouble(), 0.0));
+        }
+      } else {
+        for (int i = 0; i < 12; i++) {
+          spots.add(FlSpot(i.toDouble(), 0.0));
+        }
+      }
+      return spots;
+    }
     final now = DateTime.now();
     
     // 根据时间范围生成不同的数据点
@@ -742,12 +807,15 @@ class HabitStatisticsService {
         for (int i = 6; i >= 0; i--) {
           final date = baseDate.add(Duration(days: i));
           final dayKey = DateTime(date.year, date.month, date.day);
-          final durations = habit.trackingDurations[dayKey];
-          int totalMinutes = 0;
-          if (durations != null && durations.isNotEmpty) {
-            totalMinutes = durations.fold(0, (sum, duration) => sum + duration.inMinutes);
-          }
-          spots.add(FlSpot((6 - i).toDouble(), totalMinutes.toDouble()));
+          int totalSeconds = 0;
+          habit.trackingDurations.forEach((dt, durations) {
+            if (dt.year == dayKey.year && dt.month == dayKey.month && dt.day == dayKey.day) {
+              for (final d in durations) {
+                totalSeconds += d.inSeconds;
+              }
+            }
+          });
+          spots.add(FlSpot((6 - i).toDouble(), totalSeconds > 0 ? (totalSeconds / 60.0) : 0.0));
         }
         break;
         
@@ -764,16 +832,19 @@ class HabitStatisticsService {
         int index = 0;
         while (currentWeekStart.isBefore(monthEnd.add(const Duration(days: 1)))) {
           final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
-          int weeklyMinutes = 0;
+          int weeklySeconds = 0;
           for (DateTime d = currentWeekStart; d.isBefore(currentWeekEnd.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
             if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
             final dayKey = DateTime(d.year, d.month, d.day);
-            final durations = habit.trackingDurations[dayKey] ?? [];
-            if (durations.isNotEmpty) {
-              weeklyMinutes += durations.fold(0, (sum, duration) => sum + duration.inMinutes);
-            }
+            habit.trackingDurations.forEach((dt, durations) {
+              if (dt.year == dayKey.year && dt.month == dayKey.month && dt.day == dayKey.day) {
+                for (final dur in durations) {
+                  weeklySeconds += dur.inSeconds;
+                }
+              }
+            });
           }
-          spots.add(FlSpot(index.toDouble(), weeklyMinutes.toDouble()));
+          spots.add(FlSpot(index.toDouble(), weeklySeconds > 0 ? (weeklySeconds / 60.0) : 0.0));
           index++;
           currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
         }
@@ -785,18 +856,15 @@ class HabitStatisticsService {
         
         for (int i = 11; i >= 0; i--) {
           final targetMonth = DateTime(targetYear, i + 1, 1);
-          int totalMinutes = 0;
-          
-          // 统计该月的总时长
-          habit.trackingDurations.forEach((date, durations) {
-            if (date.year == targetMonth.year && date.month == targetMonth.month) {
-              if (durations.isNotEmpty) {
-            totalMinutes += durations.fold(0, (sum, duration) => sum + duration.inMinutes);
-          }
+          int totalSeconds = 0;
+          habit.trackingDurations.forEach((dt, durations) {
+            if (dt.year == targetMonth.year && dt.month == targetMonth.month) {
+              for (final d in durations) {
+                totalSeconds += d.inSeconds;
+              }
             }
           });
-          
-          spots.add(FlSpot((11 - i).toDouble(), totalMinutes.toDouble()));
+          spots.add(FlSpot((11 - i).toDouble(), totalSeconds > 0 ? (totalSeconds / 60.0) : 0.0));
         }
         break;
     }

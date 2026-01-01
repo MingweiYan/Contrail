@@ -17,6 +17,10 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   // 0表示当前周期，-1表示上一个周期，1表示下一个周期
   int _periodOffset = 0;
   
+  // 独立的日历月份状态（不影响统计时间范围）
+  int _calendarSelectedYear = DateTime.now().year;
+  int _calendarSelectedMonth = DateTime.now().month;
+  
   final Habit _habit;
   
   HabitDetailStatisticsProvider(this._habit) {
@@ -28,6 +32,8 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   int get timeOffset => _timeOffset;
   int get periodOffset => _periodOffset;
   Habit get habit => _habit;
+  int get calendarSelectedYear => _calendarSelectedYear;
+  int get calendarSelectedMonth => _calendarSelectedMonth;
   
   /// 获取当前选中的周期时间范围
   /// 根据习惯的cycleType和_periodOffset计算开始和结束日期
@@ -171,29 +177,30 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     // 计算周期内的总天数
     int totalDaysInPeriod = range.end.difference(range.start).inDays + 1;
     
-    // 根据cycleType计算目标天数
-    int targetDays = _habit.targetDays ?? 0;
-    
-    // 使用habit.cycleType直接决定目标天数的计算方式
+    // 根据cycleType计算目标天数（按当前周期，不做乘法）
+    int targetDays;
     switch (cycleType) {
       case CycleType.daily:
-        // 每日习惯：目标天数就是周期内的天数
+        // 每日习惯：目标为当前周期的天数（当月）
         targetDays = totalDaysInPeriod;
         break;
       case CycleType.weekly:
-        // 每周习惯：目标天数是每周目标天数乘以周数
-        int weeksInPeriod = (totalDaysInPeriod / 7).ceil();
-        targetDays = weeksInPeriod * (_habit.targetDays ?? 1);
+        // 每周习惯：目标为每周目标天数
+        targetDays = _habit.targetDays ?? 0;
         break;
       case CycleType.monthly:
-        // 每月习惯：目标天数是每月目标天数乘以月数
-        int monthsInPeriod = (totalDaysInPeriod / 30).ceil();
-        targetDays = monthsInPeriod * (_habit.targetDays ?? 1);
+        // 每月习惯：目标为每月目标天数（当月周期下恒为1个月）
+        targetDays = _habit.targetDays ?? 0;
         break;
       case CycleType.annual:
-        // 每年习惯：目标天数就是目标天数
-        targetDays = _habit.targetDays ?? 1;
+        // 每年习惯：目标为年度目标天数
+        targetDays = _habit.targetDays ?? 0;
         break;
+    }
+
+    // 兜底：未设置周期或目标时，按一个月30天作为目标
+    if ((_habit.cycleType == null) || (targetDays == 0)) {
+      targetDays = 30;
     }
     
     // 计算剩余天数
@@ -248,14 +255,30 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   
   // 提示标签统一由服务层生成，Provider 保持最小职责
   
-  /// 上一个月 - 用于日历视图的月份切换，使用基类方法
-  void previousMonth() {
-    navigateToPreviousMonth();
+  /// 上一个月 - 仅用于日历视图的月份切换（独立状态）
+  void previousCalendarMonth() {
+    int y = _calendarSelectedYear;
+    int m = _calendarSelectedMonth - 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    _calendarSelectedYear = y;
+    _calendarSelectedMonth = m;
+    notifyListeners();
   }
   
-  /// 下一个月 - 用于日历视图的月份切换，使用基类方法
-  void nextMonth() {
-    navigateToNextMonth();
+  /// 下一个月 - 仅用于日历视图的月份切换（独立状态）
+  void nextCalendarMonth() {
+    int y = _calendarSelectedYear;
+    int m = _calendarSelectedMonth + 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    _calendarSelectedYear = y;
+    _calendarSelectedMonth = m;
+    notifyListeners();
   }
   
   // 时间范围偏移由 navigateToPrevious/Next* 系列方法统一管理

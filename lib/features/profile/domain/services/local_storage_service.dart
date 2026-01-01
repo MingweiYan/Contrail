@@ -35,6 +35,19 @@ class LocalStorageService implements StorageServiceInterface {
   Future<Map<String, dynamic>?> readData(BackupFileInfo file) async {
     try {
       if (Platform.isAndroid && file.path.startsWith('content://')) {
+        final prefs = await SharedPreferences.getInstance();
+        _treeUri ??= prefs.getString(_localBackupTreeUriKey);
+        if (_treeUri == null || !_treeUri!.startsWith('content://')) {
+          logger.error('SAF目录授权缺失，无法读取备份文件: ${file.path}');
+          return null;
+        }
+        final tree = Uri.parse(_treeUri!);
+        final persisted = await saf_api.isPersistedUri(tree);
+        logger.info('读取前SAF授权检查 persisted=$persisted treeUri=$_treeUri file=${file.path}');
+        if (!persisted) {
+          logger.error('SAF授权已失效，请重新授权目录后再试');
+          return null;
+        }
         return await AndroidSafStorage.readJson(file.path);
       }
       final filePath = File(file.path);
