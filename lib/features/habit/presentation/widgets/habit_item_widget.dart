@@ -131,6 +131,9 @@ class HabitItemWidget extends StatelessWidget {
             MaterialPageRoute(builder: (context) => HabitDetailStatisticsPage(habit: habit)),
           );
         },
+        onDoubleTap: () {
+          onNavigateToTracking(habit);
+        },
         child: AnimatedContainer(
           duration: Duration(milliseconds: 300),
           margin: isFirst

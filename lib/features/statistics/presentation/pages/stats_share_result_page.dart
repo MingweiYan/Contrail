@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/features/statistics/presentation/providers/statistics_result_provider.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/services/habit_color_registry.dart';
 
 class StatsResultPage extends StatefulWidget {
   // 可选的参数，用于接收统计数据
@@ -29,6 +30,9 @@ class StatsResultPage extends StatefulWidget {
 class _StatsResultPageState extends State<StatsResultPage> {
   late final StatisticsResultProvider _statisticsResultProvider;
   late final HabitStatisticsService _statisticsService;
+  String _periodType = 'month';
+  int _selectedYear = DateTime.now().year;
+  int _selectedMonth = DateTime.now().month;
 
   @override
   void initState() {
@@ -52,8 +56,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
       final habitProvider = Provider.of<HabitProvider>(context, listen: false);
       await _statisticsResultProvider.loadStatistics(
         preloadedData: widget.statisticsData,
-        periodType: widget.periodType,
+        periodType: _periodType,
         habits: habitProvider.habits,
+        selectedYear: _selectedYear,
+        selectedMonth: _periodType == 'month' ? _selectedMonth : null,
       );
     } catch (e) {
       logger.error('❌  加载统计数据失败: $e');
@@ -67,13 +73,27 @@ class _StatsResultPageState extends State<StatsResultPage> {
   // 获取当前月的习惯完成次数数据（用于饼状图）
   Map<String, int> _getMonthlyHabitCompletionCounts() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-    return _statisticsService.getMonthlyHabitCompletionCounts(habitProvider.habits);
+    if (_periodType == 'year') {
+      return _statisticsService.getYearlyHabitCompletionCountsFor(habitProvider.habits, year: _selectedYear);
+    }
+    return _statisticsService.getMonthlyHabitCompletionCountsFor(
+      habitProvider.habits,
+      year: _selectedYear,
+      month: _selectedMonth,
+    );
   }
 
   // 获取当前月的习惯完成时间数据（用于饼状图）
   Map<String, int> _getMonthlyHabitCompletionMinutes() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-    return _statisticsService.getMonthlyHabitCompletionMinutes(habitProvider.habits);
+    if (_periodType == 'year') {
+      return _statisticsService.getYearlyHabitCompletionMinutesFor(habitProvider.habits, year: _selectedYear);
+    }
+    return _statisticsService.getMonthlyHabitCompletionMinutesFor(
+      habitProvider.habits,
+      year: _selectedYear,
+      month: _selectedMonth,
+    );
   }
 
 
@@ -81,9 +101,22 @@ class _StatsResultPageState extends State<StatsResultPage> {
   // 获取有目标的习惯及其完成度数据（用于柱状图）
   List<Map<String, dynamic>> _getHabitGoalCompletionData() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-    return _statisticsService.getHabitGoalCompletionData(
-      habitProvider.habits, 
-      widget.periodType,
+    DateTime startDate, endDate;
+    if (_periodType == 'month') {
+      startDate = DateTime(_selectedYear, _selectedMonth, 1);
+      endDate = DateTime(_selectedYear, _selectedMonth + 1, 0);
+    } else if (_periodType == 'year') {
+      startDate = DateTime(_selectedYear, 1, 1);
+      endDate = DateTime(_selectedYear, 12, 31);
+    } else {
+      final now = DateTime.now();
+      startDate = now.subtract(Duration(days: now.weekday - 1));
+      endDate = startDate.add(const Duration(days: 6));
+    }
+    return _statisticsService.getHabitGoalCompletionDataFor(
+      habitProvider.habits,
+      startDate: startDate,
+      endDate: endDate,
     );
   }
 
@@ -205,6 +238,51 @@ class _StatsResultPageState extends State<StatsResultPage> {
     );
   }
 
+  Widget _buildPeriodControls() {
+    return Padding(
+      padding: EdgeInsets.all(ScreenUtil().setWidth(12)),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ChoiceChip(
+                label: const Text('月'),
+                selected: _periodType == 'month',
+                onSelected: (_) => setState(() { _periodType = 'month'; _loadStatistics(); }),
+              ),
+              SizedBox(width: ScreenUtil().setWidth(8)),
+              ChoiceChip(
+                label: const Text('年'),
+                selected: _periodType == 'year',
+                onSelected: (_) => setState(() { _periodType = 'year'; _loadStatistics(); }),
+              ),
+            ],
+          ),
+          SizedBox(height: ScreenUtil().setHeight(12)),
+          if (_periodType == 'month')
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(onPressed: () { setState(() { final m = _selectedMonth - 1; if (m >= 1) { _selectedMonth = m; } else { _selectedYear -= 1; _selectedMonth = 12; } _loadStatistics(); }); }, icon: const Icon(Icons.chevron_left)),
+                Text('${_selectedYear}年${_selectedMonth}月', style: TextStyle(fontSize: StatsShareResultPageConstants.sectionTitleFontSize)),
+                IconButton(onPressed: () { setState(() { final m = _selectedMonth + 1; final now = DateTime.now(); final nextYear = m > 12 ? _selectedYear + 1 : _selectedYear; final nextMonth = m > 12 ? 1 : m; final notFuture = DateTime(nextYear, nextMonth, 1).isBefore(DateTime(now.year, now.month, 2)); if (notFuture) { _selectedYear = nextYear; _selectedMonth = nextMonth; } _loadStatistics(); }); }, icon: const Icon(Icons.chevron_right)),
+              ],
+            )
+          else if (_periodType == 'year')
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(onPressed: () { setState(() { _selectedYear -= 1; _loadStatistics(); }); }, icon: const Icon(Icons.chevron_left)),
+                Text('${_selectedYear}年', style: TextStyle(fontSize: StatsShareResultPageConstants.sectionTitleFontSize)),
+                IconButton(onPressed: () { setState(() { final now = DateTime.now(); if (_selectedYear < now.year) { _selectedYear += 1; } _loadStatistics(); }); }, icon: const Icon(Icons.chevron_right)),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
   // 饼状图部分 - 用于显示习惯完成次数
   Widget _buildCompletionCountPieChart() {
     final completionCounts = _getMonthlyHabitCompletionCounts();
@@ -216,39 +294,25 @@ class _StatsResultPageState extends State<StatsResultPage> {
     
     // 创建饼图数据点
     final List<PieChartSectionData> sections = [];
-    final List<Color> colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.purple,
-      Colors.orange,
-      Colors.red,
-      Colors.teal,
-      Colors.pink,
-      Colors.amber,
-      Colors.indigo,
-      Colors.cyan
-    ];
+    Color colorFor(String name) => sl<HabitColorRegistry>().getColor(name, fallback: Theme.of(context).colorScheme.primary);
     
-    int colorIndex = 0;
     for (final entry in completionCounts.entries) {
       if (entry.value > 0) {
         final percentage = (entry.value / totalCount) * 100;
         sections.add(
           PieChartSectionData(
-            color: colors[colorIndex % colors.length],
+            color: colorFor(entry.key),
             value: entry.value.toDouble(),
             title: '${percentage.toStringAsFixed(0)}%',
             radius: StatsShareResultPageConstants.pieChartRadius,
             titleStyle: TextStyle(fontSize: StatsShareResultPageConstants.pieChartTitleFontSize, fontWeight: FontWeight.bold),
           )
         );
-        colorIndex++;
       }
     }
     
     // 创建图例
     final List<Widget> legendItems = [];
-    colorIndex = 0;
     for (final entry in completionCounts.entries) {
       if (entry.value > 0) {
         legendItems.add(
@@ -261,7 +325,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     Container(
                       width: StatsShareResultPageConstants.pieChartLegendIconSize,
                       height: StatsShareResultPageConstants.pieChartLegendIconSize,
-                      color: colors[colorIndex % colors.length],
+                      color: colorFor(entry.key),
                     ),
                     SizedBox(width: StatsShareResultPageConstants.pieChartLegendIconSpacing),
                     Text(
@@ -272,7 +336,6 @@ class _StatsResultPageState extends State<StatsResultPage> {
             ),
           ),
         );
-        colorIndex++;
       }
     }
     
@@ -371,6 +434,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
   // 饼状图部分 - 用于显示习惯完成时间
   Widget _buildCompletionTimePieChart() {
     final completionMinutes = _getMonthlyHabitCompletionMinutes();
+    Color colorFor(String name) => sl<HabitColorRegistry>().getColor(name, fallback: Theme.of(context).colorScheme.primary);
     final totalMinutes = completionMinutes.values.fold(0, (sum, minutes) => sum + minutes);
     
     if (totalMinutes == 0) {
@@ -379,39 +443,24 @@ class _StatsResultPageState extends State<StatsResultPage> {
     
     // 创建饼图数据点
     final List<PieChartSectionData> sections = [];
-    final List<Color> colors = [
-      Colors.red,
-      Colors.pink,
-      Colors.purple,
-      Colors.indigo,
-      Colors.blue,
-      Colors.cyan,
-      Colors.teal,
-      Colors.green,
-      Colors.lime,
-      Colors.yellow
-    ];
     
-    int colorIndex = 0;
     for (final entry in completionMinutes.entries) {
       if (entry.value > 0) {
         final percentage = (entry.value / totalMinutes) * 100;
         sections.add(
           PieChartSectionData(
-            color: colors[colorIndex % colors.length],
+            color: colorFor(entry.key),
             value: entry.value.toDouble(),
             title: '${percentage.toStringAsFixed(0)}%',
             radius: StatsShareResultPageConstants.pieChartRadius,
             titleStyle: TextStyle(fontSize: StatsShareResultPageConstants.pieChartTitleFontSize, fontWeight: FontWeight.bold),
           )
         );
-        colorIndex++;
       }
     }
     
     // 创建图例
     final List<Widget> legendItems = [];
-    colorIndex = 0;
     for (final entry in completionMinutes.entries) {
       if (entry.value > 0) {
         final hours = entry.value ~/ 60;
@@ -428,7 +477,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     Container(
                       width: ScreenUtil().setWidth(12),
                       height: ScreenUtil().setHeight(12),
-                      color: colors[colorIndex % colors.length],
+                      color: colorFor(entry.key),
                     ),
                     SizedBox(width: ScreenUtil().setWidth(6)),
                     Text(
@@ -439,7 +488,6 @@ class _StatsResultPageState extends State<StatsResultPage> {
             ),
           ),
         );
-        colorIndex++;
       }
     }
     
@@ -573,6 +621,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children:
           [
+            _buildPeriodControls(),
             // 移除了日期范围显示，因为当前只统计当前月的结果
             SizedBox(height: ScreenUtil().setHeight(10)),
 

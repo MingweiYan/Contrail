@@ -37,6 +37,8 @@ class StatisticsResultProvider extends ChangeNotifier {
     required Map<String, dynamic>? preloadedData,
     required String? periodType,
     required List<Habit> habits,
+    int? selectedYear,
+    int? selectedMonth,
   }) async {
     try {
       logger.debug('📊  开始加载统计数据');
@@ -56,10 +58,18 @@ class StatisticsResultProvider extends ChangeNotifier {
         // 根据传入的周期类型获取不同的统计数据
         if (periodType == 'month') {
           logger.debug('📅  获取月度统计数据');
-          _statisticsData = _statisticsService.getMonthlyHabitStatistics(habits);
+          if (selectedYear != null && selectedMonth != null) {
+            _statisticsData = _statisticsService.getMonthlyHabitStatisticsFor(habits, year: selectedYear, month: selectedMonth);
+          } else {
+            _statisticsData = _statisticsService.getMonthlyHabitStatistics(habits);
+          }
         } else if (periodType == 'year') {
           logger.debug('📅  获取年度统计数据');
-          _statisticsData = _statisticsService.getYearlyHabitStatistics(habits);
+          if (selectedYear != null) {
+            _statisticsData = _statisticsService.getYearlyHabitStatisticsFor(habits, year: selectedYear);
+          } else {
+            _statisticsData = _statisticsService.getYearlyHabitStatistics(habits);
+          }
         } else {
           logger.debug('📅  获取周度统计数据 (默认)');
           // 默认获取周统计

@@ -32,6 +32,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   late final DeleteHabitUseCase _deleteHabitUseCase;
   late final HabitManagementService _habitManagementService;
   List<Habit> _habits = [];
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   @override
   void initState() {
@@ -48,8 +49,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   Future<void> _loadHabits() async {
     try {
       final habits = await _getHabitsUseCase.execute();
+      final sorted = List<Habit>.from(habits)
+        ..sort((a, b) => _getFinalProgress(a).compareTo(_getFinalProgress(b)));
       setState(() {
-        _habits = habits;
+        _habits = sorted;
       });
     } catch (e) {
       logger.error('加载习惯失败', e);
@@ -65,7 +68,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       context: context,
       habits: _habits,
       updateHabitUseCase: _updateHabitUseCase,
-      onRefresh: _loadHabits,
+      onRefresh: () async {
+        await _loadHabits();
+        _resortWithAnimation();
+      },
     );
   }
 
@@ -125,6 +131,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
             // 重新加载习惯列表以显示更新后的进度
             _loadHabits();
           });
+          _resortWithAnimation();
         }
       });
     } else {
@@ -141,6 +148,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       setState(() {
         _loadHabits();
       });
+      _resortWithAnimation();
     }
   }
 
@@ -313,18 +321,24 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       ],
                     ),
                   )
-                : ListView.builder(
+                : AnimatedList(
+                    key: _listKey,
+                    initialItemCount: _habits.length,
                     padding: HabitManagementPageConstants.listPadding,
-                    itemCount: _habits.length,
-                    itemBuilder: (context, index) {
-                      return HabitItemWidget(
-                        habit: _habits[index],
-                        onDelete: _deleteHabit,
-                        onRefresh: _refreshHabits,
-                        onNavigateToTracking: _navigateToTrackingPage,
-                        formatDescription: _formatHabitDescription,
-                        getFinalProgress: _getFinalProgress,
-                        isFirst: index == 0,
+                    itemBuilder: (context, index, animation) {
+                      final item = _habits[index];
+                      return SizeTransition(
+                        sizeFactor: animation,
+                        child: HabitItemWidget(
+                          key: ValueKey(item.id),
+                          habit: item,
+                          onDelete: _deleteHabit,
+                          onRefresh: _refreshHabits,
+                          onNavigateToTracking: _navigateToTrackingPage,
+                          formatDescription: _formatHabitDescription,
+                          getFinalProgress: _getFinalProgress,
+                          isFirst: index == 0,
+                        ),
                       );
                     },
                   ),
@@ -347,5 +361,40 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     setState(() {
       _loadHabits();
     });
+    _resortWithAnimation();
+  }
+
+  void _resortWithAnimation() {
+    if (_listKey.currentState == null) {
+      return;
+    }
+    final target = List<Habit>.from(_habits)
+      ..sort((a, b) => _getFinalProgress(a).compareTo(_getFinalProgress(b)));
+    for (int i = 0; i < target.length; i++) {
+      final h = target[i];
+      final currentIndex = _habits.indexWhere((e) => e.id == h.id);
+      if (currentIndex != i && currentIndex != -1) {
+        final removed = _habits.removeAt(currentIndex);
+        _listKey.currentState!.removeItem(
+          currentIndex,
+          (context, animation) => SizeTransition(
+            sizeFactor: animation,
+            child: HabitItemWidget(
+              key: ValueKey(removed.id),
+              habit: removed,
+              onDelete: _deleteHabit,
+              onRefresh: _refreshHabits,
+              onNavigateToTracking: _navigateToTrackingPage,
+              formatDescription: _formatHabitDescription,
+              getFinalProgress: _getFinalProgress,
+              isFirst: currentIndex == 0,
+            ),
+          ),
+          duration: const Duration(milliseconds: 200),
+        );
+        _habits.insert(i, removed);
+        _listKey.currentState!.insertItem(i, duration: const Duration(milliseconds: 200));
+      }
+    }
   }
 }

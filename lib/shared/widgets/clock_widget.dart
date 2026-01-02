@@ -209,6 +209,7 @@ class _ClockWidgetState extends State<ClockWidget> {
         final size = min(constraints.maxWidth, constraints.maxHeight);
         final primaryColor = ThemeHelper.primary(context);
         final onPrimaryColor = ThemeHelper.onPrimary(context);
+        // 使用 ClockWidgetConstants（ScreenUtil）保持与全局尺寸规范一致
         
         return GestureDetector(
           onVerticalDragUpdate: _handleVerticalDrag,

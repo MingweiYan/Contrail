@@ -20,6 +20,7 @@ import 'package:contrail/core/state/focus_tracking_manager.dart';
 
 import '../../shared/services/habit_statistics_service.dart';
 import '../../shared/services/notification_service.dart';
+import '../../shared/services/habit_color_registry.dart';
 
 final sl = GetIt.instance; 
 
@@ -32,6 +33,7 @@ Future<void> init() async {
 
   final notificationService = NotificationService();
   final focusState = FocusTrackingManager();
+  final habitColorRegistry = HabitColorRegistry();
 
 
   // 注册到依赖注入容器
@@ -40,6 +42,7 @@ Future<void> init() async {
   sl.registerSingleton<HabitStatisticsService>(statisticsService);
   sl.registerSingleton<HabitManagementService>(habitManagemetnService);
   sl.registerSingleton<HabitService>(habitService);
+  sl.registerSingleton<HabitColorRegistry>(habitColorRegistry);
   
 
   // 初始化通知服务
@@ -52,6 +55,16 @@ Future<void> init() async {
   // 领域层 - 按模块组织
   _initHabitDomainLayer();
   _initProfileDomainLayer();
+
+  // 初始化习惯颜色映射
+  try {
+    final repo = sl<HabitRepository>();
+    final habits = await repo.getHabits();
+    habitColorRegistry.buildFromHabits(habits);
+    logger.debug('习惯颜色映射已初始化，数量: ${habits.length}');
+  } catch (e) {
+    logger.error('初始化习惯颜色映射失败: $e');
+  }
 
 }
 

@@ -312,19 +312,34 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                       ),
                     ),
                     SizedBox(height: ScreenUtil().setHeight(8)),
-                    Slider(
-                      value: durationMinutes.toDouble(),
-                      min: 1.0,
-                      max: 120.0,
-                      divisions: 119,
-                      label: '$durationMinutes 分钟',
-                      onChanged: (double value) {
-                        setState(() {
-                          durationMinutes = value.toInt();
-                        });
-                      },
-                      activeColor: ThemeHelper.onPrimary(context),
-                      inactiveColor: ThemeHelper.onPrimary(context).withOpacity(0.3),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        showValueIndicator: ShowValueIndicator.always,
+                        valueIndicatorColor: ThemeHelper.onPrimary(context),
+                        valueIndicatorTextStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: ScreenUtil().setSp(20),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        thumbShape: RoundSliderThumbShape(
+                          enabledThumbRadius: ScreenUtil().setWidth(12),
+                        ),
+                        overlayColor: ThemeHelper.onPrimary(context).withOpacity(0.12),
+                      ),
+                      child: Slider(
+                        value: durationMinutes.toDouble(),
+                        min: 1.0,
+                        max: 120.0,
+                        divisions: 119,
+                        label: '$durationMinutes 分钟',
+                        onChanged: (double value) {
+                          setState(() {
+                            durationMinutes = value.toInt();
+                          });
+                        },
+                        activeColor: ThemeHelper.onPrimary(context),
+                        inactiveColor: ThemeHelper.onPrimary(context).withOpacity(0.3),
+                      ),
                     ),
                     Center(
                       child: Text(

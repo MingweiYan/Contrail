@@ -635,21 +635,53 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                     );
                   }
                 },
-                child: ClockWidget(
-                  duration: _elapsedTime,
-                  focusStatus: _focusStatus,
-                  onDurationChanged: (duration) {
-                    setState(() {
-                      _elapsedTime = duration;
-                      _focusManager.defaultWorkDuration = duration.inMinutes;
-                      logger.debug('时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟');
-                    });
-                  },
-                  trackingMode: _selectedMode,
-                  isSettingsMode: false, // 专注进行时不是设置模式
+              child: ClockWidget(
+                duration: _elapsedTime,
+                focusStatus: _focusStatus,
+                onDurationChanged: (duration) {
+                  setState(() {
+                    _elapsedTime = duration;
+                    _focusManager.defaultWorkDuration = duration.inMinutes;
+                    logger.debug('时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟');
+                  });
+                },
+                trackingMode: _selectedMode,
+                isSettingsMode: false, // 专注进行时不是设置模式
+              ),
+            ),
+            if (_elapsedTime.inHours > 0)
+              Positioned(
+                right: 12,
+                top: 12,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                  child: Container(
+                    key: ValueKey(_elapsedTime.inHours),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.shadow,
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '${_elapsedTime.inHours}h',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-                ],
+              ],
               ),
             ),
           ),

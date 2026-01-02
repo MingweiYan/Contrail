@@ -4,6 +4,7 @@ import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/services/habit_service.dart';
+import 'package:contrail/shared/services/habit_color_registry.dart';
 
 class HabitProvider with ChangeNotifier {
   final HabitRepository _habitRepository = sl<HabitRepository>();
@@ -28,6 +29,9 @@ class HabitProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       logger.debug("HabitProvider加载习惯，大小为 $habits.length");
+      try {
+        sl<HabitColorRegistry>().buildFromHabits(_habits);
+      } catch (_) {}
     }
   }
 
@@ -46,6 +50,9 @@ class HabitProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      try {
+        sl<HabitColorRegistry>().buildFromHabits(_habits);
+      } catch (_) {}
     }
   }
 
@@ -69,6 +76,9 @@ class HabitProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      try {
+        sl<HabitColorRegistry>().buildFromHabits(_habits);
+      } catch (_) {}
     }
   }
 
@@ -86,6 +96,9 @@ class HabitProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      try {
+        sl<HabitColorRegistry>().buildFromHabits(_habits);
+      } catch (_) {}
     }
   }
 
