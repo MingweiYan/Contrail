@@ -26,7 +26,14 @@ NEW_BUILD_PART=$((BUILD_PART + 1))
 NEW_VERSION="$NEW_VERSION_PART+$NEW_BUILD_PART"
 
 # 更新 pubspec.yaml
-sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+# 兼容 macOS 和 Linux 的 sed 语法
+if [[ "$(uname)" == "Darwin" ]]; then
+  # macOS 语法
+  sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+else
+  # Linux 语法
+  sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+fi
 
 # 输出结果
 echo "Version bumped from $CURRENT_VERSION to $NEW_VERSION"
