@@ -1,0 +1,93 @@
+name: Android Release
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+      - id: version
+        run: |
+          RAW=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          if [ -z "$RAW" ]; then
+            exit 1
+          fi
+          VERSION_NAME="${RAW%%+*}"
+          BUILD_NUMBER="${RAW#*+}"
+          TAG_NAME="v${VERSION_NAME}"
+          RELEASE_NAME="v${VERSION_NAME}+${BUILD_NUMBER}"
+          if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
+            TAG_NAME="${TAG_NAME}.${GITHUB_RUN_NUMBER}"
+            RELEASE_NAME="${RELEASE_NAME}.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
+      - env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p android/app
+          # Check if all signing secrets are provided
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "Error: Missing signing secrets. Please set ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD in GitHub Secrets."
+            exit 1
+          fi
+          # Write keystore and key.properties
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          cat > android/key.properties <<EOF
+storePassword=$ANDROID_KEYSTORE_PASSWORD
+keyPassword=$ANDROID_KEY_PASSWORD
+keyAlias=$ANDROID_KEY_ALIAS
+storeFile=release.keystore
+EOF
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - name: Rename APK
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          NEW_APK_NAME="Contrail-${VERSION_NAME}.apk"
+          NEW_APK_PATH="build/app/outputs/flutter-apk/$NEW_APK_NAME"
+          mv "$APK_PATH" "$NEW_APK_PATH"
+          echo "NEW_APK_PATH=$NEW_APK_PATH" >> $GITHUB_ENV
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.RELEASE_NAME }}
+          files: |
+            ${{ env.NEW_APK_PATH }}
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
