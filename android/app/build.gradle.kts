@@ -5,6 +5,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystoreProps = Properties()
+val keystoreFile = rootProject.file("android/key.properties")
+val hasReleaseKeystore = if (keystoreFile.exists()) {
+    FileInputStream(keystoreFile).use { keystoreProps.load(it) }
+    true
+} else {
+    false
+}
+
 android {
     namespace = "app.contrail"
     compileSdk = flutter.compileSdkVersion
@@ -36,11 +48,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystoreProps["storeFile"] as String)
+                storePassword = keystoreProps["storePassword"] as String?
+                keyAlias = keystoreProps["keyAlias"] as String?
+                keyPassword = keystoreProps["keyPassword"] as String?
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
