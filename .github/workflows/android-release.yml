@@ -33,6 +33,16 @@ jobs:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
+      - name: Bump version
+        run: |
+          # 运行版本递增脚本
+          NEW_VERSION=$(bash scripts/bump_version.sh)
+          # 提交版本号变更
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add pubspec.yaml
+          git commit -m "Bump version to $NEW_VERSION"
+          git push origin main
       - id: version
         run: |
           RAW=$(grep '^version:' pubspec.yaml | awk '{print $2}')
