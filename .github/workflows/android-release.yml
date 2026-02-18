@@ -1,7 +1,6 @@
----
 name: Android Release
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,14 +27,12 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys:
-            - ${{ runner.os }}-gradle-
+          restore-keys: ${{ runner.os }}-gradle-
       - uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys:
-            - ${{ runner.os }}-pub-
+          restore-keys: ${{ runner.os }}-pub-
       - id: version
         run: |
           RAW=$(grep '^version:' pubspec.yaml | awk '{print $2}')
@@ -89,8 +86,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: ${{ env.RELEASE_NAME }}
-          files:
-            - ${{ env.NEW_APK_PATH }}
+          files: ${{ env.NEW_APK_PATH }}
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
