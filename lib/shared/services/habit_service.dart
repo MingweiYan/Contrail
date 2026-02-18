@@ -46,6 +46,54 @@ class HabitService {
     _logger.debug('📅  打卡天数: ${habit.dailyCompletionStatus.length}');
   }
 
+  /// 删除习惯某次追踪记录
+  ///
+  /// 参数:
+  /// - habit: 目标习惯
+  /// - startTime: 本次记录的开始时间（键）
+  /// - duration: 本次记录的持续时间（用于从列表中匹配删除）
+  void removeTrackingRecord(Habit habit, DateTime startTime, Duration duration) {
+    _logger.debug('🗑️  删除追踪记录: 开始=${startTime.toIso8601String()}, 时长=${duration.inMinutes}分钟');
+    final dateOnly = DateTime(startTime.year, startTime.month, startTime.day);
+    final list = habit.trackingDurations[startTime];
+    if (list == null || list.isEmpty) {
+      _logger.debug('ℹ️  未找到对应开始时间的记录，忽略删除');
+      return;
+    }
+    // 按首次匹配的时长删除
+    final removed = list.remove(duration);
+    if (!removed) {
+      _logger.debug('ℹ️  未匹配到相同时长的记录，忽略删除');
+      return;
+    }
+    // 若该开始时间下无剩余记录，移除键
+    if (list.isEmpty) {
+      habit.trackingDurations.remove(startTime);
+    } else {
+      habit.trackingDurations[startTime] = list;
+    }
+    // 更新总时长，避免小于0
+    final newTotal = habit.totalDuration - duration;
+    habit.totalDuration = newTotal.isNegative ? Duration.zero : newTotal;
+    // 重新评估当天是否还有记录
+    bool hasAnyOnThatDay = false;
+    habit.trackingDurations.forEach((dt, durations) {
+      final d = DateTime(dt.year, dt.month, dt.day);
+      if (d == dateOnly && durations.isNotEmpty) {
+        hasAnyOnThatDay = true;
+      }
+    });
+    if (!hasAnyOnThatDay) {
+      if (habit.dailyCompletionStatus[dateOnly] == true) {
+        habit.dailyCompletionStatus[dateOnly] = false;
+        if (habit.currentDays > 0) {
+          habit.currentDays -= 1;
+        }
+      }
+    }
+    _logger.debug('✅  删除完成: 当前天数=${habit.currentDays}, 总时长=${habit.totalDuration.inMinutes}分钟');
+  }
+
   /// 检查习惯当天是否已完成
   /// 
   /// 参数:

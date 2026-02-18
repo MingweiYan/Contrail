@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:provider/provider.dart';
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
@@ -98,121 +100,158 @@ class TimelineViewWidget extends StatelessWidget {
               final color = session['color'] as Color;
               final icon = session['icon'] as String?;
 
-              return Container(
-                margin: EdgeInsets.only(bottom: TimelineViewWidgetConstants.itemSpacing),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center, // 改为center，确保图标在数据块的垂直中央
-                  children: [
-                    // 时间轴节点 - 放在主线上方，使用习惯图标
-                    Container(
-                      width: TimelineViewWidgetConstants.nodeContainerWidth,
-                      height: TimelineViewWidgetConstants.nodeContainerHeight,
-                      alignment: Alignment.center, // 显式设置水平居中
-                      child: Container(
-                        width: TimelineViewWidgetConstants.nodeSize,
-                        height: TimelineViewWidgetConstants.nodeSize,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: color.withOpacity(0.5),
-                              spreadRadius: 2,
-                            blurRadius: 4,
-                            ),
-                          ],
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.surface,
-                            width: TimelineViewWidgetConstants.nodeBorderWidth,
-                          ),
+              final habit = session['habit'] as Habit;
+              final startDt = session['startTime'] as DateTime;
+              return Dismissible(
+                key: Key('${habit.id}_${startDt.millisecondsSinceEpoch}_${duration.inMilliseconds}'),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (direction) async {
+                  return await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('删除记录'),
+                      content: const Text('确定删除这条专注记录吗？此操作不可恢复。'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('取消'),
                         ),
-                        alignment: Alignment.center, // 显式设置图标在节点内水平居中
-                        child: icon != null && icon.isNotEmpty
-                            ? Icon(
-                                getIconDataFromString(icon),
-                                size: TimelineViewWidgetConstants.nodeIconSize,
-                                color: ThemeHelper.onPrimary(context),
-                              )
-                            : Container(
-                                width: TimelineViewWidgetConstants.emptyNodeSize,
-                                height: TimelineViewWidgetConstants.emptyNodeSize,
-                                decoration: BoxDecoration(
-                                  color: ThemeHelper.onPrimary(context),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                      ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('删除'),
+                        ),
+                      ],
                     ),
-
-                    // 内容卡片
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(left: TimelineViewWidgetConstants.contentLeftMargin),
-                        padding: TimelineViewWidgetConstants.contentPadding,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(TimelineViewWidgetConstants.contentBorderRadius),
-                          color: Theme.of(context).colorScheme.surface,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              spreadRadius: 2,
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
+                  ) ?? false;
+                },
+                onDismissed: (_) async {
+                  await context.read<HabitProvider>()
+                    .removeTrackingRecord(habit.id, startDt, duration);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('已删除专注记录')),
+                    );
+                  }
+                },
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.redAccent,
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                child: Container(
+                  margin: EdgeInsets.only(bottom: TimelineViewWidgetConstants.itemSpacing),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 时间轴节点 - 放在主线上方，使用习惯图标
+                      Container(
+                        width: TimelineViewWidgetConstants.nodeContainerWidth,
+                        height: TimelineViewWidgetConstants.nodeContainerHeight,
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: TimelineViewWidgetConstants.nodeSize,
+                          height: TimelineViewWidgetConstants.nodeSize,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withOpacity(0.5),
+                                spreadRadius: 2,
+                                blurRadius: 4,
+                              ),
+                            ],
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: TimelineViewWidgetConstants.nodeBorderWidth,
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // 习惯名称和日期
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  session['habitName'],
-                                  style: TextStyle(
-                                    fontSize: TimelineViewWidgetConstants.habitNameFontSize,
-                                    fontWeight: FontWeight.bold,
-                                    color: color,
+                          ),
+                          alignment: Alignment.center,
+                          child: icon != null && icon.isNotEmpty
+                              ? Icon(
+                                  getIconDataFromString(icon),
+                                  size: TimelineViewWidgetConstants.nodeIconSize,
+                                  color: ThemeHelper.onPrimary(context),
+                                )
+                              : Container(
+                                  width: TimelineViewWidgetConstants.emptyNodeSize,
+                                  height: TimelineViewWidgetConstants.emptyNodeSize,
+                                  decoration: BoxDecoration(
+                                    color: ThemeHelper.onPrimary(context),
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
-                                Text(
-                                  date,
+                        ),
+                      ),
+                      // 内容卡片
+                      Expanded(
+                        child: Container(
+                          margin: EdgeInsets.only(left: TimelineViewWidgetConstants.contentLeftMargin),
+                          padding: TimelineViewWidgetConstants.contentPadding,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(TimelineViewWidgetConstants.contentBorderRadius),
+                            color: Theme.of(context).colorScheme.surface,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                spreadRadius: 2,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // 习惯名称和日期
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    session['habitName'],
+                                    style: TextStyle(
+                                      fontSize: TimelineViewWidgetConstants.habitNameFontSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: color,
+                                    ),
+                                  ),
+                                  Text(
+                                    date,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade700,
+                                      fontSize: TimelineViewWidgetConstants.timeFontSize,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // 时间
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: TimelineViewWidgetConstants.timeSpacing),
+                                child: Text(
+                                  '$startTime - $endTime',
                                   style: TextStyle(
                                     color: Colors.grey.shade700,
                                     fontSize: TimelineViewWidgetConstants.timeFontSize,
                                   ),
                                 ),
-                              ],
-                            ),
-
-                            // 时间
-                            Padding(
-                              padding: EdgeInsets.symmetric(vertical: TimelineViewWidgetConstants.timeSpacing),
-                              child: Text(
-                                '$startTime - $endTime',
+                              ),
+                              // 时长
+                              Text(
+                                durationStr,
                                 style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontSize: TimelineViewWidgetConstants.timeFontSize,
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: TimelineViewWidgetConstants.durationFontSize,
                                 ),
                               ),
-                            ),
-
-                            // 时长
-                            Text(
-                              durationStr,
-                              style: TextStyle(
-                                color: color,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: TimelineViewWidgetConstants.durationFontSize,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

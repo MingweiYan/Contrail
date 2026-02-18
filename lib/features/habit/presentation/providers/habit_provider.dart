@@ -156,4 +156,37 @@ class HabitProvider with ChangeNotifier {
       logger.debug('✅  停止追踪流程完成，isLoading: $isLoading');
     }
   }
+
+  Future<void> removeTrackingRecord(String habitId, DateTime startTime, Duration duration) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      logger.debug('🗑️  开始删除追踪记录，habitId: $habitId, 开始: ${startTime.toIso8601String()}, 时长: ${duration.inMinutes}分钟');
+      // 查找习惯
+      int index = _habits.indexWhere((h) => h.id == habitId);
+      Habit? habit = index != -1 ? _habits[index] : null;
+      if (habit == null) {
+        logger.error('⚠️  未找到ID为 $habitId 的习惯，无法删除追踪记录');
+        return;
+      }
+      // 业务删除
+      sl<HabitService>().removeTrackingRecord(habit, startTime, duration);
+      // 落库
+      await _habitRepository.updateHabit(habit);
+      // 更新本地
+      _habits[index] = habit;
+      logger.debug('✅  追踪记录删除完成并已保存');
+    } catch (e) {
+      _errorMessage = '删除追踪记录失败: $e';
+      logger.error('❌  删除追踪记录失败', e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      try {
+        sl<HabitColorRegistry>().buildFromHabits(_habits);
+      } catch (_) {}
+    }
+  }
 }
