@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/features/profile/presentation/pages/profile_page.dart';
 
-void main() {  
+void main() {
   setUpAll(() async {
     // 初始化Flutter绑定
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +19,7 @@ void main() {
     });
   });
 
-  group('ProfilePage', () {    
+  group('ProfilePage', () {
     setUp(() async {
       // 重置SharedPreferences
       final prefs = await SharedPreferences.getInstance();
@@ -32,13 +32,11 @@ void main() {
       await prefs.setString('backupFrequency', '每周');
     });
 
-    testWidgets('should initialize with correct settings', (WidgetTester tester) async {
+    testWidgets('should initialize with correct settings', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 创建测试环境
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ProfilePage(),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp(home: ProfilePage()));
 
       // 断言 - 验证初始设置
       expect(find.text('用户'), findsOneWidget);
@@ -52,11 +50,7 @@ void main() {
 
     testWidgets('should update username', (WidgetTester tester) async {
       // 安排 - 创建测试环境
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ProfilePage(),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp(home: ProfilePage()));
 
       // 行动 - 修改用户名
       await tester.enterText(find.byType(TextFormField), '新用户名');

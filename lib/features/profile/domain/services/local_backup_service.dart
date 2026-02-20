@@ -12,19 +12,19 @@ import 'package:contrail/features/profile/domain/services/user_settings_service.
 /// 本地备份服务，负责本地通道的备份/恢复/列表/保留策略与路径权限
 class LocalBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
-  
+
   // 构造函数接受存储服务接口，支持依赖注入
-  LocalBackupService({StorageServiceInterface? storageService}) : 
-    _storageService = storageService ?? sl<StorageServiceInterface>();
+  LocalBackupService({StorageServiceInterface? storageService})
+    : _storageService = storageService ?? sl<StorageServiceInterface>();
   static const String _localBackupPathKey = 'localBackupPath'; // 这个键仍然用于存储相关设置
-  
+
   static const String _backupRetentionPrefix = 'backupRetention_';
-  
+
   /// 初始化服务
   Future<void> initialize() async {
     // 本地备份服务无需初始化通知
   }
-  
+
   /// 检查并申请存储权限
   Future<bool> checkStoragePermission() async {
     // 委托给存储服务处理权限检查
@@ -40,14 +40,13 @@ class LocalBackupService implements BackupChannelService {
   Future<String> resetBackupPathToDefault() async {
     return await (_storageService as dynamic).resetToDefaultPath();
   }
-  
-  
+
   /// 加载或创建备份路径
   Future<String> loadOrCreateBackupPath() async {
     // 委托给存储服务处理路径加载
     return await _storageService.getReadPath();
   }
-  
+
   /// 更改备份路径
   Future<String?> changeBackupPath() async {
     try {
@@ -59,10 +58,10 @@ class LocalBackupService implements BackupChannelService {
     } catch (e) {
       logger.error('选择备份路径失败', e);
     }
-    
+
     return null;
   }
-  
+
   /// 加载备份文件列表
   Future<List<BackupFileInfo>> loadBackupFiles(String backupPath) async {
     try {
@@ -73,22 +72,22 @@ class LocalBackupService implements BackupChannelService {
       return [];
     }
   }
-  
+
   /// 执行备份
   Future<bool> performBackup(String backupPath) async {
     try {
       // 创建备份文件名
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final backupFileName = 'contrail_backup_$timestamp.json';
-      
+
       // 收集所有需要备份的数据
       final backupData = <String, dynamic>{};
-      
+
       // 备份习惯数据 - 使用HabitService处理习惯数据
       final habitRepository = sl<HabitRepository>();
       final habitService = sl<HabitService>();
       backupData['habits'] = await habitService.backupHabits(habitRepository);
-      
+
       // 备份用户设置
       final prefs = await SharedPreferences.getInstance();
       final settings = <String, dynamic>{};
@@ -96,59 +95,70 @@ class LocalBackupService implements BackupChannelService {
         settings[key] = prefs.get(key);
       }
       backupData['settings'] = settings;
-      
+
       // 委托给存储服务处理数据写入
-      final success = await _storageService.writeData(backupFileName, backupData);
-      
+      final success = await _storageService.writeData(
+        backupFileName,
+        backupData,
+      );
+
       if (success) {
         await _applyRetentionPolicy();
       }
-      
+
       return success;
     } catch (e) {
       logger.error('执行本地备份失败', e);
       return false;
     }
   }
-  
+
   /// 从本地备份恢复
   Future<bool> restoreFromBackup(BackupFileInfo backupFile) async {
     try {
       // 委托给存储服务处理数据读取
       final backupData = await _storageService.readData(backupFile);
-      
+
       if (backupData == null) {
         logger.error('无法读取备份文件: ${backupFile.path}');
         return false;
       }
-      
+
       // 恢复习惯数据 - 使用HabitService处理习惯数据
       if (backupData.containsKey('habits')) {
         final habitsList = backupData['habits'] as List;
         final habitRepository = sl<HabitRepository>();
         final habitService = sl<HabitService>();
-        
-        final restoreSuccess = await habitService.restoreHabits(habitRepository, habitsList);
+
+        final restoreSuccess = await habitService.restoreHabits(
+          habitRepository,
+          habitsList,
+        );
         if (!restoreSuccess) {
           logger.error('习惯数据恢复失败');
           return false;
         }
       }
-      
+
       // 恢复用户设置
       if (backupData.containsKey('settings')) {
         final settings = backupData['settings'] as Map<String, dynamic>;
-        final skip = {'autoBackupEnabled', 'backupFrequency', 'lastBackupTime', _localBackupPathKey};
+        final skip = {
+          'autoBackupEnabled',
+          'backupFrequency',
+          'lastBackupTime',
+          _localBackupPathKey,
+        };
         await UserSettingsService().restoreSettings(settings, skip);
       }
-      
+
       return true;
     } catch (e) {
       logger.error('从本地备份恢复失败', e);
       return false;
     }
   }
-  
+
   /// 删除备份文件
   Future<bool> deleteBackupFile(BackupFileInfo backupFile) async {
     try {
@@ -159,8 +169,7 @@ class LocalBackupService implements BackupChannelService {
       return false;
     }
   }
-  
-  
+
   Future<int> _loadRetentionCount() async {
     final prefs = await SharedPreferences.getInstance();
     final key = '$_backupRetentionPrefix${_storageService.getStorageId()}';
@@ -187,7 +196,13 @@ class LocalBackupService implements BackupChannelService {
     try {
       final n = await _loadRetentionCount();
       final files = await _storageService.listFiles();
-      final filtered = files.where((f) => f.name.startsWith('contrail_backup_') && f.name.endsWith('.json')).toList();
+      final filtered = files
+          .where(
+            (f) =>
+                f.name.startsWith('contrail_backup_') &&
+                f.name.endsWith('.json'),
+          )
+          .toList();
       if (filtered.length <= n) return;
       for (int i = n; i < filtered.length; i++) {
         await _storageService.deleteFile(filtered[i]);

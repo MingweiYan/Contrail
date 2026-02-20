@@ -4,7 +4,7 @@ import 'package:contrail/shared/services/notification_service.dart';
 import 'package:contrail/core/services/background_timer_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
 
- // 运行状态枚举类
+// 运行状态枚举类
 enum FocusStatus { run, pause, stop }
 
 // 番茄钟状态枚举类
@@ -142,8 +142,10 @@ class FocusTrackingManager {
       endFocus();
     } else if (_trackingMode == TrackingMode.pomodoro) {
       if (_pomodoroStatus == PomodoroStatus.work) {
-        _totalPomodoroWorkDuration += Duration( minutes: _defaultWorkDuration - _elapsedTime.inMinutes);
-      } 
+        _totalPomodoroWorkDuration += Duration(
+          minutes: _defaultWorkDuration - _elapsedTime.inMinutes,
+        );
+      }
       focusTime = processDuration(_totalPomodoroWorkDuration);
       endFocus();
       resetPomodoro();
@@ -184,8 +186,6 @@ class FocusTrackingManager {
     _notifyTimeUpdate();
   }
 
-
-
   // 处理倒计时结束 - 改为异步方法
   Future<void> _handleCountdownEnd() async {
     logger.debug('cur time is $_elapsedTime');
@@ -212,24 +212,26 @@ class FocusTrackingManager {
     }
   }
 
-// true 代表番茄钟结束
-// false 代表番茄钟未结束
+  // true 代表番茄钟结束
+  // false 代表番茄钟未结束
   bool handlePromato() {
     // 番茄钟模式：用户确认后进入下一阶段
 
     logger.debug('用户确认番茄钟阶段结束，进入下一阶段');
-    
+
     if (_pomodoroStatus == PomodoroStatus.work) {
       // 工作时段结束
       if (_currentRound <= _pomodoroRounds) {
         if (_currentRound < _pomodoroRounds) {
           // 不是最后一轮，进入短休息
-          logger.debug('进入短休息时段');   
-          
+          logger.debug('进入短休息时段');
+
           totalPomodoroWorkDuration += Duration(minutes: _defaultWorkDuration);
-          logger.debug('累加工作时长，当前总时长: ${totalPomodoroWorkDuration.inMinutes}分钟');
+          logger.debug(
+            '累加工作时长，当前总时长: ${totalPomodoroWorkDuration.inMinutes}分钟',
+          );
           // 设置番茄钟状态为短休息
-          _pomodoroStatus = PomodoroStatus.shortBreak;   
+          _pomodoroStatus = PomodoroStatus.shortBreak;
           // 重置计时器为短休息时长
           _elapsedTime = Duration(minutes: _defaultShortBreakDuration);
           // 开始短休息计时
@@ -245,9 +247,9 @@ class FocusTrackingManager {
       // 短休息结束，进入下一轮工作
       logger.debug('短休息结束，进入下一轮工作');
       // 设置番茄钟状态为工作
-      _pomodoroStatus = PomodoroStatus.work;   
+      _pomodoroStatus = PomodoroStatus.work;
       // 增加轮次计数
-      _currentRound++;   
+      _currentRound++;
       // 重置计时器为工作时长
       _elapsedTime = Duration(minutes: _defaultWorkDuration);
       // 开始下一轮工作计时
@@ -321,8 +323,6 @@ class FocusTrackingManager {
     // 通知监听器
     _notifyListeners(_focusStatus);
   }
-
-  
 
   // 添加状态变化监听器
   void addListener(Function(FocusStatus) listener) {

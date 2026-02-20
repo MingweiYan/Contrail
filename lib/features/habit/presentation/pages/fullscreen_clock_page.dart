@@ -19,17 +19,17 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // 初始化时获取当前专注状态和时间
     final focusState = sl<FocusTrackingManager>();
     _elapsedTime = focusState.elapsedTime;
-    
+
     // 开启屏幕常亮
     WakelockPlus.enable();
-    
+
     // 添加时间更新监听器
     sl<FocusTrackingManager>().addTimeUpdateListener(_onTimeUpdate);
-    
+
     // 每秒更新一次UI，确保显示最新时间
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
@@ -44,17 +44,15 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
   void dispose() {
     // 移除监听器
     sl<FocusTrackingManager>().removeTimeUpdateListener(_onTimeUpdate);
-    
+
     // 取消定时器
     _timer.cancel();
-    
+
     // 关闭屏幕常亮
     WakelockPlus.disable();
-    
+
     super.dispose();
   }
-
-
 
   // 时间更新回调
   void _onTimeUpdate(Duration elapsedTime) {
@@ -69,7 +67,7 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
     final hours = twoDigits(duration.inHours);
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
-    
+
     // 如果小时大于0，显示小时:分钟:秒，否则显示分钟:秒
     return hours == '00' ? '$minutes:$seconds' : '$hours:$minutes:$seconds';
   }
@@ -97,7 +95,9 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: FullscreenClockPageConstants.clockToHintSpacing),
+                SizedBox(
+                  height: FullscreenClockPageConstants.clockToHintSpacing,
+                ),
                 // 提示文字
                 Text(
                   '点击屏幕返回专注页面',
@@ -113,6 +113,4 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
       ),
     );
   }
-
-
 }

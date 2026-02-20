@@ -5,7 +5,7 @@ import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 class IconSelectorPage extends StatefulWidget {
   final String? selectedIcon;
-  
+
   const IconSelectorPage({super.key, this.selectedIcon});
 
   @override
@@ -24,14 +24,16 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // 使用IconHelper获取图标分类数据
     iconsByCategory = IconHelper.getIconsByCategory();
-    
+
     // 初始化当前选中的图标
     _currentSelectedIcon = widget.selectedIcon;
-    logger.debug('图标选择器初始化，传入的选中图标: ${widget.selectedIcon}, 初始化后的当前选中图标: $_currentSelectedIcon');
-    
+    logger.debug(
+      '图标选择器初始化，传入的选中图标: ${widget.selectedIcon}, 初始化后的当前选中图标: $_currentSelectedIcon',
+    );
+
     // 初始化过滤后的图标列表
     searchIcons('');
   }
@@ -40,7 +42,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
   void searchIcons(String query) {
     setState(() {
       searchQuery = query.toLowerCase();
-      
+
       if (searchQuery.isEmpty) {
         // 显示所有图标
         filteredIconsByCategory = iconsByCategory;
@@ -59,16 +61,15 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
           }
         });
         // 创建一个扁平化的图标列表用于查找
-        filteredIcons = filteredIconsByCategory.values.expand((list) => list).toList();
+        filteredIcons = filteredIconsByCategory.values
+            .expand((list) => list)
+            .toList();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    
-
-
     // 定义一些预设颜色用于图标背景
     final List<Color> presetColors = [
       Colors.blue,
@@ -109,35 +110,55 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                   hintText: '搜索图标...',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(IconSelectorPageConstants.searchBorderRadius),
+                    borderRadius: BorderRadius.circular(
+                      IconSelectorPageConstants.searchBorderRadius,
+                    ),
                   ),
                 ),
                 onChanged: searchIcons,
               ),
               SizedBox(height: IconSelectorPageConstants.largeSpacing),
-              
+
               // 图标按类型分组显示
               Expanded(
                 child: filteredIcons.isEmpty
-                    ? Center(child: Text('没有找到匹配的图标', style: TextStyle(fontSize: IconSelectorPageConstants.emptyStateFontSize)))
+                    ? Center(
+                        child: Text(
+                          '没有找到匹配的图标',
+                          style: TextStyle(
+                            fontSize:
+                                IconSelectorPageConstants.emptyStateFontSize,
+                          ),
+                        ),
+                      )
                     : ListView.builder(
                         itemCount: filteredIconsByCategory.length,
                         itemBuilder: (context, categoryIndex) {
-                          final category = filteredIconsByCategory.keys.elementAt(categoryIndex);
-                          final categoryIcons = filteredIconsByCategory[category]!;
-                          
+                          final category = filteredIconsByCategory.keys
+                              .elementAt(categoryIndex);
+                          final categoryIcons =
+                              filteredIconsByCategory[category]!;
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // 类别标题
                               Padding(
-                                padding: EdgeInsets.symmetric(vertical: IconSelectorPageConstants.mediumSpacing, horizontal: IconSelectorPageConstants.smallSpacing),
+                                padding: EdgeInsets.symmetric(
+                                  vertical:
+                                      IconSelectorPageConstants.mediumSpacing,
+                                  horizontal:
+                                      IconSelectorPageConstants.smallSpacing,
+                                ),
                                 child: Text(
                                   category,
                                   style: TextStyle(
-                                    fontSize: IconSelectorPageConstants.categoryTitleFontSize,
+                                    fontSize: IconSelectorPageConstants
+                                        .categoryTitleFontSize,
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).textTheme.titleLarge?.color,
+                                    color: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge?.color,
                                   ),
                                 ),
                               ),
@@ -145,28 +166,39 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: IconSelectorPageConstants.gridCrossAxisCount, // 每行显示5个图标
-                                  crossAxisSpacing: IconSelectorPageConstants.gridCrossAxisSpacing,
-                                  mainAxisSpacing: IconSelectorPageConstants.gridMainAxisSpacing,
-                                  childAspectRatio: IconSelectorPageConstants.gridChildAspectRatio, // 调整图标项的宽高比
-                                ),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: IconSelectorPageConstants
+                                          .gridCrossAxisCount, // 每行显示5个图标
+                                      crossAxisSpacing:
+                                          IconSelectorPageConstants
+                                              .gridCrossAxisSpacing,
+                                      mainAxisSpacing: IconSelectorPageConstants
+                                          .gridMainAxisSpacing,
+                                      childAspectRatio: IconSelectorPageConstants
+                                          .gridChildAspectRatio, // 调整图标项的宽高比
+                                    ),
                                 itemCount: categoryIcons.length,
                                 itemBuilder: (context, index) {
                                   final icon = categoryIcons[index];
                                   final iconName = IconHelper.getIconName(icon);
-                                  final isSelected = iconName == _currentSelectedIcon;
+                                  final isSelected =
+                                      iconName == _currentSelectedIcon;
                                   // 计算一个稳定的颜色索引，基于图标名称
-                                  final colorIndex = iconName.hashCode % presetColors.length;
-                                  final iconBackgroundColor = presetColors[colorIndex];
-                                     
+                                  final colorIndex =
+                                      iconName.hashCode % presetColors.length;
+                                  final iconBackgroundColor =
+                                      presetColors[colorIndex];
+
                                   return GestureDetector(
                                     onTap: () {
                                       logger.debug('点击图标，图标名称: $iconName');
                                       // 更新当前选中的图标
                                       setState(() {
                                         _currentSelectedIcon = iconName;
-                                        logger.debug('选中图标更新为: $_currentSelectedIcon');
+                                        logger.debug(
+                                          '选中图标更新为: $_currentSelectedIcon',
+                                        );
                                       });
                                       // 立即返回选中的图标名称字符串
                                       Navigator.pop(context, iconName);
@@ -174,24 +206,35 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                     child: Column(
                                       children: <Widget>[
                                         Container(
-                                          width: IconSelectorPageConstants.iconContainerSize,
-                                        height: IconSelectorPageConstants.iconContainerSize,
+                                          width: IconSelectorPageConstants
+                                              .iconContainerSize,
+                                          height: IconSelectorPageConstants
+                                              .iconContainerSize,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            color: isSelected 
-                                              ? Theme.of(context).primaryColor
-                                              : iconBackgroundColor.withOpacity(0.1),
+                                            color: isSelected
+                                                ? Theme.of(context).primaryColor
+                                                : iconBackgroundColor
+                                                      .withOpacity(0.1),
                                             border: isSelected
-                                              ? Border.all(width: IconSelectorPageConstants.selectedBorderWidth, color: Theme.of(context).primaryColor)
-                                              : null,
+                                                ? Border.all(
+                                                    width:
+                                                        IconSelectorPageConstants
+                                                            .selectedBorderWidth,
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).primaryColor,
+                                                  )
+                                                : null,
                                           ),
                                           child: Center(
                                             child: Icon(
                                               icon,
-                                              size: IconSelectorPageConstants.iconSize,
-                                              color: isSelected 
-                                                ? Colors.white
-                                                : iconBackgroundColor,
+                                              size: IconSelectorPageConstants
+                                                  .iconSize,
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : iconBackgroundColor,
                                             ),
                                           ),
                                         ),
@@ -200,7 +243,9 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                   );
                                 },
                               ),
-                              Divider(height: IconSelectorPageConstants.dividerHeight),
+                              Divider(
+                                height: IconSelectorPageConstants.dividerHeight,
+                              ),
                             ],
                           );
                         },

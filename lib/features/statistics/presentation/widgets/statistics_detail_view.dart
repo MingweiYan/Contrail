@@ -33,10 +33,10 @@ class StatisticsDetailView extends StatelessWidget {
       children: [
         // 明细视图时间选择器（固定为月份选择）
         _buildMonthSelector(context),
-        
+
         // 明细视图的图例选择部分
         _buildLegendSelector(context),
-        
+
         // 主体内容：日历视图和时间轴视图
         _buildDetailContent(context),
       ],
@@ -50,7 +50,9 @@ class StatisticsDetailView extends StatelessWidget {
       padding: StatisticsDetailViewConstants.containerPadding,
       decoration: BoxDecoration(
         color: Colors.white, // 与其他卡片保持一致的背景色
-        borderRadius: BorderRadius.circular(StatisticsDetailViewConstants.containerBorderRadius),
+        borderRadius: BorderRadius.circular(
+          StatisticsDetailViewConstants.containerBorderRadius,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -75,7 +77,7 @@ class StatisticsDetailView extends StatelessWidget {
             style: TextStyle(
               fontSize: StatisticsDetailViewConstants.subtitleFontSize,
               fontWeight: FontWeight.bold,
-              color: ThemeHelper.onBackground(context)
+              color: ThemeHelper.onBackground(context),
             ),
           ),
           IconButton(
@@ -97,7 +99,9 @@ class StatisticsDetailView extends StatelessWidget {
       padding: StatisticsDetailViewConstants.containerPadding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(StatisticsDetailViewConstants.containerBorderRadius),
+        borderRadius: BorderRadius.circular(
+          StatisticsDetailViewConstants.containerBorderRadius,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -113,78 +117,95 @@ class StatisticsDetailView extends StatelessWidget {
           Expanded(
             child: Wrap(
               spacing: StatisticsDetailViewConstants.legendItemSpacing,
-            runSpacing: StatisticsDetailViewConstants.legendRunSpacing,
+              runSpacing: StatisticsDetailViewConstants.legendRunSpacing,
               children: allHabits.asMap().entries.map((entry) {
                 final index = entry.key;
                 final habit = entry.value;
-                final isVisible = index < isHabitVisible.length && isHabitVisible[index];
-                    
+                final isVisible =
+                    index < isHabitVisible.length && isHabitVisible[index];
+
                 return Semantics(
                   label: '切换显示: ${habit.name}',
                   button: true,
                   child: GestureDetector(
-                  onTap: () {
-                    statisticsProvider.toggleHabitVisibility(index);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(6)),
-                    decoration: BoxDecoration(
-                      color: isVisible ? habit.color : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
-                      border: Border.all(
-                        color: isVisible ? habit.color : Colors.grey.shade300,
-                        width: ScreenUtil().setWidth(2),
+                    onTap: () {
+                      statisticsProvider.toggleHabitVisibility(index);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(12),
+                        vertical: ScreenUtil().setHeight(6),
                       ),
-                      boxShadow: isVisible
-                          ? [
-                              BoxShadow(
-                                color: habit.color.withOpacity(0.25),
-                                spreadRadius: 2,
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                spreadRadius: 1,
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                    ),
-                    constraints: BoxConstraints(minHeight: ScreenUtil().setWidth(40)),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: ScreenUtil().setWidth(12),
-                          height: ScreenUtil().setHeight(12),
-                          decoration: BoxDecoration(
-                            color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade400,
-                            shape: BoxShape.circle,
-                          ),
+                      decoration: BoxDecoration(
+                        color: isVisible ? habit.color : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(20),
                         ),
-                        SizedBox(width: ScreenUtil().setWidth(8)),
-                        Text(
-                          habit.name,
-                          style: TextStyle(
-                            color: isVisible ? ThemeHelper.onPrimary(context) : ThemeHelper.onBackground(context).withOpacity(0.8),
-                            fontSize: StatisticsDetailViewConstants.legendFontSize,
-                          ),
+                        border: Border.all(
+                          color: isVisible ? habit.color : Colors.grey.shade300,
+                          width: ScreenUtil().setWidth(2),
                         ),
-                      ],
+                        boxShadow: isVisible
+                            ? [
+                                BoxShadow(
+                                  color: habit.color.withOpacity(0.25),
+                                  spreadRadius: 2,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  spreadRadius: 1,
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                      ),
+                      constraints: BoxConstraints(
+                        minHeight: ScreenUtil().setWidth(40),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: ScreenUtil().setWidth(12),
+                            height: ScreenUtil().setHeight(12),
+                            decoration: BoxDecoration(
+                              color: isVisible
+                                  ? ThemeHelper.onPrimary(context)
+                                  : Colors.grey.shade400,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          SizedBox(width: ScreenUtil().setWidth(8)),
+                          Text(
+                            habit.name,
+                            style: TextStyle(
+                              color: isVisible
+                                  ? ThemeHelper.onPrimary(context)
+                                  : ThemeHelper.onBackground(
+                                      context,
+                                    ).withOpacity(0.8),
+                              fontSize:
+                                  StatisticsDetailViewConstants.legendFontSize,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 );
               }).toList(),
             ),
           ),
           // 确保容器宽度充足，即使习惯数量较少
-          allHabits.length < 3 ? Container(width: ScreenUtil().setWidth(80)) : Container(),
+          allHabits.length < 3
+              ? Container(width: ScreenUtil().setWidth(80))
+              : Container(),
         ],
       ),
     );
@@ -194,83 +215,90 @@ class StatisticsDetailView extends StatelessWidget {
   Widget _buildDetailContent(BuildContext context) {
     return Column(
       children: [
-          // 日历视图 - 独立的白色块
-          Container(
-            margin: StatisticsDetailViewConstants.containerMargin,
-            decoration: BoxDecoration(
-              color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(StatisticsDetailViewConstants.containerBorderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        // 日历视图 - 独立的白色块
+        Container(
+          margin: StatisticsDetailViewConstants.containerMargin,
+          decoration: BoxDecoration(
+            color: Colors.white, // 使用纯白色背景
+            borderRadius: BorderRadius.circular(
+              StatisticsDetailViewConstants.containerBorderRadius,
             ),
-            padding: StatisticsDetailViewConstants.containerPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children:[
-                Text(
-                  '完成日历',
-                  style: TextStyle(
-                    fontSize: StatisticsDetailViewConstants.titleFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeHelper.onBackground(context),
-                  ),
-                ),
-                SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
-                  CalendarViewWidget(
-                    habits: visibleHabits,
-                    selectedYear: statisticsProvider.detailSelectedYear,
-                    selectedMonth: statisticsProvider.detailSelectedMonth,
-                    habitColors: habitColors,
-                    weekStartDay: Provider.of<PersonalizationProvider>(context, listen: false).weekStartDay,
-                  ),
-              ],
-            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                spreadRadius: 2,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          // 时间轴视图 - 独立的白色块
-          Container(
-            margin: StatisticsDetailViewConstants.containerMargin,
-            decoration: BoxDecoration(
-              color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(StatisticsDetailViewConstants.containerBorderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
+          padding: StatisticsDetailViewConstants.containerPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '完成日历',
+                style: TextStyle(
+                  fontSize: StatisticsDetailViewConstants.titleFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeHelper.onBackground(context),
                 ),
-              ],
-            ),
-            padding: StatisticsDetailViewConstants.containerPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children:[
-                Text(
-                  '活动时间轴',
-                  style: TextStyle(
-                    fontSize: StatisticsDetailViewConstants.titleFontSize,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeHelper.onBackground(context),
-                  ),
-                ),
-                SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
-                  TimelineViewWidget(
-                    habits: visibleHabits,
-                    selectedYear: statisticsProvider.detailSelectedYear,
-                    selectedMonth: statisticsProvider.detailSelectedMonth,
-                  ),
-              ],
-            ),
+              ),
+              SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
+              CalendarViewWidget(
+                habits: visibleHabits,
+                selectedYear: statisticsProvider.detailSelectedYear,
+                selectedMonth: statisticsProvider.detailSelectedMonth,
+                habitColors: habitColors,
+                weekStartDay: Provider.of<PersonalizationProvider>(
+                  context,
+                  listen: false,
+                ).weekStartDay,
+              ),
+            ],
           ),
-          // 添加底部内边距，确保内容不会贴在底部
-          SizedBox(height: StatisticsDetailViewConstants.bottomSpacing),
-        ],
-      );
+        ),
+        // 时间轴视图 - 独立的白色块
+        Container(
+          margin: StatisticsDetailViewConstants.containerMargin,
+          decoration: BoxDecoration(
+            color: Colors.white, // 使用纯白色背景
+            borderRadius: BorderRadius.circular(
+              StatisticsDetailViewConstants.containerBorderRadius,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                spreadRadius: 2,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: StatisticsDetailViewConstants.containerPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '活动时间轴',
+                style: TextStyle(
+                  fontSize: StatisticsDetailViewConstants.titleFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeHelper.onBackground(context),
+                ),
+              ),
+              SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
+              TimelineViewWidget(
+                habits: visibleHabits,
+                selectedYear: statisticsProvider.detailSelectedYear,
+                selectedMonth: statisticsProvider.detailSelectedMonth,
+              ),
+            ],
+          ),
+        ),
+        // 添加底部内边距，确保内容不会贴在底部
+        SizedBox(height: StatisticsDetailViewConstants.bottomSpacing),
+      ],
+    );
   }
 }

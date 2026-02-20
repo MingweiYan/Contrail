@@ -3,7 +3,19 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:convert';
 
-class AppLogger {
+abstract class LoggerPort {
+  void debug(String message);
+  void info(String message);
+  void warning(String message);
+  void error(String message, [dynamic error, StackTrace? stackTrace]);
+  void fatal(String message, [dynamic error, StackTrace? stackTrace]);
+  void enableFileLogging(
+    String directoryPath, {
+    int maxBytes = 16 * 1024 * 1024,
+  });
+}
+
+class AppLogger implements LoggerPort {
   static final AppLogger _instance = AppLogger._internal();
   late Logger _logger;
   Level _level = kDebugMode ? Level.verbose : Level.info;
@@ -30,7 +42,11 @@ class AppLogger {
     );
   }
 
-  void enableFileLogging(String directoryPath, {int maxBytes = 16 * 1024 * 1024}) {
+  @override
+  void enableFileLogging(
+    String directoryPath, {
+    int maxBytes = 16 * 1024 * 1024,
+  }) {
     final fileOutput = _ErrorFileOutput(directoryPath, maxBytes);
     _logger.i('启用文件日志 dir=$directoryPath maxBytes=$maxBytes');
     fileOutput.prepare();
@@ -43,35 +59,33 @@ class AppLogger {
     _logger.i('文件日志输出已启用 dir=$directoryPath');
   }
 
-  
-
-  // 调试日志
+  @override
   void debug(String message) {
     _logger.d(message);
   }
 
-  // 信息日志
+  @override
   void info(String message) {
     _logger.i(message);
   }
 
-  // 警告日志
+  @override
   void warning(String message) {
     _logger.w(message);
   }
 
-  // 错误日志
+  @override
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.e(message, error: error, stackTrace: stackTrace);
   }
 
-  // 致命错误日志
+  @override
   void fatal(String message, [dynamic error, StackTrace? stackTrace]) {
     _logger.f(message, error: error, stackTrace: stackTrace);
   }
 }
 
-// 全局日志实例
+// 保留全局 logger 实例，用于向后兼容
 final logger = AppLogger();
 
 class _ErrorFileOutput extends LogOutput {
@@ -137,7 +151,9 @@ class _ErrorFileOutput extends LogOutput {
     final bytesLen = utf8.encode(content).length;
     final file = File(filePath);
     final currentSize = file.existsSync() ? file.lengthSync() : 0;
-    debugPrint('写入日志准备: currentSize=$currentSize addBytes=$bytesLen maxBytes=$maxBytes');
+    debugPrint(
+      '写入日志准备: currentSize=$currentSize addBytes=$bytesLen maxBytes=$maxBytes',
+    );
     if (currentSize + bytesLen > maxBytes) {
       final rotated = File(rotatedPath);
       if (rotated.existsSync()) {

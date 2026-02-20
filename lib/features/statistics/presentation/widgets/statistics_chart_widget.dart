@@ -3,11 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:contrail/core/di/injection_container.dart';
-import 'package:contrail/shared/services/habit_statistics_service.dart';
+import 'package:contrail/features/statistics/presentation/adapters/statistics_chart_adapter.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
-
-import '../../../profile/presentation/providers/personalization_provider.dart' show WeekStartDay;
+import 'package:contrail/shared/utils/time_management_util.dart';
 
 class StatisticsChartWidget extends StatefulWidget {
   final List<Habit> habits;
@@ -46,11 +44,15 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     }
 
     // 获取习惯的颜色
-    final List<String> habitNames = widget.habits.map((habit) => habit.name).toList();
-    final List<Color> habitColors = widget.habits.map((habit) => habit.color).toList();
+    final List<String> habitNames = widget.habits
+        .map((habit) => habit.name)
+        .toList();
+    final List<Color> habitColors = widget.habits
+        .map((habit) => habit.color)
+        .toList();
 
-    final statsService = sl<HabitStatisticsService>();
-    final titles = statsService.generateTitlesData(
+    final chartAdapter = StatisticsChartAdapter();
+    final titles = chartAdapter.generateTitlesData(
       widget.selectedPeriod,
       selectedYear: widget.selectedYear,
       selectedMonth: widget.selectedMonth,
@@ -59,10 +61,12 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     );
 
     // 为每个习惯生成次数统计数据
-    final List<LineChartBarData> countData = widget.habits.asMap().entries.map((entry) {
+    final List<LineChartBarData> countData = widget.habits.asMap().entries.map((
+      entry,
+    ) {
       final index = entry.key;
       final habit = entry.value;
-      final data = statsService.generateTrendSpots(
+      final data = chartAdapter.generateTrendSpots(
         habit,
         'count',
         widget.selectedPeriod,
@@ -74,10 +78,12 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
 
-    final List<LineChartBarData> timeData = widget.habits.asMap().entries.map((entry) {
+    final List<LineChartBarData> timeData = widget.habits.asMap().entries.map((
+      entry,
+    ) {
       final index = entry.key;
       final habit = entry.value;
-      final data = statsService.generateTrendSpots(
+      final data = chartAdapter.generateTrendSpots(
         habit,
         'time',
         widget.selectedPeriod,
@@ -90,7 +96,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     }).toList();
 
     final bool hasTrackTime = widget.habits.any((h) => h.trackTime);
-    
+
     // 过滤显示的数据
     final List<LineChartBarData> filteredCountData = [];
     final List<LineChartBarData> filteredTimeData = [];
@@ -110,146 +116,181 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         final chartHeight = screenHeight * 0.25; // 图表高度为屏幕高度的25%
 
         return SingleChildScrollView(
-      child: Column(
-        children: [
-          // 次数统计图表 - 添加独立的白色背景块
-          Container(
-            margin: StatisticsChartWidgetConstants.containerMargin,
-            decoration: BoxDecoration(
-              color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(StatisticsChartWidgetConstants.containerBorderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
+          child: Column(
+            children: [
+              // 次数统计图表 - 添加独立的白色背景块
+              Container(
+                margin: StatisticsChartWidgetConstants.containerMargin,
+                decoration: BoxDecoration(
+                  color: Colors.white, // 使用纯白色背景
+                  borderRadius: BorderRadius.circular(
+                    StatisticsChartWidgetConstants.containerBorderRadius,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            padding: StatisticsChartWidgetConstants.containerPadding,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: chartHeight,
-                  width: double.infinity,
-                  child: Semantics(
-                    label: '习惯完成次数统计折线图，点击数据点查看提示',
-                    child: LineChart(
-                      _createLineChartData(
-                        filteredCountData.isEmpty ? countData : filteredCountData,
-                        titles,
-                        'count',
-                        habitNames,
-                        habitColors,
+                padding: StatisticsChartWidgetConstants.containerPadding,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: chartHeight,
+                      width: double.infinity,
+                      child: Semantics(
+                        label: '习惯完成次数统计折线图，点击数据点查看提示',
+                        child: LineChart(
+                          _createLineChartData(
+                            filteredCountData.isEmpty
+                                ? countData
+                                : filteredCountData,
+                            titles,
+                            'count',
+                            habitNames,
+                            habitColors,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.info_outline, size: ScreenUtil().setSp(14), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
-                      SizedBox(width: ScreenUtil().setWidth(6)),
-                      Text(
-                        '提示：点击数据点查看详细值',
-                        style: TextStyle(fontSize: ScreenUtil().setSp(12), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
+                    Padding(
+                      padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: ScreenUtil().setSp(14),
+                            color: ThemeHelper.onBackground(
+                              context,
+                            ).withOpacity(0.7),
+                          ),
+                          SizedBox(width: ScreenUtil().setWidth(6)),
+                          Text(
+                            '提示：点击数据点查看详细值',
+                            style: TextStyle(
+                              fontSize: ScreenUtil().setSp(12),
+                              color: ThemeHelper.onBackground(
+                                context,
+                              ).withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          
-          // 次数统计标题
-          Padding(
-            padding: StatisticsChartWidgetConstants.titlePadding,
-            child: Text(
-              '习惯完成次数统计',
-              style: TextStyle(
-                fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
-                fontWeight: FontWeight.bold,
-                color: ThemeHelper.onBackground(context),
               ),
-            ),
-          ),
 
-          if (hasTrackTime)
-          Container(
-            margin: StatisticsChartWidgetConstants.containerMargin,
-            decoration: BoxDecoration(
-              color: Colors.white, // 使用纯白色背景
-              borderRadius: BorderRadius.circular(StatisticsChartWidgetConstants.containerBorderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: StatisticsChartWidgetConstants.containerPadding,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: chartHeight,
-                  width: double.infinity,
-                  child: Semantics(
-                    label: '习惯专注时间统计折线图，点击数据点查看提示',
-                    child: LineChart(
-                       _createLineChartData(
-                        filteredTimeData.isEmpty ? [] : filteredTimeData,
-                        titles,
-                        'time',
-                        habitNames,
-                        habitColors,
-                       ),
-                    ),
+              // 次数统计标题
+              Padding(
+                padding: StatisticsChartWidgetConstants.titlePadding,
+                child: Text(
+                  '习惯完成次数统计',
+                  style: TextStyle(
+                    fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.onBackground(context),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              ),
+
+              if (hasTrackTime)
+                Container(
+                  margin: StatisticsChartWidgetConstants.containerMargin,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // 使用纯白色背景
+                    borderRadius: BorderRadius.circular(
+                      StatisticsChartWidgetConstants.containerBorderRadius,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  padding: StatisticsChartWidgetConstants.containerPadding,
+                  child: Column(
                     children: [
-                      Icon(Icons.info_outline, size: ScreenUtil().setSp(14), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
-                      SizedBox(width: ScreenUtil().setWidth(6)),
-                      Text(
-                        '提示：点击数据点查看详细值',
-                        style: TextStyle(fontSize: ScreenUtil().setSp(12), color: ThemeHelper.onBackground(context).withOpacity(0.7)),
+                      SizedBox(
+                        height: chartHeight,
+                        width: double.infinity,
+                        child: Semantics(
+                          label: '习惯专注时间统计折线图，点击数据点查看提示',
+                          child: LineChart(
+                            _createLineChartData(
+                              filteredTimeData.isEmpty ? [] : filteredTimeData,
+                              titles,
+                              'time',
+                              habitNames,
+                              habitColors,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: ScreenUtil().setHeight(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: ScreenUtil().setSp(14),
+                              color: ThemeHelper.onBackground(
+                                context,
+                              ).withOpacity(0.7),
+                            ),
+                            SizedBox(width: ScreenUtil().setWidth(6)),
+                            Text(
+                              '提示：点击数据点查看详细值',
+                              style: TextStyle(
+                                fontSize: ScreenUtil().setSp(12),
+                                color: ThemeHelper.onBackground(
+                                  context,
+                                ).withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+
+              if (hasTrackTime)
+                Padding(
+                  padding: StatisticsChartWidgetConstants.titlePadding,
+                  child: Text(
+                    '习惯专注时间统计 (分钟)',
+                    style: TextStyle(
+                      fontSize:
+                          StatisticsChartWidgetConstants.chartTitleFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.onBackground(context),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          
-          if (hasTrackTime)
-          Padding(
-            padding: StatisticsChartWidgetConstants.titlePadding,
-            child: Text(
-              '习惯专注时间统计 (分钟)',
-              style: TextStyle(
-                fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
-                fontWeight: FontWeight.bold,
-                color: ThemeHelper.onBackground(context),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+        );
       },
     );
   }
 
   // 创建线条数据
-  LineChartBarData _createLineChartBarData(List<FlSpot> spots, Color color, int index) {
+  LineChartBarData _createLineChartBarData(
+    List<FlSpot> spots,
+    Color color,
+    int index,
+  ) {
     return LineChartBarData(
       spots: spots,
       isCurved: true, // 曲线样式
@@ -262,11 +303,15 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         getDotPainter: (spot, percent, barData, index) {
           // 根据是否选中显示不同样式的点
           return FlDotCirclePainter(
-            radius: touchedSpot == spot && touchedBarIndex == index ? StatisticsChartWidgetConstants.dotRadiusSelected : StatisticsChartWidgetConstants.dotRadiusNormal,
-            color: touchedSpot == spot && touchedBarIndex == index 
-              ? color.withOpacity(1.0) 
-              : color.withOpacity(0.8),
-            strokeWidth: touchedSpot == spot && touchedBarIndex == index ? StatisticsChartWidgetConstants.dotStrokeWidth : 0,
+            radius: touchedSpot == spot && touchedBarIndex == index
+                ? StatisticsChartWidgetConstants.dotRadiusSelected
+                : StatisticsChartWidgetConstants.dotRadiusNormal,
+            color: touchedSpot == spot && touchedBarIndex == index
+                ? color.withOpacity(1.0)
+                : color.withOpacity(0.8),
+            strokeWidth: touchedSpot == spot && touchedBarIndex == index
+                ? StatisticsChartWidgetConstants.dotStrokeWidth
+                : 0,
             strokeColor: ThemeHelper.onBackground(context),
           );
         },
@@ -276,10 +321,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         show: true,
         color: color.withOpacity(0.1), // 半透明背景色
         gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.2),
-            color.withOpacity(0.0),
-          ],
+          colors: [color.withOpacity(0.2), color.withOpacity(0.0)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -294,8 +336,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     String chartType,
     List<String> habitNames,
     List<Color> habitColors,
-  )
-  {
+  ) {
     // 计算Y轴的最大值
     double maxY = 0;
     for (final barData in lineBarsData) {
@@ -305,9 +346,8 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         }
       }
     }
-    
-    // 根据图表类型和最大值设置不同的边距策略
 
+    // 根据图表类型和最大值设置不同的边距策略
 
     maxY = maxY == 0 ? 10 : maxY * 1.1;
 
@@ -317,50 +357,51 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     return LineChartData(
       // 启用交互功能
       lineTouchData: LineTouchData(
-          enabled: true,
-          getTouchedSpotIndicator: (LineChartBarData barData, List<int> indicators) {
-            return indicators.map((index) {
-              return TouchedSpotIndicatorData(
-                FlLine(
-                  color: barData.color != null ? barData.color!.withOpacity(0.3) : Colors.grey.shade300,
-                  strokeWidth: ScreenUtil().setWidth(2),
-                ),
-                FlDotData(
-                  show: false,
-                ),
-              );
-            }).toList();
-          },
-          touchTooltipData: LineTouchTooltipData(
-            fitInsideHorizontally: true,
-            fitInsideVertically: true,
-            tooltipRoundedRadius: ScreenUtil().setWidth(6),
-            tooltipPadding: EdgeInsets.symmetric(
-              horizontal: ScreenUtil().setWidth(8),
-              vertical: ScreenUtil().setHeight(6),
-            ),
-            getTooltipItems: (touchedSpots) {
-              final statsService = sl<HabitStatisticsService>();
-              return touchedSpots.map((touchedSpot) {
-                final habitName = habitNames[touchedSpot.barIndex];
-                final text = statsService.getTooltipLabel(
-                  chartType,
-                  touchedSpot.x.toInt(),
-                  touchedSpot.y,
-                  widget.selectedPeriod,
-                  selectedYear: widget.selectedYear,
-                  selectedMonth: widget.selectedMonth,
-                  selectedWeek: widget.selectedWeek,
-                  weekStartDay: widget.weekStartDay,
-                );
-                return LineTooltipItem(
-                  '$habitName: $text\n',
-                  TextStyle(color: habitColors[touchedSpot.barIndex]),
+        enabled: true,
+        getTouchedSpotIndicator:
+            (LineChartBarData barData, List<int> indicators) {
+              return indicators.map((index) {
+                return TouchedSpotIndicatorData(
+                  FlLine(
+                    color: barData.color != null
+                        ? barData.color!.withOpacity(0.3)
+                        : Colors.grey.shade300,
+                    strokeWidth: ScreenUtil().setWidth(2),
+                  ),
+                  FlDotData(show: false),
                 );
               }).toList();
             },
-            // 在0.68.0版本中，我们使用默认的tooltip样式
+        touchTooltipData: LineTouchTooltipData(
+          fitInsideHorizontally: true,
+          fitInsideVertically: true,
+          tooltipRoundedRadius: ScreenUtil().setWidth(6),
+          tooltipPadding: EdgeInsets.symmetric(
+            horizontal: ScreenUtil().setWidth(8),
+            vertical: ScreenUtil().setHeight(6),
           ),
+          getTooltipItems: (touchedSpots) {
+            final chartAdapter = StatisticsChartAdapter();
+            return touchedSpots.map((touchedSpot) {
+              final habitName = habitNames[touchedSpot.barIndex];
+              final text = chartAdapter.getTooltipLabel(
+                chartType,
+                touchedSpot.x.toInt(),
+                touchedSpot.y,
+                widget.selectedPeriod,
+                selectedYear: widget.selectedYear,
+                selectedMonth: widget.selectedMonth,
+                selectedWeek: widget.selectedWeek,
+                weekStartDay: widget.weekStartDay,
+              );
+              return LineTooltipItem(
+                '$habitName: $text\n',
+                TextStyle(color: habitColors[touchedSpot.barIndex]),
+              );
+            }).toList();
+          },
+          // 在0.68.0版本中，我们使用默认的tooltip样式
+        ),
         // 设置触摸回调
         touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
           setState(() {
@@ -411,11 +452,13 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             reservedSize: ScreenUtil().setWidth(48),
             interval: chartType == 'count' ? 1 : maxY / 5,
             getTitlesWidget: (value, meta) {
-              if (value == meta.min || value == meta.max || value % (chartType == 'count' ? 1 : maxY / 5) < 0.01) {
+              if (value == meta.min ||
+                  value == meta.max ||
+                  value % (chartType == 'count' ? 1 : maxY / 5) < 0.01) {
                 return Text(
-                  chartType == 'count' 
-                    ? value.toInt().toString() 
-                    : value.toStringAsFixed(0),
+                  chartType == 'count'
+                      ? value.toInt().toString()
+                      : value.toStringAsFixed(0),
                   style: TextStyle(
                     fontSize: MediaQuery.of(context).textScaleFactor * 12,
                     color: ThemeHelper.onSurfaceVariant(context),
@@ -443,18 +486,23 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         show: true,
         border: Border(
           bottom: BorderSide(
-                    color: ThemeHelper.outline(context),
-                    width: ScreenUtil().setWidth(1),
-                  ),
-                  left: BorderSide(
-                    color: ThemeHelper.outline(context),
-                    width: ScreenUtil().setWidth(1),
-                  ),
+            color: ThemeHelper.outline(context),
+            width: ScreenUtil().setWidth(1),
+          ),
+          left: BorderSide(
+            color: ThemeHelper.outline(context),
+            width: ScreenUtil().setWidth(1),
+          ),
           top: BorderSide.none,
           right: BorderSide.none,
         ),
       ),
-      clipData: const FlClipData(top: true, bottom: true, left: true, right: true),
+      clipData: const FlClipData(
+        top: true,
+        bottom: true,
+        left: true,
+        right: true,
+      ),
       // 限制范围
       minX: 0,
       maxX: (titles.length - 1).toDouble(),
@@ -464,6 +512,4 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       lineBarsData: lineBarsData,
     );
   }
-
-  
 }

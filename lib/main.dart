@@ -18,7 +18,8 @@ import 'features/profile/presentation/providers/backup_provider.dart';
 import 'features/profile/presentation/providers/personalization_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/profile/domain/services/auto_backup_service.dart';
-
+import 'features/profile/domain/services/user_settings_service.dart';
+import 'shared/utils/debug_menu_manager.dart';
 
 void main() async {
   logger.info('开始初始化应用...');
@@ -32,46 +33,53 @@ void main() async {
     return true;
   };
 
-  await runZonedGuarded(() async {
-    try {
-      WidgetsFlutterBinding.ensureInitialized();
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ));
+  await runZonedGuarded(
+    () async {
+      try {
+        WidgetsFlutterBinding.ensureInitialized();
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+          ),
+        );
 
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: [SystemUiOverlay.bottom]);
+        SystemChrome.setEnabledSystemUIMode(
+          SystemUiMode.edgeToEdge,
+          overlays: [SystemUiOverlay.bottom],
+        );
 
-      final directory = await getApplicationDocumentsDirectory();
-      final logsPath = '${directory.path}/logs';
-      logger.enableFileLogging(logsPath, maxBytes: 16 * 1024 * 1024);
-      logger.debug('初始化依赖注入...');
-      await init();
-      logger.debug('依赖注入初始化成功');
+        final directory = await getApplicationDocumentsDirectory();
+        final logsPath = '${directory.path}/logs';
+        logger.enableFileLogging(logsPath, maxBytes: 16 * 1024 * 1024);
+        logger.debug('初始化依赖注入...');
+        await init();
+        logger.debug('依赖注入初始化成功');
 
-      final prefs = await SharedPreferences.getInstance();
-      if (!prefs.containsKey('firstLaunchDate')) {
-        final now = DateTime.now();
-        prefs.setString('firstLaunchDate', now.toIso8601String());
-        logger.debug('存储首次启动日期: $now');
+        final prefs = await SharedPreferences.getInstance();
+        if (!prefs.containsKey('firstLaunchDate')) {
+          final now = DateTime.now();
+          prefs.setString('firstLaunchDate', now.toIso8601String());
+          logger.debug('存储首次启动日期: $now');
+        }
+
+        logger.debug('通知服务初始化成功');
+
+        final autoService = AutoBackupService();
+        await autoService.initialize();
+        await autoService.checkAndPerformAutoBackup();
+
+        logger.info('启动应用...');
+        runApp(const ContrailApp());
+      } catch (e, stackTrace) {
+        logger.error('初始化过程中出错', e, stackTrace);
       }
-
-      logger.debug('通知服务初始化成功');
-
-      final autoService = AutoBackupService();
-      await autoService.initialize();
-      await autoService.checkAndPerformAutoBackup();
-
-      logger.info('启动应用...');
-      runApp(const ContrailApp());
-    } catch (e, stackTrace) {
-      logger.error('初始化过程中出错', e, stackTrace);
-    }
-  }, (error, stack) {
-    logger.fatal('Zone未捕获异常', error, stack);
-  });
+    },
+    (error, stack) {
+      logger.fatal('Zone未捕获异常', error, stack);
+    },
+  );
 }
-
 
 class ContrailApp extends StatefulWidget {
   const ContrailApp({super.key});
@@ -85,11 +93,19 @@ class _ContrailAppState extends State<ContrailApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => HabitProvider()..loadHabits()),
+        Provider<IUserSettingsService>(
+          create: (context) => sl<IUserSettingsService>(),
+        ),
+        Provider<DebugMenuManager>(create: (context) => sl<DebugMenuManager>()),
+        ChangeNotifierProvider(
+          create: (context) => sl<HabitProvider>()..loadHabits(),
+        ),
         ChangeNotifierProvider(create: (context) => StatisticsProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => BackupProvider()),
-        ChangeNotifierProvider(create: (context) => PersonalizationProvider()..initialize()),
+        ChangeNotifierProvider(
+          create: (context) => PersonalizationProvider()..initialize(),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -106,7 +122,7 @@ class _ContrailAppState extends State<ContrailApp> {
               flutterThemeMode = ThemeMode.system;
               break;
           }
-          
+
           return ScreenUtilInit(
             designSize: const Size(540, 1200), // 设计稿尺寸
             minTextAdapt: true,

@@ -29,8 +29,10 @@ class HabitAdapter extends TypeAdapter<Habit> {
       descriptionJson: fields[16] as String?,
       trackTime: fields[11] as bool,
       colorValue: fields[8] as int?,
-      trackingDurations: (fields[13] as Map?)?.map((dynamic k, dynamic v) =>
-          MapEntry(k as DateTime, (v as List).cast<Duration>())),
+      trackingDurations: (fields[13] as Map?)?.map(
+        (dynamic k, dynamic v) =>
+            MapEntry(k as DateTime, (v as List).cast<Duration>()),
+      ),
       dailyCompletionStatus: (fields[14] as Map?)?.cast<DateTime, bool>(),
     );
   }

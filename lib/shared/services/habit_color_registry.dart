@@ -19,4 +19,3 @@ class HabitColorRegistry {
 
   Map<String, Color> getMap() => Map.unmodifiable(_nameToColor);
 }
-

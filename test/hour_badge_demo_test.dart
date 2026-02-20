@@ -20,24 +20,30 @@ class _DemoBadgeState extends State<_DemoBadge> {
           child: SizedBox(
             width: 240,
             height: 240,
-            child: Stack(children: [
-              Container(color: Colors.green),
-              if (hours > 0)
-                Positioned(
-                  right: 12,
-                  top: 12,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, a) => ScaleTransition(scale: a, child: child),
-                    child: Container(
-                      key: ValueKey(hours),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      color: Colors.white,
-                      child: Text('${hours}h'),
+            child: Stack(
+              children: [
+                Container(color: Colors.green),
+                if (hours > 0)
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, a) =>
+                          ScaleTransition(scale: a, child: child),
+                      child: Container(
+                        key: ValueKey(hours),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        color: Colors.white,
+                        child: Text('${hours}h'),
+                      ),
                     ),
                   ),
-                ),
-            ]),
+              ],
+            ),
           ),
         ),
       ),
@@ -57,4 +63,3 @@ void main() {
     expect(find.text('2h'), findsOneWidget);
   });
 }
-

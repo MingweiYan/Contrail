@@ -7,8 +7,6 @@ import '../utils/theme_helper.dart';
 import '../models/habit.dart'; // 导入Habit模型以使用TrackingMode枚举
 import '../utils/page_layout_constants.dart';
 
-
-
 // 自定义圆环绘制器
 class CustomCirclePainter extends CustomPainter {
   final double progress;
@@ -48,9 +46,7 @@ class CustomCirclePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round;
 
       final startAngle = -pi / 2; // 12点钟方向
-      final sweepAngle = isClockwise 
-        ? progress * 2 * pi 
-        : -progress * 2 * pi;
+      final sweepAngle = isClockwise ? progress * 2 * pi : -progress * 2 * pi;
 
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -94,15 +90,17 @@ class _ClockWidgetState extends State<ClockWidget> {
   late Duration _currentDuration;
   double _rotationProgress = 0.0;
   Timer? _rotationTimer;
-  
+
   // 获取是否为倒计时模式（番茄钟和倒计时都视为倒计时）
-  bool get isCountdown => widget.trackingMode == TrackingMode.pomodoro || widget.trackingMode == TrackingMode.countdown;
+  bool get isCountdown =>
+      widget.trackingMode == TrackingMode.pomodoro ||
+      widget.trackingMode == TrackingMode.countdown;
 
   @override
   void initState() {
     super.initState();
     _currentDuration = widget.duration;
-    
+
     // 如果在设置界面或专注已开始，启动旋转动画
     if (widget.isSettingsMode || widget.focusStatus == FocusStatus.run) {
       _startRotationAnimation();
@@ -119,11 +117,10 @@ class _ClockWidgetState extends State<ClockWidget> {
     }
 
     _updateProgress();
-    
+
     // 如果设置模式、旋转速度或运行状态发生变化，重新启动或停止动画
     if (widget.isSettingsMode != oldWidget.isSettingsMode ||
         widget.focusStatus != oldWidget.focusStatus) {
-      
       // 在设置界面或运行状态下启动动画
       if (widget.isSettingsMode || widget.focusStatus == FocusStatus.run) {
         _startRotationAnimation();
@@ -145,10 +142,9 @@ class _ClockWidgetState extends State<ClockWidget> {
       // 非设置模式下，根据当前_currentDuration计算旋转进度
       // 60秒刚好转完一圈
       double newValue = (_currentDuration.inSeconds % 60 / 60).clamp(0.0, 1.0);
-     _rotationProgress = isCountdown ? 1 - newValue : newValue;
+      _rotationProgress = isCountdown ? 1 - newValue : newValue;
       // logger.debug('非设置模式，根据_currentDuration计算旋转进度: $_rotationProgress');
     }
-    
   }
 
   // 启动旋转动画
@@ -158,12 +154,14 @@ class _ClockWidgetState extends State<ClockWidget> {
     _updateProgress();
 
     // 计算每毫秒旋转的进度 (根据 rotationSpeed 计算)
-    final millisecondsPerCycle = (60000 / widget.rotationSpeed).toInt(); // 一圈的毫秒数
-    
+    final millisecondsPerCycle = (60000 / widget.rotationSpeed)
+        .toInt(); // 一圈的毫秒数
+
     _rotationTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
       setState(() {
         // 每16ms更新一次进度 (约60fps)
-        _rotationProgress = (_rotationProgress + 16 / millisecondsPerCycle) % 1.0;
+        _rotationProgress =
+            (_rotationProgress + 16 / millisecondsPerCycle) % 1.0;
       });
     });
   }
@@ -210,7 +208,7 @@ class _ClockWidgetState extends State<ClockWidget> {
         final primaryColor = ThemeHelper.primary(context);
         final onPrimaryColor = ThemeHelper.onPrimary(context);
         // 使用 ClockWidgetConstants（ScreenUtil）保持与全局尺寸规范一致
-        
+
         return GestureDetector(
           onVerticalDragUpdate: _handleVerticalDrag,
           child: Container(
@@ -222,10 +220,7 @@ class _ClockWidgetState extends State<ClockWidget> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  primaryColor.withValues(alpha: 0.9),
-                  primaryColor,
-                ],
+                colors: [primaryColor.withValues(alpha: 0.9), primaryColor],
               ),
               boxShadow: [
                 BoxShadow(

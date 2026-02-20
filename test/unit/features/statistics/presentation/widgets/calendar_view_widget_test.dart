@@ -4,7 +4,7 @@ import 'package:contrail/features/statistics/presentation/widgets/calendar_view_
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
-import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
+import 'package:contrail/shared/utils/time_management_util.dart';
 
 void main() {
   group('CalendarViewWidget', () {
@@ -32,10 +32,7 @@ void main() {
     ];
 
     // 习惯颜色映射
-    final habitColors = {
-      '晨跑': Colors.blue,
-      '阅读': Colors.red,
-    };
+    final habitColors = {'晨跑': Colors.blue, '阅读': Colors.red};
 
     // 测试年份和月份
     const testYear = 2023;
@@ -53,7 +50,9 @@ void main() {
       testHabits[1].dailyCompletionStatus[date] = true;
     }
 
-    testWidgets('should render calendar grid with correct number of cells', (WidgetTester tester) async {
+    testWidgets('should render calendar grid with correct number of cells', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 创建组件
       await tester.pumpWidget(
         MaterialApp(
@@ -69,20 +68,26 @@ void main() {
 
       // 断言 - 验证单元格数量（7天标题 + 当月天数）
       // 使用更精确的方式来查找主要的日历单元格
-      expect(find.byWidgetPredicate((widget) {
-        if (widget is Container) {
-          // 检查是否是具有特定样式的日期单元格
-          final decoration = widget.decoration;
-          if (decoration is BoxDecoration) {
-            // 星期标题单元格有灰色背景，日期单元格有白色背景
-            return decoration.color == Colors.grey.shade100 || decoration.color == Colors.white;
+      expect(
+        find.byWidgetPredicate((widget) {
+          if (widget is Container) {
+            // 检查是否是具有特定样式的日期单元格
+            final decoration = widget.decoration;
+            if (decoration is BoxDecoration) {
+              // 星期标题单元格有灰色背景，日期单元格有白色背景
+              return decoration.color == Colors.grey.shade100 ||
+                  decoration.color == Colors.white;
+            }
           }
-        }
-        return false;
-      }), findsNWidgets(7 + daysInMarch));
+          return false;
+        }),
+        findsNWidgets(7 + daysInMarch),
+      );
     });
 
-    testWidgets('should display weekday headers correctly', (WidgetTester tester) async {
+    testWidgets('should display weekday headers correctly', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 创建组件
       await tester.pumpWidget(
         MaterialApp(
@@ -103,7 +108,9 @@ void main() {
       }
     });
 
-    testWidgets('should display dates and mark completed habits', (WidgetTester tester) async {
+    testWidgets('should display dates and mark completed habits', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 创建组件
       await tester.pumpWidget(
         MaterialApp(
@@ -136,7 +143,9 @@ void main() {
       expect(find.text('阅读'), findsWidgets);
     });
 
-    testWidgets('should display empty calendar when no habits', (WidgetTester tester) async {
+    testWidgets('should display empty calendar when no habits', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 创建组件（无习惯数据）
       await tester.pumpWidget(
         MaterialApp(
@@ -156,20 +165,28 @@ void main() {
       expect(find.text('晨跑'), findsNothing);
     });
 
-    testWidgets('should adjust cell aspect ratio based on habit count', (WidgetTester tester) async {
+    testWidgets('should adjust cell aspect ratio based on habit count', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 创建组件（多个习惯）
-      final manyHabits = List.generate(5, (i) => Habit(
-        id: '$i',
-        name: '习惯$i',
-        trackTime: i % 2 == 0,
-        totalDuration: Duration.zero,
-        currentDays: 0,
-        targetDays: 30,
-        goalType: GoalType.positive,
-        cycleType: CycleType.daily,
-      ));
+      final manyHabits = List.generate(
+        5,
+        (i) => Habit(
+          id: '$i',
+          name: '习惯$i',
+          trackTime: i % 2 == 0,
+          totalDuration: Duration.zero,
+          currentDays: 0,
+          targetDays: 30,
+          goalType: GoalType.positive,
+          cycleType: CycleType.daily,
+        ),
+      );
 
-      final manyHabitColors = {for (int i = 0; i < 5; i++) '习惯$i': Colors.primaries[i % Colors.primaries.length]};
+      final manyHabitColors = {
+        for (int i = 0; i < 5; i++)
+          '习惯$i': Colors.primaries[i % Colors.primaries.length],
+      };
 
       await tester.pumpWidget(
         MaterialApp(

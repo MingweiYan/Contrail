@@ -13,17 +13,32 @@ void main() {
       }
     });
 
-    test('Calendar month navigation does not change statistics selectedMonth', () {
-      final habit = Habit(id: 'h', name: 'x', trackTime: false, cycleType: CycleType.monthly, targetDays: 12);
-      final provider = HabitDetailStatisticsProvider(habit);
-      final initialSelectedMonth = provider.selectedMonth;
-      provider.previousCalendarMonth();
-      provider.previousCalendarMonth();
-      expect(provider.selectedMonth, initialSelectedMonth);
-    });
+    test(
+      'Calendar month navigation does not change statistics selectedMonth',
+      () {
+        final habit = Habit(
+          id: 'h',
+          name: 'x',
+          trackTime: false,
+          cycleType: CycleType.monthly,
+          targetDays: 12,
+        );
+        final provider = HabitDetailStatisticsProvider(habit);
+        final initialSelectedMonth = provider.selectedMonth;
+        provider.previousCalendarMonth();
+        provider.previousCalendarMonth();
+        expect(provider.selectedMonth, initialSelectedMonth);
+      },
+    );
 
     test('Statistics time unit navigation does not change calendar month', () {
-      final habit = Habit(id: 'h2', name: 'y', trackTime: false, cycleType: CycleType.weekly, targetDays: 3);
+      final habit = Habit(
+        id: 'h2',
+        name: 'y',
+        trackTime: false,
+        cycleType: CycleType.weekly,
+        targetDays: 3,
+      );
       final provider = HabitDetailStatisticsProvider(habit);
       final initialCalendarMonth = provider.calendarSelectedMonth;
       provider.setSelectedPeriod('month');

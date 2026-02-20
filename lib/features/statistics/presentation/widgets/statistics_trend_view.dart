@@ -31,13 +31,13 @@ class StatisticsTrendView extends StatelessWidget {
       children: [
         // 趋势视图时间选择器（可切换周/月/年）
         _buildTimeSelector(context),
-        
+
         // 周/月/年维度切换控件
         _buildPeriodSelector(context),
-        
+
         // 趋势视图的图例选择部分
         _buildLegendSelector(context),
-        
+
         // 图表组件
         _buildChart(context),
       ],
@@ -47,7 +47,10 @@ class StatisticsTrendView extends StatelessWidget {
   // 构建时间选择器
   Widget _buildTimeSelector(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+      margin: EdgeInsets.symmetric(
+        horizontal: ScreenUtil().setWidth(16),
+        vertical: ScreenUtil().setHeight(12),
+      ),
       padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -73,14 +76,14 @@ class StatisticsTrendView extends StatelessWidget {
           ),
           Text(
             statisticsProvider.trendSelectedPeriod == 'week'
-              ? '${statisticsProvider.trendSelectedYear}年第${statisticsProvider.trendSelectedWeek}周'
-              : statisticsProvider.trendSelectedPeriod == 'month'
+                ? '${statisticsProvider.trendSelectedYear}年第${statisticsProvider.trendSelectedWeek}周'
+                : statisticsProvider.trendSelectedPeriod == 'month'
                 ? '${statisticsProvider.trendSelectedYear}年${statisticsProvider.trendSelectedMonth}月'
                 : '${statisticsProvider.trendSelectedYear}年',
             style: TextStyle(
               fontSize: ScreenUtil().setSp(20),
               fontWeight: FontWeight.bold,
-              color: ThemeHelper.onBackground(context)
+              color: ThemeHelper.onBackground(context),
             ),
           ),
           IconButton(
@@ -98,7 +101,10 @@ class StatisticsTrendView extends StatelessWidget {
   // 构建维度选择器（周/月/年）
   Widget _buildPeriodSelector(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+      margin: EdgeInsets.symmetric(
+        horizontal: ScreenUtil().setWidth(16),
+        vertical: ScreenUtil().setHeight(12),
+      ),
       padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -115,30 +121,57 @@ class StatisticsTrendView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildPeriodButton(context, '周', statisticsProvider.trendSelectedPeriod == 'week', () {
-            statisticsProvider.setTrendSelectedPeriod('week');
-          }),
+          _buildPeriodButton(
+            context,
+            '周',
+            statisticsProvider.trendSelectedPeriod == 'week',
+            () {
+              statisticsProvider.setTrendSelectedPeriod('week');
+            },
+          ),
           SizedBox(width: ScreenUtil().setWidth(16)),
-          _buildPeriodButton(context, '月', statisticsProvider.trendSelectedPeriod == 'month', () {
-            statisticsProvider.setTrendSelectedPeriod('month');
-          }),
+          _buildPeriodButton(
+            context,
+            '月',
+            statisticsProvider.trendSelectedPeriod == 'month',
+            () {
+              statisticsProvider.setTrendSelectedPeriod('month');
+            },
+          ),
           SizedBox(width: ScreenUtil().setWidth(16)),
-          _buildPeriodButton(context, '年', statisticsProvider.trendSelectedPeriod == 'year', () {
-            statisticsProvider.setTrendSelectedPeriod('year');
-          }),
+          _buildPeriodButton(
+            context,
+            '年',
+            statisticsProvider.trendSelectedPeriod == 'year',
+            () {
+              statisticsProvider.setTrendSelectedPeriod('year');
+            },
+          ),
         ],
       ),
     );
   }
 
   // 创建维度切换按钮
-  Widget _buildPeriodButton(BuildContext context, String label, bool isSelected, VoidCallback onPressed) {
+  Widget _buildPeriodButton(
+    BuildContext context,
+    String label,
+    bool isSelected,
+    VoidCallback onPressed,
+  ) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Colors.white,
-        foregroundColor: isSelected ? ThemeHelper.onPrimary(context) : ThemeHelper.onBackground(context),
-        padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(20), vertical: ScreenUtil().setHeight(12)),
+        backgroundColor: isSelected
+            ? Theme.of(context).colorScheme.primary
+            : Colors.white,
+        foregroundColor: isSelected
+            ? ThemeHelper.onPrimary(context)
+            : ThemeHelper.onBackground(context),
+        padding: EdgeInsets.symmetric(
+          horizontal: ScreenUtil().setWidth(20),
+          vertical: ScreenUtil().setHeight(12),
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
         ),
@@ -158,7 +191,10 @@ class StatisticsTrendView extends StatelessWidget {
   // 构建图例选择器
   Widget _buildLegendSelector(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(16), vertical: ScreenUtil().setHeight(12)),
+      margin: EdgeInsets.symmetric(
+        horizontal: ScreenUtil().setWidth(16),
+        vertical: ScreenUtil().setHeight(12),
+      ),
       padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -182,74 +218,90 @@ class StatisticsTrendView extends StatelessWidget {
               children: allHabits.asMap().entries.map((entry) {
                 final index = entry.key;
                 final habit = entry.value;
-                final isVisible = index < isHabitVisible.length && isHabitVisible[index];
-                    
+                final isVisible =
+                    index < isHabitVisible.length && isHabitVisible[index];
+
                 return Semantics(
                   label: '切换显示: ${habit.name}',
                   button: true,
                   child: GestureDetector(
-                  onTap: () {
-                    statisticsProvider.toggleHabitVisibility(index);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(6)),
-                    decoration: BoxDecoration(
-                      color: isVisible ? habit.color : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
-                      border: Border.all(
-                        color: isVisible ? habit.color : Colors.grey.shade300,
-                        width: ScreenUtil().setWidth(2),
+                    onTap: () {
+                      statisticsProvider.toggleHabitVisibility(index);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(12),
+                        vertical: ScreenUtil().setHeight(6),
                       ),
-                      boxShadow: isVisible
-                          ? [
-                              BoxShadow(
-                                color: habit.color.withOpacity(0.25),
-                                spreadRadius: 2,
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                spreadRadius: 1,
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                    ),
-                    constraints: BoxConstraints(minHeight: ScreenUtil().setWidth(40)),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: ScreenUtil().setWidth(12),
-                          height: ScreenUtil().setHeight(12),
-                          decoration: BoxDecoration(
-                            color: isVisible ? ThemeHelper.onPrimary(context) : Colors.grey.shade400,
-                            shape: BoxShape.circle,
-                          ),
+                      decoration: BoxDecoration(
+                        color: isVisible ? habit.color : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(20),
                         ),
-                        SizedBox(width: ScreenUtil().setWidth(8)),
-                        Text(
-                          habit.name,
-                          style: TextStyle(
-                            color: isVisible ? ThemeHelper.onPrimary(context) : ThemeHelper.onBackground(context).withOpacity(0.8),
-                            fontSize: ScreenUtil().setSp(18),
-                          ),
+                        border: Border.all(
+                          color: isVisible ? habit.color : Colors.grey.shade300,
+                          width: ScreenUtil().setWidth(2),
                         ),
-                      ],
+                        boxShadow: isVisible
+                            ? [
+                                BoxShadow(
+                                  color: habit.color.withOpacity(0.25),
+                                  spreadRadius: 2,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  spreadRadius: 1,
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                      ),
+                      constraints: BoxConstraints(
+                        minHeight: ScreenUtil().setWidth(40),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: ScreenUtil().setWidth(12),
+                            height: ScreenUtil().setHeight(12),
+                            decoration: BoxDecoration(
+                              color: isVisible
+                                  ? ThemeHelper.onPrimary(context)
+                                  : Colors.grey.shade400,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          SizedBox(width: ScreenUtil().setWidth(8)),
+                          Text(
+                            habit.name,
+                            style: TextStyle(
+                              color: isVisible
+                                  ? ThemeHelper.onPrimary(context)
+                                  : ThemeHelper.onBackground(
+                                      context,
+                                    ).withOpacity(0.8),
+                              fontSize: ScreenUtil().setSp(18),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 );
               }).toList(),
             ),
           ),
           // 确保容器宽度充足，即使习惯数量较少
-          allHabits.length < 3 ? Container(width: ScreenUtil().setWidth(80)) : Container(),
+          allHabits.length < 3
+              ? Container(width: ScreenUtil().setWidth(80))
+              : Container(),
         ],
       ),
     );
@@ -264,7 +316,10 @@ class StatisticsTrendView extends StatelessWidget {
       selectedMonth: statisticsProvider.trendSelectedMonth,
       selectedWeek: statisticsProvider.trendSelectedWeek,
       isHabitVisible: isHabitVisible,
-      weekStartDay: Provider.of<PersonalizationProvider>(context, listen: false).weekStartDay,
+      weekStartDay: Provider.of<PersonalizationProvider>(
+        context,
+        listen: false,
+      ).weekStartDay,
     );
   }
 }

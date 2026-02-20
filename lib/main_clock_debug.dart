@@ -15,8 +15,14 @@ class ClockDebugApp extends StatelessWidget {
       designSize: const Size(375, 812),
       builder: (_, child) => MaterialApp(
         title: 'Clock Debug',
-        theme: ThemeData(colorSchemeSeed: Colors.blue, brightness: Brightness.light),
-        darkTheme: ThemeData(colorSchemeSeed: Colors.blue, brightness: Brightness.dark),
+        theme: ThemeData(
+          colorSchemeSeed: Colors.blue,
+          brightness: Brightness.light,
+        ),
+        darkTheme: ThemeData(
+          colorSchemeSeed: Colors.blue,
+          brightness: Brightness.dark,
+        ),
         themeMode: ThemeMode.system,
         home: child,
       ),

@@ -9,13 +9,20 @@ class BackupListItem extends StatelessWidget {
   final Future<bool> Function() onDelete;
   final Future<void> Function() onRestore;
 
-  const BackupListItem({super.key, required this.file, required this.onDelete, required this.onRestore});
+  const BackupListItem({
+    super.key,
+    required this.file,
+    required this.onDelete,
+    required this.onRestore,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12))),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+      ),
       child: Dismissible(
         key: Key(file.path),
         direction: DismissDirection.endToStart,
@@ -29,7 +36,13 @@ class BackupListItem extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('删除', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                '删除',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               SizedBox(width: ScreenUtil().setWidth(8)),
               const Icon(Icons.delete, color: Colors.white),
               SizedBox(width: ScreenUtil().setWidth(10)),
@@ -46,31 +59,47 @@ class BackupListItem extends StatelessWidget {
             width: ScreenUtil().setWidth(40),
             height: ScreenUtil().setWidth(40),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.insert_drive_file, color: ThemeHelper.primary(context)),
+            child: Icon(
+              Icons.insert_drive_file,
+              color: ThemeHelper.primary(context),
+            ),
           ),
           title: Text(
             file.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: DataBackupPageConstants.fontSize_16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: DataBackupPageConstants.fontSize_16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           subtitle: Text(
-            '备份时间: ' + file.formattedLastModified + ' · 大小: ' + file.formattedSize,
+            '备份时间: ' +
+                file.formattedLastModified +
+                ' · 大小: ' +
+                file.formattedSize,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: DataBackupPageConstants.fontSize_14, color: ThemeHelper.onBackground(context).withValues(alpha: 0.7)),
+            style: TextStyle(
+              fontSize: DataBackupPageConstants.fontSize_14,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
+            ),
           ),
           trailing: ElevatedButton.icon(
             onPressed: () => onRestore(),
             icon: Icon(Icons.restore, size: ScreenUtil().setSp(20)),
-            label: Text('恢复', style: TextStyle(fontSize: DataBackupPageConstants.fontSize_16)),
+            label: Text(
+              '恢复',
+              style: TextStyle(fontSize: DataBackupPageConstants.fontSize_16),
+            ),
           ),
         ),
       ),
     );
   }
 }
-

@@ -35,7 +35,11 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
     if (v) {
       _timer = Timer.periodic(const Duration(seconds: 1), (t) {
         setState(() {
-          _duration = _duration + (_tickBySecond ? const Duration(seconds: 1) : const Duration(minutes: 1));
+          _duration =
+              _duration +
+              (_tickBySecond
+                  ? const Duration(seconds: 1)
+                  : const Duration(minutes: 1));
         });
       });
     }
@@ -55,7 +59,7 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
     final remainderMinutes = minutes % 60;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Clock Debug')), 
+      appBar: AppBar(title: const Text('Clock Debug')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -79,10 +83,14 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                       top: 8,
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
-                        transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(scale: animation, child: child),
                         child: Container(
                           key: ValueKey(_duration.inHours),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
@@ -113,9 +121,19 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ElevatedButton(onPressed: () => _setDuration(const Duration(minutes: 70)), child: const Text('70 分钟')),
-              ElevatedButton(onPressed: () => _setDuration(const Duration(minutes: 130)), child: const Text('130 分钟')),
-              ElevatedButton(onPressed: () => _setDuration(const Duration(hours: 3, minutes: 15)), child: const Text('3h15m')),
+              ElevatedButton(
+                onPressed: () => _setDuration(const Duration(minutes: 70)),
+                child: const Text('70 分钟'),
+              ),
+              ElevatedButton(
+                onPressed: () => _setDuration(const Duration(minutes: 130)),
+                child: const Text('130 分钟'),
+              ),
+              ElevatedButton(
+                onPressed: () =>
+                    _setDuration(const Duration(hours: 3, minutes: 15)),
+                child: const Text('3h15m'),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -130,7 +148,9 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                   keyboardType: TextInputType.number,
                   onSubmitted: (v) {
                     final h = int.tryParse(v) ?? 0;
-                    _setDuration(Duration(hours: h, minutes: _duration.inMinutes % 60));
+                    _setDuration(
+                      Duration(hours: h, minutes: _duration.inMinutes % 60),
+                    );
                   },
                 ),
               ),
@@ -149,13 +169,20 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: () => _setDuration(Duration(hours: _duration.inHours, minutes: _duration.inMinutes % 60)),
+                onPressed: () => _setDuration(
+                  Duration(
+                    hours: _duration.inHours,
+                    minutes: _duration.inMinutes % 60,
+                  ),
+                ),
                 child: const Text('应用'),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Text('派生: hours=$hours, remainderMinutes=$remainderMinutes, seconds=$seconds'),
+          Text(
+            '派生: hours=$hours, remainderMinutes=$remainderMinutes, seconds=$seconds',
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -170,7 +197,9 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 12,
+                    ),
                     overlayColor: Colors.white.withOpacity(0.12),
                   ),
                   child: Slider(
@@ -179,7 +208,9 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     max: 300,
                     divisions: 300,
                     label: '$minutes 分',
-                    onChanged: (v) => _setDuration(Duration(minutes: v.toInt(), seconds: seconds)),
+                    onChanged: (v) => _setDuration(
+                      Duration(minutes: v.toInt(), seconds: seconds),
+                    ),
                   ),
                 ),
               ),
@@ -198,7 +229,9 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 12,
+                    ),
                     overlayColor: Colors.white.withOpacity(0.12),
                   ),
                   child: Slider(
@@ -207,7 +240,9 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     max: 59,
                     divisions: 59,
                     label: '$seconds 秒',
-                    onChanged: (v) => _setDuration(Duration(minutes: minutes, seconds: v.toInt())),
+                    onChanged: (v) => _setDuration(
+                      Duration(minutes: minutes, seconds: v.toInt()),
+                    ),
                   ),
                 ),
               ),
@@ -226,7 +261,9 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 12,
+                    ),
                     overlayColor: Colors.white.withOpacity(0.12),
                   ),
                   child: Slider(
@@ -244,11 +281,21 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
           DropdownButtonFormField<TrackingMode>(
             value: _mode,
             items: const [
-              DropdownMenuItem(value: TrackingMode.countdown, child: Text('倒计时')),
-              DropdownMenuItem(value: TrackingMode.stopwatch, child: Text('正计时')),
-              DropdownMenuItem(value: TrackingMode.pomodoro, child: Text('番茄钟')),
+              DropdownMenuItem(
+                value: TrackingMode.countdown,
+                child: Text('倒计时'),
+              ),
+              DropdownMenuItem(
+                value: TrackingMode.stopwatch,
+                child: Text('正计时'),
+              ),
+              DropdownMenuItem(
+                value: TrackingMode.pomodoro,
+                child: Text('番茄钟'),
+              ),
             ],
-            onChanged: (v) => setState(() => _mode = v ?? TrackingMode.countdown),
+            onChanged: (v) =>
+                setState(() => _mode = v ?? TrackingMode.countdown),
             decoration: const InputDecoration(labelText: '模式'),
           ),
           DropdownButtonFormField<FocusStatus>(
@@ -270,17 +317,19 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
             title: const Text('自动递增'),
             value: _autoTick,
             onChanged: _toggleAutoTick,
-            subtitle: Row(children: [
-              const Text('单位: '),
-              DropdownButton<bool>(
-                value: _tickBySecond,
-                items: const [
-                  DropdownMenuItem(value: true, child: Text('秒')),
-                  DropdownMenuItem(value: false, child: Text('分')),
-                ],
-                onChanged: (v) => setState(() => _tickBySecond = v ?? true),
-              )
-            ]),
+            subtitle: Row(
+              children: [
+                const Text('单位: '),
+                DropdownButton<bool>(
+                  value: _tickBySecond,
+                  items: const [
+                    DropdownMenuItem(value: true, child: Text('秒')),
+                    DropdownMenuItem(value: false, child: Text('分')),
+                  ],
+                  onChanged: (v) => setState(() => _tickBySecond = v ?? true),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           Row(

@@ -18,7 +18,8 @@ class AutoBackupService {
   static const String _autoBackupChannelName = '自动备份';
   static const String _autoBackupChannelDescription = '自动备份通知';
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
@@ -30,8 +31,14 @@ class AutoBackupService {
     final dynamic rawFreq = prefs.get(_backupFrequencyKey);
     final int freq = _normalizeBackupFrequency(rawFreq);
     final lastMillis = prefs.getInt(_lastBackupTimeKey);
-    final last = lastMillis != null ? DateTime.fromMillisecondsSinceEpoch(lastMillis) : null;
-    return {'autoBackupEnabled': enabled, 'backupFrequency': freq, 'lastBackupTime': last};
+    final last = lastMillis != null
+        ? DateTime.fromMillisecondsSinceEpoch(lastMillis)
+        : null;
+    return {
+      'autoBackupEnabled': enabled,
+      'backupFrequency': freq,
+      'lastBackupTime': last,
+    };
   }
 
   Future<void> saveAutoBackupSettings(bool enabled, int frequency) async {
@@ -100,17 +107,21 @@ class AutoBackupService {
       if (tzName.isEmpty || tzName == 'Etc/Unknown') tzName = 'Asia/Shanghai';
       final location = tz.getLocation(tzName);
       var scheduled = DateTime(now.year, now.month, now.day, 2, 0, 0);
-      if (!scheduled.isAfter(now)) scheduled = scheduled.add(Duration(days: frequency));
+      if (!scheduled.isAfter(now))
+        scheduled = scheduled.add(Duration(days: frequency));
       final tzDateTime = tz.TZDateTime.from(scheduled, location);
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        _autoBackupChannelId,
-        _autoBackupChannelName,
-        channelDescription: _autoBackupChannelDescription,
-        importance: Importance.low,
-        priority: Priority.low,
-        playSound: false,
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            _autoBackupChannelId,
+            _autoBackupChannelName,
+            channelDescription: _autoBackupChannelDescription,
+            importance: Importance.low,
+            priority: Priority.low,
+            playSound: false,
+          );
+      const NotificationDetails platformDetails = NotificationDetails(
+        android: androidDetails,
       );
-      const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
       await _notificationsPlugin.zonedSchedule(
         0,
         '执行自动备份',
@@ -118,9 +129,12 @@ class AutoBackupService {
         tzDateTime,
         platformDetails,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
         payload: 'auto_backup_payload',
-        matchDateTimeComponents: frequency == 1 ? DateTimeComponents.time : DateTimeComponents.dayOfWeekAndTime,
+        matchDateTimeComponents: frequency == 1
+            ? DateTimeComponents.time
+            : DateTimeComponents.dayOfWeekAndTime,
       );
       logger.info('已安排自动备份，频率：$frequency 天，下次备份时间：$scheduled');
     } catch (e) {
@@ -134,7 +148,10 @@ class AutoBackupService {
 
   Future<void> updateLastBackupTime() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastBackupTimeKey, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(
+      _lastBackupTimeKey,
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   int _normalizeBackupFrequency(dynamic raw) {

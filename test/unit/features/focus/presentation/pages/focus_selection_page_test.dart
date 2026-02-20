@@ -18,28 +18,30 @@ void main() {
       cycleType: CycleType.daily,
     );
 
-    testWidgets('should render correctly with habit', (WidgetTester tester) async {
+    testWidgets('should render correctly with habit', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 直接创建HabitTrackingPage（与路由配置一致）
       await tester.pumpWidget(
-        MaterialApp(
-          home: HabitTrackingPage(habit: testHabit),
-        ),
+        MaterialApp(home: HabitTrackingPage(habit: testHabit)),
       );
 
       // 断言 - 验证HabitTrackingPage正确渲染
       expect(find.byType(HabitTrackingPage), findsOneWidget);
     });
 
-    testWidgets('should receive correct habit data', (WidgetTester tester) async {
+    testWidgets('should receive correct habit data', (
+      WidgetTester tester,
+    ) async {
       // 安排 - 直接创建HabitTrackingPage
       await tester.pumpWidget(
-        MaterialApp(
-          home: HabitTrackingPage(habit: testHabit),
-        ),
+        MaterialApp(home: HabitTrackingPage(habit: testHabit)),
       );
 
       // 断言 - 验证HabitTrackingPage接收到了正确的habit
-      final habitTrackingPage = tester.widget<HabitTrackingPage>(find.byType(HabitTrackingPage));
+      final habitTrackingPage = tester.widget<HabitTrackingPage>(
+        find.byType(HabitTrackingPage),
+      );
       expect(habitTrackingPage.habit.id, '1');
       expect(habitTrackingPage.habit.name, '晨跑');
     });

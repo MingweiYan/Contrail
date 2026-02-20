@@ -11,22 +11,30 @@ class HabitService {
   final AppLogger _logger = AppLogger();
 
   /// 添加习惯追踪记录
-  /// 
+  ///
   /// 这个方法会更新习惯的完成天数、总时长和追踪记录
-  /// 
+  ///
   /// 参数:
   /// - habit: 要添加记录的习惯对象
   /// - date: 记录的日期时间
   /// - duration: 完成的时长
   void addTrackingRecord(Habit habit, DateTime date, Duration duration) {
-    _logger.debug('📝  开始添加追踪记录: 日期=${date.toString()}, 时长=${duration.inMinutes}分钟');
-    
+    _logger.debug(
+      '📝  开始添加追踪记录: 日期=${date.toString()}, 时长=${duration.inMinutes}分钟',
+    );
+
     final dateOnly = DateTime(date.year, date.month, date.day);
-    final hasCompletedToday = habit.dailyCompletionStatus.containsKey(dateOnly) && habit.dailyCompletionStatus[dateOnly] == true;
-    
-    _logger.debug('🔍  检查当天打卡状态: hasCompletedToday=$hasCompletedToday, dateOnly=${dateOnly.toString()}');
-    _logger.debug('📊  添加前状态 - 完成天数: ${habit.currentDays}, 总时长: ${habit.totalDuration.inMinutes}分钟');
-    
+    final hasCompletedToday =
+        habit.dailyCompletionStatus.containsKey(dateOnly) &&
+        habit.dailyCompletionStatus[dateOnly] == true;
+
+    _logger.debug(
+      '🔍  检查当天打卡状态: hasCompletedToday=$hasCompletedToday, dateOnly=${dateOnly.toString()}',
+    );
+    _logger.debug(
+      '📊  添加前状态 - 完成天数: ${habit.currentDays}, 总时长: ${habit.totalDuration.inMinutes}分钟',
+    );
+
     // 记录完成时间
     if (!hasCompletedToday) {
       // 如果当天尚未完成打卡
@@ -36,11 +44,11 @@ class HabitService {
     } else {
       _logger.debug('ℹ️  当天已经完成打卡，不增加完成天数');
     }
-    
+
     habit.totalDuration += duration;
     // 修复：使用putIfAbsent和add方法确保所有记录都被保存，而不是覆盖
     habit.trackingDurations.putIfAbsent(date, () => []).add(duration);
-    
+
     _logger.debug('📈  添加追踪记录完成 - 总时长: ${habit.totalDuration.inMinutes}分钟');
     _logger.debug('📋  追踪记录总数: ${habit.trackingDurations.length}');
     _logger.debug('📅  打卡天数: ${habit.dailyCompletionStatus.length}');
@@ -52,8 +60,14 @@ class HabitService {
   /// - habit: 目标习惯
   /// - startTime: 本次记录的开始时间（键）
   /// - duration: 本次记录的持续时间（用于从列表中匹配删除）
-  void removeTrackingRecord(Habit habit, DateTime startTime, Duration duration) {
-    _logger.debug('🗑️  删除追踪记录: 开始=${startTime.toIso8601String()}, 时长=${duration.inMinutes}分钟');
+  void removeTrackingRecord(
+    Habit habit,
+    DateTime startTime,
+    Duration duration,
+  ) {
+    _logger.debug(
+      '🗑️  删除追踪记录: 开始=${startTime.toIso8601String()}, 时长=${duration.inMinutes}分钟',
+    );
     final dateOnly = DateTime(startTime.year, startTime.month, startTime.day);
     final list = habit.trackingDurations[startTime];
     if (list == null || list.isEmpty) {
@@ -91,61 +105,72 @@ class HabitService {
         }
       }
     }
-    _logger.debug('✅  删除完成: 当前天数=${habit.currentDays}, 总时长=${habit.totalDuration.inMinutes}分钟');
+    _logger.debug(
+      '✅  删除完成: 当前天数=${habit.currentDays}, 总时长=${habit.totalDuration.inMinutes}分钟',
+    );
   }
 
   /// 检查习惯当天是否已完成
-  /// 
+  ///
   /// 参数:
   /// - habit: 要检查的习惯对象
-  /// 
+  ///
   /// 返回值:
   /// - 如果习惯在今天已经完成返回true，否则返回false
   bool hasCompletedToday(Habit habit) {
     final today = DateTime.now();
     final todayOnly = DateTime(today.year, today.month, today.day);
-    return habit.dailyCompletionStatus.containsKey(todayOnly) && habit.dailyCompletionStatus[todayOnly] == true;
+    return habit.dailyCompletionStatus.containsKey(todayOnly) &&
+        habit.dailyCompletionStatus[todayOnly] == true;
   }
 
   /// 备份所有习惯数据
-  /// 
+  ///
   /// 将所有习惯数据转换为可序列化的格式
-  /// 
+  ///
   /// 参数:
   /// - habitRepository: 习惯数据仓库接口
-  /// 
+  ///
   /// 返回值:
   /// - 包含所有习惯数据的列表，可直接用于JSON序列化
-  Future<List<Map<String, dynamic>>> backupHabits(HabitRepository habitRepository) async {
+  Future<List<Map<String, dynamic>>> backupHabits(
+    HabitRepository habitRepository,
+  ) async {
     _logger.debug('📁  开始备份习惯数据');
-    
+
     try {
       final habits = await habitRepository.getHabits();
-    final result = habits.map((habit) => {
-      'id': habit.id,
-      'name': habit.name,
-      'totalDuration': habit.totalDuration.inMilliseconds,
-      'currentDays': habit.currentDays,
-      'targetDays': habit.targetDays,
-      'goalType': habit.goalType.index,
-      'imagePath': habit.imagePath,
-      'cycleType': habit.cycleType?.index,
-      'icon': habit.icon,
-      'trackTime': habit.trackTime,
-      'colorValue': habit.colorValue,
-      'descriptionJson': habit.descriptionJson,
-      'trackingDurations': habit.trackingDurations.map((date, durations) => MapEntry(
-        date.toIso8601String(),
-        durations.map((duration) => duration.inMilliseconds).toList()
-      )),
-      'dailyCompletionStatus': habit.dailyCompletionStatus.map((date, completed) => MapEntry(
-        date.toIso8601String(),
-        completed
-      ))
-    }).toList();
-    
-    _logger.debug('✅  习惯数据备份完成，共备份 ${result.length} 个习惯');
-    return result;
+      final result = habits
+          .map(
+            (habit) => {
+              'id': habit.id,
+              'name': habit.name,
+              'totalDuration': habit.totalDuration.inMilliseconds,
+              'currentDays': habit.currentDays,
+              'targetDays': habit.targetDays,
+              'goalType': habit.goalType.index,
+              'imagePath': habit.imagePath,
+              'cycleType': habit.cycleType?.index,
+              'icon': habit.icon,
+              'trackTime': habit.trackTime,
+              'colorValue': habit.colorValue,
+              'descriptionJson': habit.descriptionJson,
+              'trackingDurations': habit.trackingDurations.map(
+                (date, durations) => MapEntry(
+                  date.toIso8601String(),
+                  durations.map((duration) => duration.inMilliseconds).toList(),
+                ),
+              ),
+              'dailyCompletionStatus': habit.dailyCompletionStatus.map(
+                (date, completed) =>
+                    MapEntry(date.toIso8601String(), completed),
+              ),
+            },
+          )
+          .toList();
+
+      _logger.debug('✅  习惯数据备份完成，共备份 ${result.length} 个习惯');
+      return result;
     } catch (e) {
       _logger.error('❌  备份习惯数据失败', e);
       return [];
@@ -153,72 +178,83 @@ class HabitService {
   }
 
   /// 从备份数据恢复习惯
-  /// 
+  ///
   /// 将序列化的习惯数据恢复到数据库
-  /// 
+  ///
   /// 参数:
   /// - habitRepository: 习惯数据仓库接口
   /// - habitsData: 从备份文件读取的习惯数据列表
-  /// 
+  ///
   /// 返回值:
   /// - 如果恢复成功返回true，否则返回false
-  Future<bool> restoreHabits(HabitRepository habitRepository, List<dynamic> habitsData) async {
+  Future<bool> restoreHabits(
+    HabitRepository habitRepository,
+    List<dynamic> habitsData,
+  ) async {
     try {
-        _logger.debug('🔄  开始恢复习惯数据，共 ${habitsData.length} 个习惯');
-        
-        // 清空现有数据 - 通过先获取所有习惯再逐个删除
-        final existingHabits = await habitRepository.getHabits();
-        for (final habit in existingHabits) {
-          await habitRepository.deleteHabit(habit.id);
-        }
-        
-        // 恢复所有习惯
-        for (final habitJson in habitsData) {
-          final habitMap = habitJson as Map<String, dynamic>;
-          
-          // 反序列化trackingDurations
-          final trackingDurations = <DateTime, List<Duration>>{};
-          if (habitMap.containsKey('trackingDurations')) {
-            final trackingData = habitMap['trackingDurations'] as Map<String, dynamic>;
-            trackingData.forEach((dateString, durations) {
-              final date = DateTime.parse(dateString);
-              final durationList = (durations as List).map((ms) => Duration(milliseconds: ms as int)).toList();
-              trackingDurations[date] = durationList;
-            });
-          }
-          
-          // 反序列化dailyCompletionStatus
-          final dailyCompletionStatus = <DateTime, bool>{};
-          if (habitMap.containsKey('dailyCompletionStatus')) {
-            final completionData = habitMap['dailyCompletionStatus'] as Map<String, dynamic>;
-            completionData.forEach((dateString, completed) {
-              final date = DateTime.parse(dateString);
-              dailyCompletionStatus[date] = completed as bool;
-            });
-          }
-          
-          // 创建Habit对象
-          final habit = Habit(
-            id: habitMap['id'] as String,
-            name: habitMap['name'] as String,
-            totalDuration: Duration(milliseconds: habitMap['totalDuration'] as int),
-            currentDays: habitMap['currentDays'] as int,
-            targetDays: habitMap['targetDays'] as int?,
-            goalType: GoalType.values[habitMap['goalType'] as int],
-            imagePath: habitMap['imagePath'] as String?,
-            cycleType: habitMap.containsKey('cycleType') ? CycleType.values[habitMap['cycleType'] as int] : null,
-            icon: habitMap['icon'] as String?,
-            trackTime: habitMap['trackTime'] as bool,
-            colorValue: habitMap['colorValue'] as int?,
-            descriptionJson: habitMap['descriptionJson'] as String?,
-            trackingDurations: trackingDurations,
-            dailyCompletionStatus: dailyCompletionStatus,
-          );
-          
-          // 使用Repository添加习惯
-          await habitRepository.addHabit(habit);
+      _logger.debug('🔄  开始恢复习惯数据，共 ${habitsData.length} 个习惯');
+
+      // 清空现有数据 - 通过先获取所有习惯再逐个删除
+      final existingHabits = await habitRepository.getHabits();
+      for (final habit in existingHabits) {
+        await habitRepository.deleteHabit(habit.id);
       }
-      
+
+      // 恢复所有习惯
+      for (final habitJson in habitsData) {
+        final habitMap = habitJson as Map<String, dynamic>;
+
+        // 反序列化trackingDurations
+        final trackingDurations = <DateTime, List<Duration>>{};
+        if (habitMap.containsKey('trackingDurations')) {
+          final trackingData =
+              habitMap['trackingDurations'] as Map<String, dynamic>;
+          trackingData.forEach((dateString, durations) {
+            final date = DateTime.parse(dateString);
+            final durationList = (durations as List)
+                .map((ms) => Duration(milliseconds: ms as int))
+                .toList();
+            trackingDurations[date] = durationList;
+          });
+        }
+
+        // 反序列化dailyCompletionStatus
+        final dailyCompletionStatus = <DateTime, bool>{};
+        if (habitMap.containsKey('dailyCompletionStatus')) {
+          final completionData =
+              habitMap['dailyCompletionStatus'] as Map<String, dynamic>;
+          completionData.forEach((dateString, completed) {
+            final date = DateTime.parse(dateString);
+            dailyCompletionStatus[date] = completed as bool;
+          });
+        }
+
+        // 创建Habit对象
+        final habit = Habit(
+          id: habitMap['id'] as String,
+          name: habitMap['name'] as String,
+          totalDuration: Duration(
+            milliseconds: habitMap['totalDuration'] as int,
+          ),
+          currentDays: habitMap['currentDays'] as int,
+          targetDays: habitMap['targetDays'] as int?,
+          goalType: GoalType.values[habitMap['goalType'] as int],
+          imagePath: habitMap['imagePath'] as String?,
+          cycleType: habitMap.containsKey('cycleType')
+              ? CycleType.values[habitMap['cycleType'] as int]
+              : null,
+          icon: habitMap['icon'] as String?,
+          trackTime: habitMap['trackTime'] as bool,
+          colorValue: habitMap['colorValue'] as int?,
+          descriptionJson: habitMap['descriptionJson'] as String?,
+          trackingDurations: trackingDurations,
+          dailyCompletionStatus: dailyCompletionStatus,
+        );
+
+        // 使用Repository添加习惯
+        await habitRepository.addHabit(habit);
+      }
+
       _logger.debug('✅  习惯数据恢复完成');
       return true;
     } catch (e) {
@@ -248,17 +284,17 @@ class HabitService {
   int calculateDefaultTargetTimeMinutes(int targetDays) {
     int targetTimeMinutes = targetDays * 30; // 每天30分钟
     final maxTimeMinutes = getMaxTimeMinutes(targetDays);
-    
+
     // 确保不小于最小时间限制
     if (targetTimeMinutes < 5) {
       targetTimeMinutes = 5;
     }
-    
+
     // 确保不超过最大时间限制
     if (targetTimeMinutes > maxTimeMinutes) {
       targetTimeMinutes = maxTimeMinutes;
     }
-    
+
     return targetTimeMinutes;
   }
 
@@ -296,9 +332,13 @@ class HabitService {
   }
 
   /// 保存习惯
-  Future<void> saveHabit(HabitProvider habitProvider, Habit habit, bool isUpdating) async {
+  Future<void> saveHabit(
+    HabitProvider habitProvider,
+    Habit habit,
+    bool isUpdating,
+  ) async {
     _logger.debug('保存习惯: id=${habit.id}, 名称=${habit.name}, 是更新操作=$isUpdating');
-    
+
     if (isUpdating) {
       await habitProvider.updateHabit(habit);
       _logger.debug('习惯更新成功: id=${habit.id}');

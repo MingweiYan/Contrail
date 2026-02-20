@@ -7,7 +7,7 @@ import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 
 // 创建模拟HabitRepository
-class MockHabitRepository extends Mock implements HabitRepository {} 
+class MockHabitRepository extends Mock implements HabitRepository {}
 
 void main() {
   late MockHabitRepository mockHabitRepository;
@@ -15,12 +15,14 @@ void main() {
 
   setUp(() {
     // 注册Habit类型以便在测试中使用
-    registerFallbackValue(Habit(
-      id: 'test',
-      name: 'Test',
-      trackTime: false,
-      goalType: GoalType.positive,
-    ));
+    registerFallbackValue(
+      Habit(
+        id: 'test',
+        name: 'Test',
+        trackTime: false,
+        goalType: GoalType.positive,
+      ),
+    );
     mockHabitRepository = MockHabitRepository();
     addHabitUseCase = AddHabitUseCase(mockHabitRepository);
   });

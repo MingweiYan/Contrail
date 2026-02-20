@@ -36,9 +36,20 @@ class WebDavBackupProvider extends ChangeNotifier {
   String get webdavPassword => _webdavPassword;
   String get webdavPath => _webdavPath;
 
-  void _setLoading(bool v) { _isLoading = v; notifyListeners(); }
-  void _setError(String msg) { _errorMessage = msg; notifyListeners(); }
-  void clearError() { _errorMessage = null; notifyListeners(); }
+  void _setLoading(bool v) {
+    _isLoading = v;
+    notifyListeners();
+  }
+
+  void _setError(String msg) {
+    _errorMessage = msg;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 
   Future<void> initialize() async {
     try {
@@ -94,13 +105,33 @@ class WebDavBackupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setWebDavUrl(String v) { _webdavUrl = v; notifyListeners(); }
-  void setWebDavUsername(String v) { _webdavUsername = v; notifyListeners(); }
-  void setWebDavPassword(String v) { _webdavPassword = v; notifyListeners(); }
-  void setWebDavPath(String v) { _webdavPath = v; notifyListeners(); }
+  void setWebDavUrl(String v) {
+    _webdavUrl = v;
+    notifyListeners();
+  }
+
+  void setWebDavUsername(String v) {
+    _webdavUsername = v;
+    notifyListeners();
+  }
+
+  void setWebDavPassword(String v) {
+    _webdavPassword = v;
+    notifyListeners();
+  }
+
+  void setWebDavPath(String v) {
+    _webdavPath = v;
+    notifyListeners();
+  }
 
   Future<void> saveWebDavConfig() async {
-    await _service.saveWebDavConfig(url: _webdavUrl, username: _webdavUsername, password: _webdavPassword, path: _webdavPath);
+    await _service.saveWebDavConfig(
+      url: _webdavUrl,
+      username: _webdavUsername,
+      password: _webdavPassword,
+      path: _webdavPath,
+    );
     _displayPath = await _service.loadOrCreateBackupPath();
     await refreshBackupFiles();
   }
@@ -131,11 +162,17 @@ class WebDavBackupProvider extends ChangeNotifier {
     return ok;
   }
 
-  Future<bool> restoreBackupFile(BuildContext context, BackupFileInfo file) async {
+  Future<bool> restoreBackupFile(
+    BuildContext context,
+    BackupFileInfo file,
+  ) async {
     final ok = await _service.restoreFromBackup(file);
     if (ok) {
       try {
-        final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+        final habitProvider = Provider.of<HabitProvider>(
+          context,
+          listen: false,
+        );
         await habitProvider.loadHabits();
       } catch (e) {
         logger.warning('刷新习惯数据失败: $e');

@@ -23,7 +23,7 @@ class AppRouter {
           ...StatisticsRoutes.routes,
           ...ProfileRoutes.routes,
         ],
-      )
+      ),
     ],
   );
 }

@@ -1,27 +1,13 @@
 import 'package:flutter/material.dart';
 
 // 主题模式枚举
-enum ThemeMode {
-  light,
-  dark,
-  system,
-}
+enum ThemeMode { light, dark, system }
 
 // 背景样式枚举
-enum BackgroundStyle {
-  none,
-  gradient,
-  pattern,
-  image,
-}
+enum BackgroundStyle { none, gradient, pattern, image }
 
 // 图标样式枚举
-enum IconStyle {
-  defaultStyle,
-  outlined,
-  filled,
-  gradient,
-}
+enum IconStyle { defaultStyle, outlined, filled, gradient }
 
 // 自定义主题数据类
 class AppTheme {

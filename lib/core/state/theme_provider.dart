@@ -14,9 +14,9 @@ class ThemeProvider extends ChangeNotifier {
 
   // 获取当前选择的主题
   app_theme.AppTheme get currentTheme => _availableThemes.firstWhere(
-        (app_theme.AppTheme theme) => theme.name == _selectedThemeName,
-        orElse: () => _availableThemes[0],
-      );
+    (app_theme.AppTheme theme) => theme.name == _selectedThemeName,
+    orElse: () => _availableThemes[0],
+  );
 
   // 获取所有可用主题
   List<app_theme.AppTheme> get availableThemes => _availableThemes;
@@ -88,18 +88,20 @@ class ThemeProvider extends ChangeNotifier {
   // 设置主题
   Future<void> setThemeByName(String themeName) async {
     if (_selectedThemeName != themeName &&
-        _availableThemes.any((app_theme.AppTheme theme) => theme.name == themeName)) {
+        _availableThemes.any(
+          (app_theme.AppTheme theme) => theme.name == themeName,
+        )) {
       _selectedThemeName = themeName;
       await _saveSettings();
       notifyListeners();
     }
   }
-  
+
   // 添加自定义主题
   Future<void> addCustomTheme(Color color) async {
     // 生成一个唯一的主题名称
     final themeName = '自定义主题_${color.value.toRadixString(16).substring(2)}';
-    
+
     // 创建一个新的AppTheme对象
     final customTheme = app_theme.AppTheme(
       name: themeName,
@@ -116,19 +118,16 @@ class ThemeProvider extends ChangeNotifier {
       ),
       lightBackgroundStyle: app_theme.BackgroundStyle.gradient,
       darkBackgroundStyle: app_theme.BackgroundStyle.gradient,
-      gradientColors: [
-        color.withOpacity(0.2),
-        color.withOpacity(0.1),
-      ],
+      gradientColors: [color.withOpacity(0.2), color.withOpacity(0.1)],
       iconStyle: app_theme.IconStyle.defaultStyle,
     );
-    
+
     // 检查是否已经存在相同的主题，如果存在则先移除
     _availableThemes.removeWhere((theme) => theme.name == themeName);
-    
+
     // 添加新的主题到可用主题列表
     _availableThemes.add(customTheme);
-    
+
     // 选择新添加的主题
     await setThemeByName(themeName);
   }

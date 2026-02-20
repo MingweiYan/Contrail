@@ -5,9 +5,6 @@ class ProfileRoutes {
   static const String root = 'profile';
 
   static List<GoRoute> get routes => [
-        GoRoute(
-          path: root,
-          builder: (context, state) => const ProfilePage(),
-        ),
-      ];
+    GoRoute(path: root, builder: (context, state) => const ProfilePage()),
+  ];
 }

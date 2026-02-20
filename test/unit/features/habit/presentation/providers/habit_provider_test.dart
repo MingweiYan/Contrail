@@ -8,21 +8,23 @@ import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:contrail/core/di/injection_container.dart';
 
 // 创建模拟HabitRepository
-class MockHabitRepository extends Mock implements HabitRepository {} 
+class MockHabitRepository extends Mock implements HabitRepository {}
 
-void main() {  
-  setUpAll(() {    
+void main() {
+  setUpAll(() {
     // 注册Habit类型的回退值
-    registerFallbackValue(Habit(
-      id: 'fallback',
-      name: '回退习惯',
-      trackTime: true,
-      totalDuration: Duration.zero,
-      currentDays: 0,
-      targetDays: 30,
-      goalType: GoalType.positive,
-      cycleType: CycleType.daily,
-    ));
+    registerFallbackValue(
+      Habit(
+        id: 'fallback',
+        name: '回退习惯',
+        trackTime: true,
+        totalDuration: Duration.zero,
+        currentDays: 0,
+        targetDays: 30,
+        goalType: GoalType.positive,
+        cycleType: CycleType.daily,
+      ),
+    );
   });
 
   late MockHabitRepository mockHabitRepository;
@@ -69,7 +71,7 @@ void main() {
     sl.reset();
   });
 
-  group('HabitProvider', () {    
+  group('HabitProvider', () {
     test('loadHabits should load habits from repository', () async {
       // 行动 - 执行方法
       await habitProvider.loadHabits();
@@ -81,20 +83,23 @@ void main() {
       verify(mockHabitRepository.getHabits).called(1);
     });
 
-    test('loadHabits should set error message when repository throws', () async {
-      // 安排 - 设置模拟行为
-      final exception = Exception('加载失败');
-      when(mockHabitRepository.getHabits).thenThrow(exception);
+    test(
+      'loadHabits should set error message when repository throws',
+      () async {
+        // 安排 - 设置模拟行为
+        final exception = Exception('加载失败');
+        when(mockHabitRepository.getHabits).thenThrow(exception);
 
-      // 行动 - 执行方法
-      await habitProvider.loadHabits();
+        // 行动 - 执行方法
+        await habitProvider.loadHabits();
 
-      // 断言 - 验证结果
-      expect(habitProvider.habits, isEmpty);
-      expect(habitProvider.isLoading, false);
-      expect(habitProvider.errorMessage, '加载习惯失败: $exception');
-      verify(mockHabitRepository.getHabits).called(1);
-    });
+        // 断言 - 验证结果
+        expect(habitProvider.habits, isEmpty);
+        expect(habitProvider.isLoading, false);
+        expect(habitProvider.errorMessage, '加载习惯失败: $exception');
+        verify(mockHabitRepository.getHabits).called(1);
+      },
+    );
 
     test('addHabit should add habit to repository', () async {
       // 安排 - 先加载初始数据
@@ -135,7 +140,9 @@ void main() {
         goalType: GoalType.positive,
         cycleType: CycleType.daily,
       );
-      when(() => mockHabitRepository.updateHabit(any())).thenAnswer((_) async {});
+      when(
+        () => mockHabitRepository.updateHabit(any()),
+      ).thenAnswer((_) async {});
 
       // 行动 - 执行方法
       await habitProvider.updateHabit(updatedHabit);
@@ -144,36 +151,48 @@ void main() {
       verify(() => mockHabitRepository.updateHabit(updatedHabit)).called(1);
     });
 
-    test('deleteHabit should delete habit from repository', () async {
-      // 安排 - 先加载初始数据
-      await habitProvider.loadHabits();
+    test(
+      'deleteHabit should delete habit from repository',
+      () async {
+        // 安排 - 先加载初始数据
+        await habitProvider.loadHabits();
 
-      // 安排 - 设置模拟行为
-      const habitId = '1';
-      // 使用更精确的参数匹配
-      when(() => mockHabitRepository.deleteHabit(habitId)).thenAnswer((_) async {});
+        // 安排 - 设置模拟行为
+        const habitId = '1';
+        // 使用更精确的参数匹配
+        when(
+          () => mockHabitRepository.deleteHabit(habitId),
+        ).thenAnswer((_) async {});
 
-      // 行动 - 执行方法
-      await habitProvider.deleteHabit(habitId);
+        // 行动 - 执行方法
+        await habitProvider.deleteHabit(habitId);
 
-      // 断言 - 验证结果
-      verify(() => mockHabitRepository.deleteHabit(habitId)).called(1);
-    }, skip: '暂时跳过此测试，等待修复测试套件中的依赖问题');
+        // 断言 - 验证结果
+        verify(() => mockHabitRepository.deleteHabit(habitId)).called(1);
+      },
+      skip: '暂时跳过此测试，等待修复测试套件中的依赖问题',
+    );
 
-    test('stopTracking should update habit in repository', () async {
-      // 安排 - 先加载初始数据
-      await habitProvider.loadHabits();
+    test(
+      'stopTracking should update habit in repository',
+      () async {
+        // 安排 - 先加载初始数据
+        await habitProvider.loadHabits();
 
-      // 安排 - 设置模拟行为
-      const habitId = '1';
-      final duration = Duration(minutes: 20);
-      when(() => mockHabitRepository.updateHabit(any())).thenAnswer((_) async {});
+        // 安排 - 设置模拟行为
+        const habitId = '1';
+        final duration = Duration(minutes: 20);
+        when(
+          () => mockHabitRepository.updateHabit(any()),
+        ).thenAnswer((_) async {});
 
-      // 行动 - 执行方法
-      await habitProvider.stopTracking(habitId, duration);
+        // 行动 - 执行方法
+        await habitProvider.stopTracking(habitId, duration);
 
-      // 断言 - 验证结果
-      verify(() => mockHabitRepository.updateHabit(any())).called(1);
-    }, skip: '暂时跳过此测试，等待修复实际代码中的问题');
+        // 断言 - 验证结果
+        verify(() => mockHabitRepository.updateHabit(any())).called(1);
+      },
+      skip: '暂时跳过此测试，等待修复实际代码中的问题',
+    );
   });
 }

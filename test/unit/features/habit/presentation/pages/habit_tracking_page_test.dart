@@ -15,7 +15,7 @@ import 'package:contrail/shared/widgets/clock_widget.dart';
 import 'package:contrail/shared/models/habit.dart' as habit_model;
 
 // 创建模拟HabitProvider
-class MockHabitProvider extends Mock implements HabitProvider {} 
+class MockHabitProvider extends Mock implements HabitProvider {}
 
 void main() {
   group('HabitTrackingPage', () {
@@ -41,7 +41,9 @@ void main() {
       }
     });
 
-    testWidgets('should initialize with correct habit', (WidgetTester tester) async {
+    testWidgets('should initialize with correct habit', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1440, 2560);
       tester.view.devicePixelRatio = 1.0;
       // 安排 - 创建测试环境
@@ -61,13 +63,17 @@ void main() {
 
       // 断言 - 验证页面初始化
       expect(find.byType(HabitTrackingPage), findsOneWidget);
-      final habitTrackingPage = tester.widget<HabitTrackingPage>(find.byType(HabitTrackingPage));
+      final habitTrackingPage = tester.widget<HabitTrackingPage>(
+        find.byType(HabitTrackingPage),
+      );
       expect(habitTrackingPage.habit.id, '1');
       expect(habitTrackingPage.habit.name, '晨跑');
       tester.view.reset();
     });
 
-    testWidgets('should start timer from settings page', (WidgetTester tester) async {
+    testWidgets('should start timer from settings page', (
+      WidgetTester tester,
+    ) async {
       // 设置更大的视窗，确保时钟尺寸足够
       tester.view.physicalSize = const Size(1440, 2560);
       tester.view.devicePixelRatio = 1.0;
@@ -98,7 +104,9 @@ void main() {
       tester.view.reset();
     });
 
-    testWidgets('should display correct initial mode', (WidgetTester tester) async {
+    testWidgets('should display correct initial mode', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1440, 2560);
       tester.view.devicePixelRatio = 1.0;
       // 安排 - 创建测试环境
@@ -134,20 +142,22 @@ void main() {
           builder: (_, child) => MaterialApp(home: child!),
           child: Scaffold(
             body: Center(
-              child: LayoutBuilder(builder: (context, constraints) {
-                final side = MediaQuery.of(context).size.width * 0.75;
-                return SizedBox(
-                  key: key,
-                  width: side,
-                  height: side,
-                  child: ClockWidget(
-                    duration: const Duration(minutes: 70),
-                    focusStatus: FocusStatus.run,
-                    trackingMode: habit_model.TrackingMode.stopwatch,
-                    onDurationChanged: (_) {},
-                  ),
-                );
-              }),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final side = MediaQuery.of(context).size.width * 0.75;
+                  return SizedBox(
+                    key: key,
+                    width: side,
+                    height: side,
+                    child: ClockWidget(
+                      duration: const Duration(minutes: 70),
+                      focusStatus: FocusStatus.run,
+                      trackingMode: habit_model.TrackingMode.stopwatch,
+                      onDurationChanged: (_) {},
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -163,7 +173,9 @@ void main() {
   });
 
   group('Scrollable clock page preview', () {
-    testWidgets('clock centered, buttons below, page scrollable', (WidgetTester tester) async {
+    testWidgets('clock centered, buttons below, page scrollable', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 1.0;
 
@@ -181,20 +193,22 @@ void main() {
                 children: [
                   SizedBox(height: 24),
                   Center(
-                    child: LayoutBuilder(builder: (context, constraints) {
-                      final side = MediaQuery.of(context).size.width * 0.75;
-                      return SizedBox(
-                        key: clockKey,
-                        width: side,
-                        height: side,
-                        child: ClockWidget(
-                          duration: const Duration(minutes: 70),
-                          focusStatus: FocusStatus.run,
-                          trackingMode: habit_model.TrackingMode.stopwatch,
-                          onDurationChanged: (_) {},
-                        ),
-                      );
-                    }),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final side = MediaQuery.of(context).size.width * 0.75;
+                        return SizedBox(
+                          key: clockKey,
+                          width: side,
+                          height: side,
+                          child: ClockWidget(
+                            duration: const Duration(minutes: 70),
+                            focusStatus: FocusStatus.run,
+                            trackingMode: habit_model.TrackingMode.stopwatch,
+                            onDurationChanged: (_) {},
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 32),
                   Padding(
@@ -204,10 +218,22 @@ void main() {
                       spacing: 32,
                       runSpacing: 16,
                       children: const [
-                        ElevatedButton(onPressed: null, child: Icon(Icons.lightbulb_outline)),
-                        ElevatedButton(onPressed: null, child: Icon(Icons.restart_alt)),
-                        ElevatedButton(onPressed: null, child: Icon(Icons.play_arrow)),
-                        ElevatedButton(onPressed: null, child: Icon(Icons.stop)),
+                        ElevatedButton(
+                          onPressed: null,
+                          child: Icon(Icons.lightbulb_outline),
+                        ),
+                        ElevatedButton(
+                          onPressed: null,
+                          child: Icon(Icons.restart_alt),
+                        ),
+                        ElevatedButton(
+                          onPressed: null,
+                          child: Icon(Icons.play_arrow),
+                        ),
+                        ElevatedButton(
+                          onPressed: null,
+                          child: Icon(Icons.stop),
+                        ),
                       ],
                     ),
                   ),

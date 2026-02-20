@@ -9,22 +9,36 @@ void main() {
   final pass = const String.fromEnvironment('WEBDAV_PASSWORD');
 
   setUpAll(() async {
-    SharedPreferences.setMockInitialValues({
-    });
+    SharedPreferences.setMockInitialValues({});
   });
 
   test('webdav write/read/delete', () async {
     final service = WebDavStorageService();
     await service.initialize();
-    final name = 'contrail_backup_test_${DateTime.now().millisecondsSinceEpoch}.json';
+    final name =
+        'contrail_backup_test_${DateTime.now().millisecondsSinceEpoch}.json';
     final putOk = await service.writeData(name, {'k': 'v'});
     expect(putOk, true);
     final prefs = await SharedPreferences.getInstance();
     final base = prefs.getString('webdav_path') ?? '/';
     final full = '${base.endsWith('/') ? base : '$base/'}$name';
-    final read = await service.readData(BackupFileInfo(name: name, path: full, lastModified: DateTime.now(), size: 0));
+    final read = await service.readData(
+      BackupFileInfo(
+        name: name,
+        path: full,
+        lastModified: DateTime.now(),
+        size: 0,
+      ),
+    );
     expect(read?['k'], 'v');
-    final delOk = await service.deleteFile(BackupFileInfo(name: name, path: full, lastModified: DateTime.now(), size: 0));
+    final delOk = await service.deleteFile(
+      BackupFileInfo(
+        name: name,
+        path: full,
+        lastModified: DateTime.now(),
+        size: 0,
+      ),
+    );
     expect(delOk, true);
   });
 }

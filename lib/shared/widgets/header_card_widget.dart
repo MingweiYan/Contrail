@@ -6,19 +6,19 @@ import 'package:contrail/shared/utils/page_layout_constants.dart';
 class StatisticsCardWidget extends StatelessWidget {
   /// 卡片的图标（可选）
   final IconData? icon;
-  
+
   /// 卡片的文本内容（可选，与图标二选一）
   final String? text;
-  
+
   /// 卡片的标题
   final String title;
-  
+
   /// 点击事件回调
   final VoidCallback onTap;
-  
+
   /// 文本样式（可选，用于自定义文本样式）
   final TextStyle? textStyle;
-  
+
   /// 图标颜色（可选，用于自定义图标颜色）
   final Color? iconColor;
 
@@ -37,11 +37,15 @@ class StatisticsCardWidget extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(HeaderCardWidgetConstants.statisticsCardBorderRadius),
+        borderRadius: BorderRadius.circular(
+          HeaderCardWidgetConstants.statisticsCardBorderRadius,
+        ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(HeaderCardWidgetConstants.statisticsCardBorderRadius),
+        borderRadius: BorderRadius.circular(
+          HeaderCardWidgetConstants.statisticsCardBorderRadius,
+        ),
         child: Container(
           width: HeaderCardWidgetConstants.statisticsCardWidth,
           height: HeaderCardWidgetConstants.statisticsCardHeight,
@@ -59,9 +63,11 @@ class StatisticsCardWidget extends StatelessWidget {
               else
                 Text(
                   text!,
-                  style: textStyle ??
+                  style:
+                      textStyle ??
                       TextStyle(
-                        fontSize: HeaderCardWidgetConstants.statisticsCardTextFontSize,
+                        fontSize: HeaderCardWidgetConstants
+                            .statisticsCardTextFontSize,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -70,7 +76,8 @@ class StatisticsCardWidget extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: HeaderCardWidgetConstants.statisticsCardTitleFontSize,
+                  fontSize:
+                      HeaderCardWidgetConstants.statisticsCardTitleFontSize,
                   color: Colors.black,
                 ),
                 textAlign: TextAlign.center,
