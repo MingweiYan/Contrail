@@ -77,11 +77,38 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   // 删除习惯
   Future<void> _deleteHabit(String habitId) async {
     try {
+      final index = _habits.indexWhere((h) => h.id == habitId);
+      if (index == -1) {
+        return;
+      }
+      
+      final removedHabit = _habits.removeAt(index);
+      
+      if (_listKey.currentState != null) {
+        _listKey.currentState!.removeItem(
+          index,
+          (context, animation) => SizeTransition(
+            sizeFactor: animation,
+            child: HabitItemWidget(
+              key: ValueKey(removedHabit.id),
+              habit: removedHabit,
+              onDelete: _deleteHabit,
+              onRefresh: _refreshHabits,
+              onNavigateToTracking: _navigateToTrackingPage,
+              formatDescription: _formatHabitDescription,
+              getFinalProgress: _getFinalProgress,
+              isFirst: index == 0,
+            ),
+          ),
+          duration: const Duration(milliseconds: 300),
+        );
+      }
+      
       await _deleteHabitUseCase.execute(habitId);
+      
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('习惯删除成功')));
-      _loadHabits();
     } catch (e) {
       logger.error('删除习惯失败', e);
       ScaffoldMessenger.of(
@@ -276,9 +303,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                         ),
                       );
                       if (result is Habit) {
-                        setState(() {
-                          _habits.add(result);
-                        });
+                        await _loadHabits();
+                        _resortWithAnimation();
                       }
                     },
                   ),
