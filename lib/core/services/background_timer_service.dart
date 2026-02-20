@@ -11,33 +11,32 @@ void onStart(ServiceInstance service) {
   // 仅在Android平台实现前台服务逻辑
   if (service is AndroidServiceInstance) {
     Timer? timer;
-    
+
     // 处理来自前台的命令
     service.on('startTimer').listen((event) {
       // 取消现有计时器
       timer?.cancel();
-      
+
       // 获取时间间隔
       final interval = event?['interval'] ?? 1000;
-      
+
       // 启动新的计时器
       timer = Timer.periodic(Duration(milliseconds: interval), (Timer t) {
         // 发送时间更新事件到前台
         service.invoke('timeUpdate');
       });
     });
-    
+
     // 处理停止计时命令
     service.on('stopTimer').listen((event) {
       timer?.cancel();
     });
-    
+
     // 处理停止服务命令
     service.on('stop').listen((event) {
       timer?.cancel();
       service.stopSelf();
     });
-    
   }
 }
 
@@ -49,7 +48,8 @@ Future<bool> iosBackgroundCallback(ServiceInstance service) async {
 }
 
 class BackgroundTimerService {
-  static final BackgroundTimerService _instance = BackgroundTimerService._internal();
+  static final BackgroundTimerService _instance =
+      BackgroundTimerService._internal();
   factory BackgroundTimerService() => _instance;
   BackgroundTimerService._internal();
 
@@ -86,7 +86,7 @@ class BackgroundTimerService {
       }
 
       _isInitialized = true;
-      
+
       // 监听后台服务发送的事件
       _service.on('timeUpdate').listen((event) {
         if (_focusState != null) {
@@ -94,7 +94,6 @@ class BackgroundTimerService {
           _focusState?.tik();
         }
       });
-      
     }
   }
 
@@ -108,11 +107,13 @@ class BackgroundTimerService {
     if (_focusState != null) {
       // 确保服务已初始化
       await initialize();
-      
+
       // 启动后台服务
       _service.startService();
-      
-      logger.debug('BackgroundTimerService started with flutter_background_service');
+
+      logger.debug(
+        'BackgroundTimerService started with flutter_background_service',
+      );
     }
   }
 
@@ -121,16 +122,15 @@ class BackgroundTimerService {
     if (_focusState != null) {
       // 确保服务已初始化
       await initialize();
-      
+
       // 向后台服务发送启动计时的命令
-      _service.invoke(
-        'startTimer',
-        {
-          'interval': 1000, // 1秒
-        },
+      _service.invoke('startTimer', {
+        'interval': 1000, // 1秒
+      });
+
+      logger.debug(
+        'BackgroundTimerService started with flutter_background_service',
       );
-      
-      logger.debug('BackgroundTimerService started with flutter_background_service');
     }
   }
 
@@ -139,7 +139,7 @@ class BackgroundTimerService {
     try {
       // 停止后台服务&定时器
       _service.invoke('stop');
-      
+
       logger.debug('BackgroundTimerService stopped service');
     } catch (e) {
       logger.error('Failed to stop background service: $e');
@@ -149,17 +149,13 @@ class BackgroundTimerService {
   Future<void> stopTimer() async {
     try {
       // 向后台服务发送停止命令
-      _service.invoke('stopTimer');      
-      
+      _service.invoke('stopTimer');
+
       logger.debug('BackgroundTimerService stopped timer');
     } catch (e) {
       logger.error('Failed to stop background timer: $e');
     }
-
   }
 
   // 获取服务是否在运行
-  
-
-  
 }

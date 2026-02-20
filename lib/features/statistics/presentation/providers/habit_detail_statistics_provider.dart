@@ -3,30 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:contrail/shared/services/habit_statistics_service.dart';
-import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/features/statistics/presentation/adapters/statistics_chart_adapter.dart';
 import 'package:contrail/core/state/base_stats_provider.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
 
 class HabitDetailStatisticsProvider extends BaseStatsProvider {
   // 移除重复的getter，直接使用基类的selectedPeriod
   int _timeOffset = 0; // 时间偏移量：0表示当前时间范围，-1表示上一个，1表示下一个
-  final HabitStatisticsService _statisticsService = sl<HabitStatisticsService>();
-  
+  final StatisticsChartAdapter _chartAdapter = StatisticsChartAdapter();
+
   // 完成情况模块的周期偏移量
   // 0表示当前周期，-1表示上一个周期，1表示下一个周期
   int _periodOffset = 0;
-  
+
   // 独立的日历月份状态（不影响统计时间范围）
   int _calendarSelectedYear = DateTime.now().year;
   int _calendarSelectedMonth = DateTime.now().month;
-  
+
   final Habit _habit;
-  
+
   HabitDetailStatisticsProvider(this._habit) {
     // 基类已经初始化了时间状态
   }
-  
+
   // Getters - 日历相关状态直接使用基类的getter，只定义特有属性的getter
   String get timeRange => selectedPeriod; // 兼容原有的API调用
   int get timeOffset => _timeOffset;
@@ -34,14 +33,14 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   Habit get habit => _habit;
   int get calendarSelectedYear => _calendarSelectedYear;
   int get calendarSelectedMonth => _calendarSelectedMonth;
-  
+
   /// 获取当前选中的周期时间范围
   /// 根据习惯的cycleType和_periodOffset计算开始和结束日期
   DateTimeRange getCurrentPeriodRange() {
     DateTime startDate, endDate;
     final now = DateTime.now();
     final cycleType = _habit.cycleType ?? CycleType.daily; // 默认使用每日类型
-    
+
     switch (cycleType) {
       case CycleType.weekly:
         // 每周习惯：显示最近一周
@@ -50,22 +49,22 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
         startDate = now.subtract(Duration(days: daysFromMonday));
         startDate = DateTime(startDate.year, startDate.month, startDate.day);
         endDate = startDate.add(Duration(days: 6));
-        
+
         // 应用周期偏移
         startDate = startDate.add(Duration(days: _periodOffset * 7));
         endDate = endDate.add(Duration(days: _periodOffset * 7));
         break;
-        
+
       case CycleType.monthly:
         // 每月习惯：显示最近一个月
         startDate = DateTime(now.year, now.month, 1);
         endDate = DateTime(now.year, now.month + 1, 0);
-        
+
         // 应用周期偏移
         if (_periodOffset != 0) {
           int newMonth = now.month + _periodOffset;
           int newYear = now.year;
-          
+
           while (newMonth > 12) {
             newMonth -= 12;
             newYear++;
@@ -74,33 +73,33 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
             newMonth += 12;
             newYear--;
           }
-          
+
           startDate = DateTime(newYear, newMonth, 1);
           endDate = DateTime(newYear, newMonth + 1, 0);
         }
         break;
-        
+
       case CycleType.annual:
         // 每年习惯：显示最近一年
         startDate = DateTime(now.year, 1, 1);
         endDate = DateTime(now.year, 12, 31);
-        
+
         // 应用周期偏移
         int newYear = now.year + _periodOffset;
         startDate = DateTime(newYear, 1, 1);
         endDate = DateTime(newYear, 12, 31);
         break;
-        
+
       case CycleType.daily:
         // 每日习惯：默认显示最近一个月
         startDate = DateTime(now.year, now.month, 1);
         endDate = DateTime(now.year, now.month + 1, 0);
-        
+
         // 应用周期偏移
         if (_periodOffset != 0) {
           int newMonth = now.month + _periodOffset;
           int newYear = now.year;
-          
+
           while (newMonth > 12) {
             newMonth -= 12;
             newYear++;
@@ -109,22 +108,22 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
             newMonth += 12;
             newYear--;
           }
-          
+
           startDate = DateTime(newYear, newMonth, 1);
           endDate = DateTime(newYear, newMonth + 1, 0);
         }
         break;
     }
-    
+
     return DateTimeRange(start: startDate, end: endDate);
   }
-  
+
   /// 获取自定义周期标签
   /// 根据习惯的cycleType返回友好的标签文本
   String getCustomPeriodLabel() {
     final range = getCurrentPeriodRange();
     final cycleType = _habit.cycleType ?? CycleType.daily;
-    
+
     switch (cycleType) {
       case CycleType.weekly:
         // 计算是今年的第几周
@@ -138,31 +137,31 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
         return '${range.start.year}年${range.start.month}月';
     }
   }
-  
+
   /// 使用TimeManagementUtil中的getWeekNumber方法
   int getWeekNumber(DateTime date) {
     return TimeManagementUtil.getWeekNumber(date);
   }
-  
+
   /// 切换到上一个周期
   void previousPeriod() {
     _periodOffset--;
     notifyListeners();
   }
-  
+
   /// 切换到下一个周期
   void nextPeriod() {
     _periodOffset++;
     notifyListeners();
   }
-  
+
   /// 本地实现的习惯统计方法
   /// 直接使用习惯的cycleType计算指定周期内的完成情况
   /// 返回包含完成天数、剩余天数、完成率和目标天数的映射
   Map<String, dynamic> calculateHabitStats() {
     final range = getCurrentPeriodRange();
     final cycleType = _habit.cycleType ?? CycleType.daily;
-    
+
     // 计算已完成的天数
     int completedDays = 0;
     _habit.dailyCompletionStatus.forEach((date, completed) {
@@ -173,10 +172,10 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
         completedDays++;
       }
     });
-    
+
     // 计算周期内的总天数
     int totalDaysInPeriod = range.end.difference(range.start).inDays + 1;
-    
+
     // 根据cycleType计算目标天数（按当前周期，不做乘法）
     int targetDays;
     switch (cycleType) {
@@ -202,24 +201,28 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     if ((_habit.cycleType == null) || (targetDays == 0)) {
       targetDays = 30;
     }
-    
+
     // 计算剩余天数
     int remainingDays = max(0, targetDays - completedDays);
-    
+
     // 计算完成率
     double completionRate = targetDays > 0 ? completedDays / targetDays : 0.0;
-    
+
     return {
       'completedDays': completedDays,
       'remainingDays': remainingDays,
       'completionRate': completionRate,
-      'targetDays': targetDays
+      'targetDays': targetDays,
     };
   }
-  
-  // 生成次数趋势图数据 - 调用服务类方法
+
+  // 生成次数趋势图数据 - 调用适配器方法
   LineChartBarData generateCountTrendData() {
-    final spots = _statisticsService.generateCountTrendDataWithOffset(_habit, selectedPeriod, _timeOffset);
+    final spots = _chartAdapter.generateCountTrendDataWithOffset(
+      _habit,
+      selectedPeriod,
+      _timeOffset,
+    );
     return LineChartBarData(
       spots: spots,
       isCurved: true,
@@ -231,10 +234,14 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
       belowBarData: BarAreaData(show: false),
     );
   }
-  
-  // 生成时间趋势图数据 - 调用服务类方法
+
+  // 生成时间趋势图数据 - 调用适配器方法
   LineChartBarData generateTimeTrendData() {
-    final spots = _statisticsService.generateTimeTrendDataWithOffset(_habit, selectedPeriod, _timeOffset);
+    final spots = _chartAdapter.generateTimeTrendDataWithOffset(
+      _habit,
+      selectedPeriod,
+      _timeOffset,
+    );
     return LineChartBarData(
       spots: spots,
       isCurved: true,
@@ -246,15 +253,15 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
       belowBarData: BarAreaData(show: false),
     );
   }
-  
+
   /// 修复颜色透明度使用
   /// 使用withAlpha替代withOpacity以避免精度丢失
   Color getColorWithOpacity(Color color, double opacity) {
-      return color.withValues(alpha: (opacity * 255).round().toDouble());
-    }
-  
+    return color.withValues(alpha: (opacity * 255).round().toDouble());
+  }
+
   // 提示标签统一由服务层生成，Provider 保持最小职责
-  
+
   /// 上一个月 - 仅用于日历视图的月份切换（独立状态）
   void previousCalendarMonth() {
     int y = _calendarSelectedYear;
@@ -267,7 +274,7 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     _calendarSelectedMonth = m;
     notifyListeners();
   }
-  
+
   /// 下一个月 - 仅用于日历视图的月份切换（独立状态）
   void nextCalendarMonth() {
     int y = _calendarSelectedYear;
@@ -280,13 +287,11 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     _calendarSelectedMonth = m;
     notifyListeners();
   }
-  
-  // 时间范围偏移由 navigateToPrevious/Next* 系列方法统一管理
-  
-  // 时间范围标签由视图层直接计算或调用服务层生成
-  
 
-  
+  // 时间范围偏移由 navigateToPrevious/Next* 系列方法统一管理
+
+  // 时间范围标签由视图层直接计算或调用服务层生成
+
   /// 设置时间范围，使用基类的setter
   void setTimeRange(String range) {
     setSelectedPeriod(range);

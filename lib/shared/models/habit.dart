@@ -5,21 +5,13 @@ import 'cycle_type.dart';
 part 'habit.g.dart';
 
 // 图片来源枚举
-enum ImageSourceType {
-  gallery,
-  assets,
-}
+enum ImageSourceType { gallery, assets }
 
 // 跟踪模式枚举
-enum TrackingMode {
-  stopwatch,
-  pomodoro,
-  countdown,
-}
+enum TrackingMode { stopwatch, pomodoro, countdown }
 
 @HiveType(typeId: 0)
 class Habit extends HiveObject {
-
   // firt part is about property
 
   // unique id
@@ -67,12 +59,11 @@ class Habit extends HiveObject {
 
   // 获取Color对象
   Color get color => Color(colorValue);
-  
+
   // 设置Color对象
   set color(Color newColor) {
     colorValue = newColor.value;
   }
-
 
   Habit({
     required this.id,
@@ -89,11 +80,10 @@ class Habit extends HiveObject {
     int? colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
-  }) : 
-    colorValue = colorValue ?? Colors.blue.value,
-    trackingDurations = trackingDurations ?? {},
-    dailyCompletionStatus = dailyCompletionStatus ?? {};
-    
+  }) : colorValue = colorValue ?? Colors.blue.value,
+       trackingDurations = trackingDurations ?? {},
+       dailyCompletionStatus = dailyCompletionStatus ?? {};
+
   // 创建一个专门用于Hive读取的构造函数，确保colorValue在对象创建时就被正确设置
   Habit.fromHive({
     required this.id,
@@ -110,9 +100,6 @@ class Habit extends HiveObject {
     required this.colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
-  }) : 
-    trackingDurations = trackingDurations ?? {},
-    dailyCompletionStatus = dailyCompletionStatus ?? {};
-
-
+  }) : trackingDurations = trackingDurations ?? {},
+       dailyCompletionStatus = dailyCompletionStatus ?? {};
 }

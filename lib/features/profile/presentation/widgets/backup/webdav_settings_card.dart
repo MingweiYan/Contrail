@@ -17,7 +17,21 @@ class WebDavSettingsCard extends StatelessWidget {
   final ValueChanged<int> onRetentionChanged;
   final VoidCallback onPerformBackup;
 
-  const WebDavSettingsCard({super.key, required this.url, required this.username, required this.password, required this.path, required this.retentionCount, required this.onUrlChanged, required this.onUsernameChanged, required this.onPasswordChanged, required this.onPathChanged, required this.onSaveConfig, required this.onRetentionChanged, required this.onPerformBackup});
+  const WebDavSettingsCard({
+    super.key,
+    required this.url,
+    required this.username,
+    required this.password,
+    required this.path,
+    required this.retentionCount,
+    required this.onUrlChanged,
+    required this.onUsernameChanged,
+    required this.onPasswordChanged,
+    required this.onPathChanged,
+    required this.onSaveConfig,
+    required this.onRetentionChanged,
+    required this.onPerformBackup,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +41,12 @@ class WebDavSettingsCard extends StatelessWidget {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Column(
@@ -37,10 +56,18 @@ class WebDavSettingsCard extends StatelessWidget {
             leading: Container(
               width: ScreenUtil().setWidth(40),
               height: ScreenUtil().setWidth(40),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
               child: Icon(Icons.link, color: ThemeHelper.primary(context)),
             ),
-            title: Text('WebDAV URL', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
+            title: Text(
+              'WebDAV URL',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
             subtitle: TextFormField(
               key: ValueKey('webdav_url_$url'),
               initialValue: url,
@@ -51,10 +78,21 @@ class WebDavSettingsCard extends StatelessWidget {
             leading: Container(
               width: ScreenUtil().setWidth(40),
               height: ScreenUtil().setWidth(40),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: Icon(Icons.person_outline, color: ThemeHelper.primary(context)),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person_outline,
+                color: ThemeHelper.primary(context),
+              ),
             ),
-            title: Text('账号', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
+            title: Text(
+              '账号',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
             subtitle: TextFormField(
               key: ValueKey('webdav_user_$username'),
               initialValue: username,
@@ -65,10 +103,21 @@ class WebDavSettingsCard extends StatelessWidget {
             leading: Container(
               width: ScreenUtil().setWidth(40),
               height: ScreenUtil().setWidth(40),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: Icon(Icons.lock_outline, color: ThemeHelper.primary(context)),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.lock_outline,
+                color: ThemeHelper.primary(context),
+              ),
             ),
-            title: Text('密码', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
+            title: Text(
+              '密码',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
             subtitle: TextFormField(
               key: ValueKey('webdav_pass_${password.hashCode}'),
               initialValue: password,
@@ -80,10 +129,21 @@ class WebDavSettingsCard extends StatelessWidget {
             leading: Container(
               width: ScreenUtil().setWidth(40),
               height: ScreenUtil().setWidth(40),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: Icon(Icons.folder_copy_outlined, color: ThemeHelper.primary(context)),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.folder_copy_outlined,
+                color: ThemeHelper.primary(context),
+              ),
             ),
-            title: Text('保存路径', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
+            title: Text(
+              '保存路径',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
             subtitle: TextFormField(
               key: ValueKey('webdav_path_$path'),
               initialValue: path,
@@ -93,18 +153,40 @@ class WebDavSettingsCard extends StatelessWidget {
           SizedBox(height: BaseLayoutConstants.spacingSmall),
           ElevatedButton(
             onPressed: onSaveConfig,
-            child: Text('保存配置', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
-            style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, DataBackupPageConstants.buttonHeight)),
+            child: Text(
+              '保存配置',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(
+                double.infinity,
+                DataBackupPageConstants.buttonHeight,
+              ),
+            ),
           ),
-          Divider(height: ScreenUtil().setHeight(1), color: ThemeHelper.onBackground(context).withValues(alpha: 0.1)),
+          Divider(
+            height: ScreenUtil().setHeight(1),
+            color: ThemeHelper.onBackground(context).withValues(alpha: 0.1),
+          ),
           ListTile(
             leading: Container(
               width: ScreenUtil().setWidth(40),
               height: ScreenUtil().setWidth(40),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: Icon(Icons.cloud_done_outlined, color: ThemeHelper.primary(context)),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_done_outlined,
+                color: ThemeHelper.primary(context),
+              ),
             ),
-            title: Text('保留数量', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
+            title: Text(
+              '保留数量',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
             trailing: DropdownButton<int>(
               value: retentionCount,
               items: const [
@@ -123,12 +205,19 @@ class WebDavSettingsCard extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onPerformBackup,
             icon: const Icon(Icons.cloud_upload_outlined),
-            label: Text('执行网络备份', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
-            style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, DataBackupPageConstants.buttonHeight)),
+            label: Text(
+              '执行网络备份',
+              style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+            ),
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(
+                double.infinity,
+                DataBackupPageConstants.buttonHeight,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 }
-

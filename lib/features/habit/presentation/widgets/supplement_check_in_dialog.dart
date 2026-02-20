@@ -34,9 +34,9 @@ class SupplementCheckInDialog extends StatefulWidget {
     required void Function() onRefresh,
   }) {
     if (habits.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('暂无习惯，请先添加习惯')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('暂无习惯，请先添加习惯')));
       return;
     }
 
@@ -53,7 +53,8 @@ class SupplementCheckInDialog extends StatefulWidget {
   }
 
   @override
-  State<SupplementCheckInDialog> createState() => _SupplementCheckInDialogState();
+  State<SupplementCheckInDialog> createState() =>
+      _SupplementCheckInDialogState();
 }
 
 class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
@@ -65,9 +66,9 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
   // 处理确认按钮点击
   void handleConfirm() async {
     if (selectedHabit == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('请选择习惯')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('请选择习惯')));
       return;
     }
 
@@ -85,24 +86,31 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
         : Duration.zero;
 
     // 使用HabitService添加追踪记录
-    sl<HabitService>().addTrackingRecord(selectedHabit!, completeDateTime, duration);
+    sl<HabitService>().addTrackingRecord(
+      selectedHabit!,
+      completeDateTime,
+      duration,
+    );
     try {
       await widget.updateHabitUseCase.execute(selectedHabit!);
       Navigator.pop(context);
-      ScaffoldMessenger.of(widget.parentContext).showSnackBar(
-        SnackBar(content: Text('${selectedHabit!.name} 补充记录成功')),
-      );
+      ScaffoldMessenger.of(
+        widget.parentContext,
+      ).showSnackBar(SnackBar(content: Text('${selectedHabit!.name} 补充记录成功')));
       // 重新加载习惯列表
       widget.onRefresh();
 
       // 通知StatisticsProvider更新数据，确保统计页面能及时刷新
-      final statisticsProvider = Provider.of<StatisticsProvider>(widget.parentContext, listen: false);
+      final statisticsProvider = Provider.of<StatisticsProvider>(
+        widget.parentContext,
+        listen: false,
+      );
       statisticsProvider.notifyListeners();
     } catch (e) {
       logger.error('更新习惯失败', e);
-      ScaffoldMessenger.of(widget.parentContext).showSnackBar(
-        SnackBar(content: Text('补充记录失败: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        widget.parentContext,
+      ).showSnackBar(SnackBar(content: Text('补充记录失败: ${e.toString()}')));
     }
   }
 
@@ -110,7 +118,9 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(SupplementCheckInDialogConstants.dialogBorderRadius),
+        borderRadius: BorderRadius.circular(
+          SupplementCheckInDialogConstants.dialogBorderRadius,
+        ),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -122,7 +132,9 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
               Theme.of(context).colorScheme.primary.withOpacity(0.8),
             ],
           ),
-          borderRadius: BorderRadius.circular(SupplementCheckInDialogConstants.dialogBorderRadius),
+          borderRadius: BorderRadius.circular(
+            SupplementCheckInDialogConstants.dialogBorderRadius,
+          ),
         ),
         padding: SupplementCheckInDialogConstants.dialogPadding,
         child: SingleChildScrollView(
@@ -156,11 +168,18 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
               Container(
                 decoration: BoxDecoration(
                   color: ThemeHelper.onPrimary(context).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(SupplementCheckInDialogConstants.dropdownBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    SupplementCheckInDialogConstants.dropdownBorderRadius,
+                  ),
                 ),
                 padding: SupplementCheckInDialogConstants.dropdownPadding,
                 child: DropdownButton<Habit>(
-                  hint: Text('选择习惯', style: TextStyle(color: ThemeHelper.onPrimary(context).withOpacity(0.7))),
+                  hint: Text(
+                    '选择习惯',
+                    style: TextStyle(
+                      color: ThemeHelper.onPrimary(context).withOpacity(0.7),
+                    ),
+                  ),
                   value: selectedHabit,
                   onChanged: (Habit? newValue) {
                     setState(() {
@@ -170,12 +189,20 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                   items: widget.habits.map((Habit habit) {
                     return DropdownMenuItem<Habit>(
                       value: habit,
-                      child: Text(habit.name, style: TextStyle(color: ThemeHelper.onPrimary(context))),
+                      child: Text(
+                        habit.name,
+                        style: TextStyle(color: ThemeHelper.onPrimary(context)),
+                      ),
                     );
                   }).toList(),
                   isExpanded: true,
-                  dropdownColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
-                  icon: Icon(Icons.arrow_drop_down, color: ThemeHelper.onPrimary(context)),
+                  dropdownColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.9),
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: ThemeHelper.onPrimary(context),
+                  ),
                 ),
               ),
               SizedBox(height: SupplementCheckInDialogConstants.sectionSpacing),
@@ -196,7 +223,8 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                   Text(
                     '日期:',
                     style: TextStyle(
-                      fontSize: SupplementCheckInDialogConstants.timeLabelFontSize,
+                      fontSize:
+                          SupplementCheckInDialogConstants.timeLabelFontSize,
                       color: ThemeHelper.onPrimary(context).withOpacity(0.8),
                     ),
                   ),
@@ -205,16 +233,24 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                       final DateTime? picked = await showDatePicker(
                         context: context,
                         initialDate: selectedDate,
-                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        firstDate: DateTime.now().subtract(
+                          const Duration(days: 365),
+                        ),
                         lastDate: DateTime.now(),
                         builder: (BuildContext context, Widget? child) {
                           return Theme(
                             data: ThemeData.light().copyWith(
-                              primaryColor: Theme.of(context).colorScheme.primary,
-                              colorScheme: ColorScheme.light(primary: Theme.of(context).colorScheme.primary),
-                              buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
+                              primaryColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              colorScheme: ColorScheme.light(
+                                primary: Theme.of(context).colorScheme.primary,
+                              ),
+                              buttonTheme: ButtonThemeData(
+                                textTheme: ButtonTextTheme.primary,
+                              ),
                             ),
-                            child: child!, 
+                            child: child!,
                           );
                         },
                       );
@@ -225,9 +261,13 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                      backgroundColor: ThemeHelper.onPrimary(
+                        context,
+                      ).withOpacity(0.2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(SupplementCheckInDialogConstants.buttonBorderRadius),
+                        borderRadius: BorderRadius.circular(
+                          SupplementCheckInDialogConstants.buttonBorderRadius,
+                        ),
                       ),
                       elevation: 0,
                     ),
@@ -256,7 +296,8 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                   Text(
                     '时间:',
                     style: TextStyle(
-                      fontSize: SupplementCheckInDialogConstants.timeLabelFontSize,
+                      fontSize:
+                          SupplementCheckInDialogConstants.timeLabelFontSize,
                       color: ThemeHelper.onPrimary(context).withOpacity(0.8),
                     ),
                   ),
@@ -268,11 +309,17 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                         builder: (BuildContext context, Widget? child) {
                           return Theme(
                             data: ThemeData.light().copyWith(
-                              primaryColor: Theme.of(context).colorScheme.primary,
-                              colorScheme: ColorScheme.light(primary: Theme.of(context).colorScheme.primary),
-                              buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
+                              primaryColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              colorScheme: ColorScheme.light(
+                                primary: Theme.of(context).colorScheme.primary,
+                              ),
+                              buttonTheme: ButtonThemeData(
+                                textTheme: ButtonTextTheme.primary,
+                              ),
                             ),
-                            child: child!, 
+                            child: child!,
                           );
                         },
                       );
@@ -283,9 +330,13 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                      backgroundColor: ThemeHelper.onPrimary(
+                        context,
+                      ).withOpacity(0.2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(SupplementCheckInDialogConstants.buttonBorderRadius),
+                        borderRadius: BorderRadius.circular(
+                          SupplementCheckInDialogConstants.buttonBorderRadius,
+                        ),
                       ),
                       elevation: 0,
                     ),
@@ -324,7 +375,9 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                         thumbShape: RoundSliderThumbShape(
                           enabledThumbRadius: ScreenUtil().setWidth(12),
                         ),
-                        overlayColor: ThemeHelper.onPrimary(context).withOpacity(0.12),
+                        overlayColor: ThemeHelper.onPrimary(
+                          context,
+                        ).withOpacity(0.12),
                       ),
                       child: Slider(
                         value: durationMinutes.toDouble(),
@@ -338,7 +391,9 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                           });
                         },
                         activeColor: ThemeHelper.onPrimary(context),
-                        inactiveColor: ThemeHelper.onPrimary(context).withOpacity(0.3),
+                        inactiveColor: ThemeHelper.onPrimary(
+                          context,
+                        ).withOpacity(0.3),
                       ),
                     ),
                     Center(
@@ -362,11 +417,18 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                      backgroundColor: ThemeHelper.onPrimary(
+                        context,
+                      ).withOpacity(0.2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(12),
+                        ),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(12)),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(24),
+                        vertical: ScreenUtil().setHeight(12),
+                      ),
                       elevation: 0,
                     ),
                     child: Text(
@@ -379,9 +441,14 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ThemeHelper.onPrimary(context),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(12),
+                        ),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(12)),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(24),
+                        vertical: ScreenUtil().setHeight(12),
+                      ),
                       elevation: 4,
                     ),
                     child: Text(

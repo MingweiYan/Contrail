@@ -59,10 +59,7 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
       appBar: AppBar(
         title: const Text('Debug日志查看'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _load,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
       ),
       body: _loading
@@ -79,10 +76,16 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                             ? null
                             : () async {
                                 try {
-                                  final res = await OpenFilex.open(_currentFilePath!);
+                                  final res = await OpenFilex.open(
+                                    _currentFilePath!,
+                                  );
                                   if (res.type != ResultType.done) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('系统打开失败: ${res.message ?? res.type.name}')),
+                                      SnackBar(
+                                        content: Text(
+                                          '系统打开失败: ${res.message ?? res.type.name}',
+                                        ),
+                                      ),
                                     );
                                   }
                                 } catch (e) {
@@ -103,7 +106,11 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                                   final res = await OpenFilex.open(_logsDir!);
                                   if (res.type != ResultType.done) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('系统打开目录失败: ${res.message ?? res.type.name}')),
+                                      SnackBar(
+                                        content: Text(
+                                          '系统打开目录失败: ${res.message ?? res.type.name}',
+                                        ),
+                                      ),
                                     );
                                   }
                                 } catch (e) {
@@ -169,7 +176,9 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                       TextButton(
                         onPressed: () {
                           if (_currentFilePath != null) {
-                            Clipboard.setData(ClipboardData(text: _currentFilePath!));
+                            Clipboard.setData(
+                              ClipboardData(text: _currentFilePath!),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('文件路径已复制')),
                             );
@@ -183,8 +192,12 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(8)),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(8),
+                        ),
                       ),
                       child: Scrollbar(
                         child: SingleChildScrollView(

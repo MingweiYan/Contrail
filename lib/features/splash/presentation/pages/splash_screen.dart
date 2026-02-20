@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart' show ScreenUtil;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:contrail/core/routing/app_router.dart';
 
-
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 

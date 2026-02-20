@@ -21,41 +21,59 @@ class BackupRestoreConfirmationDialog extends StatelessWidget {
     return AlertDialog(
       backgroundColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(BackupRestoreConfirmationDialogConstants.dialogBorderRadius),
+        borderRadius: BorderRadius.circular(
+          BackupRestoreConfirmationDialogConstants.dialogBorderRadius,
+        ),
       ),
       contentPadding: BackupRestoreConfirmationDialogConstants.dialogPadding,
-      title: Text('确认恢复', style: TextStyle(
-        fontSize: BackupRestoreConfirmationDialogConstants.titleFontSize,
-        fontWeight: FontWeight.bold,
-        color: Colors.orange
-      )),
-      content: Text('确定要从备份文件 "${backupFile.name}" 恢复数据吗？当前数据将被覆盖！', style: TextStyle(
-        fontSize: BackupRestoreConfirmationDialogConstants.contentFontSize,
-        color: ThemeHelper.onBackground(context)
-      )),
+      title: Text(
+        '确认恢复',
+        style: TextStyle(
+          fontSize: BackupRestoreConfirmationDialogConstants.titleFontSize,
+          fontWeight: FontWeight.bold,
+          color: Colors.orange,
+        ),
+      ),
+      content: Text(
+        '确定要从备份文件 "${backupFile.name}" 恢复数据吗？当前数据将被覆盖！',
+        style: TextStyle(
+          fontSize: BackupRestoreConfirmationDialogConstants.contentFontSize,
+          color: ThemeHelper.onBackground(context),
+        ),
+      ),
       actions: [
         ElevatedButton(
-          child: Text('取消', style: TextStyle(
-            fontSize: BackupRestoreConfirmationDialogConstants.buttonFontSize,
-            color: ThemeHelper.onPrimary(context)
-          )),
+          child: Text(
+            '取消',
+            style: TextStyle(
+              fontSize: BackupRestoreConfirmationDialogConstants.buttonFontSize,
+              color: ThemeHelper.onPrimary(context),
+            ),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: ThemeHelper.primary(context).withOpacity(0.8),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(BackupRestoreConfirmationDialogConstants.buttonBorderRadius),
+              borderRadius: BorderRadius.circular(
+                BackupRestoreConfirmationDialogConstants.buttonBorderRadius,
+              ),
             ),
           ),
           onPressed: onCancel,
         ),
         ElevatedButton(
-          child: Text('确认恢复', style: TextStyle(
-            fontSize: BackupRestoreConfirmationDialogConstants.buttonFontSize,
-            color: Colors.white
-          )),
+          child: Text(
+            '确认恢复',
+            style: TextStyle(
+              fontSize: BackupRestoreConfirmationDialogConstants.buttonFontSize,
+              color: Colors.white,
+            ),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orange,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(BackupRestoreConfirmationDialogConstants.buttonBorderRadius),
+              borderRadius: BorderRadius.circular(
+                BackupRestoreConfirmationDialogConstants.buttonBorderRadius,
+              ),
             ),
           ),
           onPressed: onConfirm,

@@ -41,8 +41,9 @@ class HabitItemWidget extends StatelessWidget {
     // 检查今天是否已完成
     final today = DateTime.now();
     final todayOnly = DateTime(today.year, today.month, today.day);
-    final isCompletedToday = habit.dailyCompletionStatus.containsKey(todayOnly) &&
-                            habit.dailyCompletionStatus[todayOnly] == true;
+    final isCompletedToday =
+        habit.dailyCompletionStatus.containsKey(todayOnly) &&
+        habit.dailyCompletionStatus[todayOnly] == true;
 
     return Dismissible(
       // 唯一标识符
@@ -58,7 +59,9 @@ class HabitItemWidget extends StatelessWidget {
         margin: HabitItemWidgetConstants.backgroundContainerMargin,
         decoration: BoxDecoration(
           color: Colors.red,
-          borderRadius: BorderRadius.circular(HabitItemWidgetConstants.containerBorderRadius),
+          borderRadius: BorderRadius.circular(
+            HabitItemWidgetConstants.containerBorderRadius,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -71,10 +74,7 @@ class HabitItemWidget extends StatelessWidget {
               ),
             ),
             SizedBox(width: HabitItemWidgetConstants.deleteIconSpacing),
-            Icon(
-              Icons.delete,
-              color: Colors.white,
-            ),
+            Icon(Icons.delete, color: Colors.white),
             SizedBox(width: HabitItemWidgetConstants.deleteTextIconSpacing),
           ],
         ),
@@ -82,25 +82,30 @@ class HabitItemWidget extends StatelessWidget {
       // 滑动确认删除
       confirmDismiss: (direction) async {
         // 显示确认对话框
-        final shouldDelete = await showDialog<bool>(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: const Text('确认删除'),
-              content: Text('确定要删除习惯 "${habit.name}" 吗？'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('取消'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('删除', style: TextStyle(color: Colors.red)),
-                ),
-              ],
-            );
-          },
-        ) ?? false;
+        final shouldDelete =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('确认删除'),
+                  content: Text('确定要删除习惯 "${habit.name}" 吗？'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('取消'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        '删除',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ) ??
+            false;
 
         // 如果用户确认删除，执行删除操作
         if (shouldDelete) {
@@ -117,7 +122,9 @@ class HabitItemWidget extends StatelessWidget {
           // 长按习惯卡片时，跳转到编辑习惯页面
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddHabitPage(habitToEdit: habit)),
+            MaterialPageRoute(
+              builder: (context) => AddHabitPage(habitToEdit: habit),
+            ),
           );
           if (result != null) {
             // 如果习惯被更新，重新加载习惯列表
@@ -128,7 +135,9 @@ class HabitItemWidget extends StatelessWidget {
           // 点击习惯卡片（非播放按钮区域）跳转到统计页面
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => HabitDetailStatisticsPage(habit: habit)),
+            MaterialPageRoute(
+              builder: (context) => HabitDetailStatisticsPage(habit: habit),
+            ),
           );
         },
         onDoubleTap: () {
@@ -144,10 +153,14 @@ class HabitItemWidget extends StatelessWidget {
               // 卡片背景
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(HabitItemWidgetConstants.containerBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    HabitItemWidgetConstants.containerBorderRadius,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.shadow.withOpacity(0.15),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.shadow.withOpacity(0.15),
                       spreadRadius: 2,
                       blurRadius: 10,
                       offset: Offset(0, 5),
@@ -157,10 +170,14 @@ class HabitItemWidget extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(HabitItemWidgetConstants.containerBorderRadius),
+                    borderRadius: BorderRadius.circular(
+                      HabitItemWidgetConstants.containerBorderRadius,
+                    ),
                     border: Border.all(
                       color: isDarkMode
-                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.3)
                           : Colors.transparent,
                       width: ScreenUtil().setWidth(1),
                     ),
@@ -180,7 +197,9 @@ class HabitItemWidget extends StatelessWidget {
                             end: Alignment.bottomRight,
                             colors: gradientColors,
                           ),
-                          borderRadius: BorderRadius.circular(HabitItemWidgetConstants.iconContainerBorderRadius),
+                          borderRadius: BorderRadius.circular(
+                            HabitItemWidgetConstants.iconContainerBorderRadius,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: gradientColors[0].withOpacity(0.3),
@@ -189,69 +208,103 @@ class HabitItemWidget extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Center(
-                          child: _getHabitIcon(context, habit),
-                        ),
+                        child: Center(child: _getHabitIcon(context, habit)),
                       ),
                       SizedBox(width: HabitItemWidgetConstants.contentSpacing),
                       // 内容区域
                       Expanded(
                         child: Padding(
-                          padding: EdgeInsets.only(right: HabitItemWidgetConstants.contentRightPadding), // 为右侧按钮留出空间
+                          padding: EdgeInsets.only(
+                            right: HabitItemWidgetConstants.contentRightPadding,
+                          ), // 为右侧按钮留出空间
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children:[
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
                                   Text(
                                     habit.name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     softWrap: false,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontSize: HabitItemWidgetConstants.habitNameFontSize + 2,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.15,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                    ) ?? ThemeHelper.textStyleWithTheme(
-                                      context,
-                                      fontSize: HabitItemWidgetConstants.habitNameFontSize + 2,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                    ),
+                                    style:
+                                        Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium?.copyWith(
+                                          fontSize:
+                                              HabitItemWidgetConstants
+                                                  .habitNameFontSize +
+                                              2,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.15,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ) ??
+                                        ThemeHelper.textStyleWithTheme(
+                                          context,
+                                          fontSize:
+                                              HabitItemWidgetConstants
+                                                  .habitNameFontSize +
+                                              2,
+                                          fontWeight: FontWeight.w600,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ),
                                   ),
                                   if (isCompletedToday)
                                     Container(
-                                      padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(12), vertical: ScreenUtil().setHeight(4)),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: ScreenUtil().setWidth(12),
+                                        vertical: ScreenUtil().setHeight(4),
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(
+                                          ScreenUtil().setWidth(16),
+                                        ),
                                       ),
                                       child: Text(
                                         '今日已完成',
                                         style: ThemeHelper.textStyleWithTheme(
                                           context,
-                                          fontSize: HabitItemWidgetConstants.completedTodayFontSize,
+                                          fontSize: HabitItemWidgetConstants
+                                              .completedTodayFontSize,
                                           fontWeight: FontWeight.w500,
-                                          color: Theme.of(context).colorScheme.primary,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                         ),
                                       ),
                                     ),
                                 ],
                               ),
-                              SizedBox(height: HabitItemWidgetConstants.progressIndicatorSpacing),
+                              SizedBox(
+                                height: HabitItemWidgetConstants
+                                    .progressIndicatorSpacing,
+                              ),
                               Text(
                                 formatDescription(habit),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: ThemeHelper.textStyleWithTheme(
                                   context,
-                                  fontSize: HabitItemWidgetConstants.habitDescriptionFontSize,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  fontSize: HabitItemWidgetConstants
+                                      .habitDescriptionFontSize,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.6),
                                 ),
                               ),
-                              SizedBox(height: HabitItemWidgetConstants.descriptionProgressSpacing),
+                              SizedBox(
+                                height: HabitItemWidgetConstants
+                                    .descriptionProgressSpacing,
+                              ),
                               // 根据是否设置目标显示不同内容
                               Column(
                                 children: [
@@ -260,22 +313,39 @@ class HabitItemWidget extends StatelessWidget {
                                     children: [
                                       Expanded(
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(4)),
+                                          borderRadius: BorderRadius.circular(
+                                            ScreenUtil().setWidth(4),
+                                          ),
                                           child: LinearProgressIndicator(
-                                            value: getFinalProgress(habit).clamp(0.0, 1.0),
-                                            backgroundColor: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                                            valueColor: AlwaysStoppedAnimation<Color>(gradientColors[0]),
-                                            minHeight: HabitItemWidgetConstants.progressIndicatorHeight,
+                                            value: getFinalProgress(
+                                              habit,
+                                            ).clamp(0.0, 1.0),
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .outline
+                                                .withOpacity(0.2),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  gradientColors[0],
+                                                ),
+                                            minHeight: HabitItemWidgetConstants
+                                                .progressIndicatorHeight,
                                           ),
                                         ),
                                       ),
                                       SizedBox(width: ScreenUtil().setWidth(8)),
-                                      Text('${(getFinalProgress(habit).clamp(0.0, 1.0) * 100).round()}%',
-                                        style: Theme.of(context).textTheme.bodySmall,
+                                      Text(
+                                        '${(getFinalProgress(habit).clamp(0.0, 1.0) * 100).round()}%',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: HabitItemWidgetConstants.nameDescriptionSpacing),
+                                  SizedBox(
+                                    height: HabitItemWidgetConstants
+                                        .nameDescriptionSpacing,
+                                  ),
                                 ],
                               ),
                               SizedBox(height: ScreenUtil().setHeight(4)),
@@ -296,10 +366,14 @@ class HabitItemWidget extends StatelessWidget {
                   height: HabitItemWidgetConstants.actionButtonSize,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(HabitItemWidgetConstants.actionButtonBorderRadius),
+                    borderRadius: BorderRadius.circular(
+                      HabitItemWidgetConstants.actionButtonBorderRadius,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.3),
                         spreadRadius: 2,
                         blurRadius: 6,
                         offset: Offset(0, 4),

@@ -9,7 +9,11 @@ void main() {
     final habits = <Habit>[];
 
     test('monthly for specific year/month uses correct bounds', () {
-      final data = svc.getMonthlyHabitStatisticsFor(habits, year: 2025, month: 3);
+      final data = svc.getMonthlyHabitStatisticsFor(
+        habits,
+        year: 2025,
+        month: 3,
+      );
       expect(data['startDate'], DateTime(2025, 3, 1));
       expect(data['endDate'], DateTime(2025, 4, 0));
     });
@@ -21,8 +25,16 @@ void main() {
     });
 
     test('monthly counts/minutes for specific year/month do not throw', () {
-      final counts = svc.getMonthlyHabitCompletionCountsFor(habits, year: 2025, month: 7);
-      final minutes = svc.getMonthlyHabitCompletionMinutesFor(habits, year: 2025, month: 7);
+      final counts = svc.getMonthlyHabitCompletionCountsFor(
+        habits,
+        year: 2025,
+        month: 7,
+      );
+      final minutes = svc.getMonthlyHabitCompletionMinutesFor(
+        habits,
+        year: 2025,
+        month: 7,
+      );
       expect(counts, isA<Map<String, int>>());
       expect(minutes, isA<Map<String, int>>());
     });
@@ -36,7 +48,9 @@ void main() {
       h.dailyCompletionStatus[DateTime(2025, 1, 1)] = true;
       h.dailyCompletionStatus[DateTime(2025, 12, 31)] = true;
       h.trackingDurations[DateTime(2025, 1, 1)] = [const Duration(minutes: 30)];
-      h.trackingDurations[DateTime(2025, 12, 31)] = [const Duration(minutes: 45)];
+      h.trackingDurations[DateTime(2025, 12, 31)] = [
+        const Duration(minutes: 45),
+      ];
       final counts = svc.getYearlyHabitCompletionCountsFor([h], year: 2025);
       final minutes = svc.getYearlyHabitCompletionMinutesFor([h], year: 2025);
       expect(counts['Study'], 2);
@@ -59,7 +73,11 @@ void main() {
         final d = start.add(Duration(days: i));
         h.dailyCompletionStatus[DateTime(d.year, d.month, d.day)] = true;
       }
-      final data = svc.getHabitGoalCompletionDataFor([h], startDate: start, endDate: start.add(const Duration(days: 6)));
+      final data = svc.getHabitGoalCompletionDataFor(
+        [h],
+        startDate: start,
+        endDate: start.add(const Duration(days: 6)),
+      );
       expect(data.first['requiredDays'], 3); // 1 week * targetDays
       expect(data.first['completedDays'], 3); // capped at targetDays
       expect(data.first['completionRate'], closeTo(1.0, 1e-6));

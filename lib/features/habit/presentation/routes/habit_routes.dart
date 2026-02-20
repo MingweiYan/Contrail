@@ -11,27 +11,24 @@ class HabitRoutes {
   static const String tracking = 'habits/tracking';
 
   static List<GoRoute> get routes => [
-        GoRoute(
-          path: management,
-          builder: (context, state) => const HabitManagementPage(),
-        ),
-        GoRoute(
-          path: add,
-          builder: (context, state) => const AddHabitPage(),
-        ),
-        GoRoute(
-          path: edit,
-          builder: (context, state) {
-            final habit = state.extra as Habit;
-            return AddHabitPage(habitToEdit: habit);
-          },
-        ),
-        GoRoute(
-          path: tracking,
-          builder: (context, state) {
-            final habit = state.extra as Habit;
-            return HabitTrackingPage(habit: habit);
-          },
-        ),
-      ];
+    GoRoute(
+      path: management,
+      builder: (context, state) => const HabitManagementPage(),
+    ),
+    GoRoute(path: add, builder: (context, state) => const AddHabitPage()),
+    GoRoute(
+      path: edit,
+      builder: (context, state) {
+        final habit = state.extra as Habit;
+        return AddHabitPage(habitToEdit: habit);
+      },
+    ),
+    GoRoute(
+      path: tracking,
+      builder: (context, state) {
+        final habit = state.extra as Habit;
+        return HabitTrackingPage(habit: habit);
+      },
+    ),
+  ];
 }

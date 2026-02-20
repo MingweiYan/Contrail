@@ -15,14 +15,16 @@ import 'package:contrail/features/profile/domain/services/backup_channel_service
 class WebDavBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
 
-  WebDavBackupService({required StorageServiceInterface storageService}) : _storageService = storageService;
+  WebDavBackupService({required StorageServiceInterface storageService})
+    : _storageService = storageService;
 
   static const String _autoBackupEnabledKey = 'autoBackupEnabled';
   static const String _backupFrequencyKey = 'backupFrequency';
   static const String _lastBackupTimeKey = 'webdav_lastBackupTime';
   static const String _backupRetentionPrefix = 'webdav_backupRetention_';
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
@@ -37,9 +39,13 @@ class WebDavBackupService implements BackupChannelService {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(_autoBackupEnabledKey) ?? false;
     final dynamic rawFreq = prefs.get(_backupFrequencyKey);
-    final int freq = rawFreq is int ? rawFreq : (int.tryParse(rawFreq?.toString() ?? '') ?? 1);
+    final int freq = rawFreq is int
+        ? rawFreq
+        : (int.tryParse(rawFreq?.toString() ?? '') ?? 1);
     final lastMillis = prefs.getInt(_lastBackupTimeKey);
-    final last = lastMillis != null ? DateTime.fromMillisecondsSinceEpoch(lastMillis) : null;
+    final last = lastMillis != null
+        ? DateTime.fromMillisecondsSinceEpoch(lastMillis)
+        : null;
     return {
       'autoBackupEnabled': enabled,
       'backupFrequency': freq,
@@ -67,15 +73,15 @@ class WebDavBackupService implements BackupChannelService {
     final user = prefs.getString('webdav_username');
     final pass = prefs.getString('webdav_password');
     final path = prefs.getString('webdav_path');
-    return {
-      'url': url,
-      'username': user,
-      'password': pass,
-      'path': path,
-    };
+    return {'url': url, 'username': user, 'password': pass, 'path': path};
   }
 
-  Future<void> saveWebDavConfig({String? url, String? username, String? password, String? path}) async {
+  Future<void> saveWebDavConfig({
+    String? url,
+    String? username,
+    String? password,
+    String? path,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     if (url != null) await prefs.setString('webdav_url', url);
     if (username != null) await prefs.setString('webdav_username', username);
@@ -115,7 +121,10 @@ class WebDavBackupService implements BackupChannelService {
         final habitsList = backupData['habits'] as List;
         final habitRepository = sl<HabitRepository>();
         final habitService = sl<HabitService>();
-        habitsOk = await habitService.restoreHabits(habitRepository, habitsList);
+        habitsOk = await habitService.restoreHabits(
+          habitRepository,
+          habitsList,
+        );
       }
 
       // 恢复设置，跳过 WebDAV 相关与自动备份相关键
@@ -147,7 +156,10 @@ class WebDavBackupService implements BackupChannelService {
 
   Future<void> _updateLastBackupTime() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastBackupTimeKey, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(
+      _lastBackupTimeKey,
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<int> loadRetentionCount() async {

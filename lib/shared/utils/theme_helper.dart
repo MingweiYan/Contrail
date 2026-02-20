@@ -141,8 +141,7 @@ class ThemeHelper {
 
   /// 创建具有主题颜色的TextStyle，自动适应深色/浅色主题
   static TextStyle textStyleWithTheme(
-    BuildContext context,
-    {
+    BuildContext context, {
     double? fontSize,
     FontWeight? fontWeight,
     Color? color,
@@ -151,10 +150,10 @@ class ThemeHelper {
     TextDecoration? decoration,
   }) {
     // 如果提供了深色模式专用颜色，则在深色模式下使用该颜色
-    final effectiveColor = isDarkMode(context) && darkModeColor != null 
-      ? darkModeColor 
-      : (color ?? onSurface(context));
-      
+    final effectiveColor = isDarkMode(context) && darkModeColor != null
+        ? darkModeColor
+        : (color ?? onSurface(context));
+
     return TextStyle(
       fontSize: fontSize,
       fontWeight: fontWeight,
@@ -165,7 +164,8 @@ class ThemeHelper {
   }
 
   /// 应用主题到ElevatedButton
-  static ButtonStyle elevatedButtonStyle(BuildContext context, {
+  static ButtonStyle elevatedButtonStyle(
+    BuildContext context, {
     Color? backgroundColor,
     Color? foregroundColor,
     double? elevation,
@@ -180,7 +180,8 @@ class ThemeHelper {
   }
 
   /// 应用主题到OutlinedButton
-  static ButtonStyle outlinedButtonStyle(BuildContext context, {
+  static ButtonStyle outlinedButtonStyle(
+    BuildContext context, {
     Color? foregroundColor,
     Color? sideColor,
     double? sideWidth,
@@ -197,7 +198,8 @@ class ThemeHelper {
   }
 
   /// 应用主题到TextButton
-  static ButtonStyle textButtonStyle(BuildContext context, {
+  static ButtonStyle textButtonStyle(
+    BuildContext context, {
     Color? foregroundColor,
     EdgeInsetsGeometry? padding,
   }) {
@@ -214,7 +216,10 @@ class ThemeHelper {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
-        side: BorderSide(color: outline(context), width: ScreenUtil().setWidth(0.5)),
+        side: BorderSide(
+          color: outline(context),
+          width: ScreenUtil().setWidth(0.5),
+        ),
       ),
     );
   }
@@ -222,10 +227,11 @@ class ThemeHelper {
   /// 获取当前主题的背景样式
   static app_theme.BackgroundStyle getBackgroundStyle(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final isDarkMode = themeProvider.themeMode == app_theme.ThemeMode.dark ||
+    final isDarkMode =
+        themeProvider.themeMode == app_theme.ThemeMode.dark ||
         (themeProvider.themeMode == app_theme.ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
-    
+
     return isDarkMode
         ? themeProvider.currentTheme.darkBackgroundStyle
         : themeProvider.currentTheme.lightBackgroundStyle;
@@ -235,17 +241,19 @@ class ThemeHelper {
   static BoxDecoration? generateBackgroundDecoration(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final currentTheme = themeProvider.currentTheme;
-    final isDarkMode = themeProvider.themeMode == app_theme.ThemeMode.dark ||
+    final isDarkMode =
+        themeProvider.themeMode == app_theme.ThemeMode.dark ||
         (themeProvider.themeMode == app_theme.ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
-    
+
     final backgroundStyle = isDarkMode
         ? currentTheme.darkBackgroundStyle
         : currentTheme.lightBackgroundStyle;
-    
+
     switch (backgroundStyle) {
       case app_theme.BackgroundStyle.gradient:
-        if (currentTheme.gradientColors != null && currentTheme.gradientColors!.isNotEmpty) {
+        if (currentTheme.gradientColors != null &&
+            currentTheme.gradientColors!.isNotEmpty) {
           return BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -256,27 +264,29 @@ class ThemeHelper {
           );
         }
         break;
-        
+
       case app_theme.BackgroundStyle.pattern:
         // 跳过pattern样式，因为项目中不存在模式图片资源文件
         // 如果尝试加载不存在的资源，会导致应用程序崩溃
         break;
-        
+
       case app_theme.BackgroundStyle.image:
         // 跳过image样式，因为项目中不存在背景图片资源文件
         // 如果尝试加载不存在的资源，会导致应用程序崩溃
         break;
-        
+
       case app_theme.BackgroundStyle.none:
       default:
         return null;
     }
-    
+
     return null;
   }
 
   /// 根据当前主题样式处理图标
-  static Widget styledIcon(BuildContext context, IconData iconData, {
+  static Widget styledIcon(
+    BuildContext context,
+    IconData iconData, {
     double size = 24.0,
     Color? color,
     double? padding,
@@ -284,22 +294,21 @@ class ThemeHelper {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final iconStyle = themeProvider.currentTheme.iconStyle;
     final defaultColor = color ?? ThemeHelper.primary(context);
-    
+
     switch (iconStyle) {
       case app_theme.IconStyle.outlined:
         return Container(
           padding: padding != null ? EdgeInsets.all(padding) : null,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: defaultColor, width: ScreenUtil().setWidth(1.5)),
+            border: Border.all(
+              color: defaultColor,
+              width: ScreenUtil().setWidth(1.5),
+            ),
           ),
-          child: Icon(
-            iconData,
-            size: size,
-            color: defaultColor,
-          ),
+          child: Icon(iconData, size: size, color: defaultColor),
         );
-        
+
       case app_theme.IconStyle.filled:
         return Container(
           padding: padding != null ? EdgeInsets.all(padding) : null,
@@ -313,7 +322,7 @@ class ThemeHelper {
             color: ThemeHelper.onPrimary(context),
           ),
         );
-        
+
       case app_theme.IconStyle.gradient:
         return Container(
           padding: padding != null ? EdgeInsets.all(padding) : null,
@@ -331,19 +340,17 @@ class ThemeHelper {
             color: ThemeHelper.onPrimary(context),
           ),
         );
-        
+
       case app_theme.IconStyle.defaultStyle:
       default:
-        return Icon(
-          iconData,
-          size: size,
-          color: defaultColor,
-        );
+        return Icon(iconData, size: size, color: defaultColor);
     }
   }
 
   /// 创建带有背景覆盖的图标
-  static Widget iconWithBackground(BuildContext context, IconData iconData, {
+  static Widget iconWithBackground(
+    BuildContext context,
+    IconData iconData, {
     double size = 24.0,
     double backgroundSize = 40.0,
     Color? iconColor,
@@ -353,9 +360,10 @@ class ThemeHelper {
     Color? borderColor,
   }) {
     final defaultIconColor = iconColor ?? ThemeHelper.onPrimary(context);
-    final defaultBackgroundColor = backgroundColor ?? ThemeHelper.primary(context);
+    final defaultBackgroundColor =
+        backgroundColor ?? ThemeHelper.primary(context);
     final defaultBorderColor = borderColor ?? ThemeHelper.outline(context);
-    
+
     return Container(
       width: backgroundSize,
       height: backgroundSize,
@@ -374,17 +382,15 @@ class ThemeHelper {
         ],
       ),
       child: Center(
-        child: Icon(
-          iconData,
-          size: size,
-          color: defaultIconColor,
-        ),
+        child: Icon(iconData, size: size, color: defaultIconColor),
       ),
     );
   }
 
   /// 创建带有覆盖效果的图标
-  static Widget iconWithOverlay(BuildContext context, IconData iconData, {
+  static Widget iconWithOverlay(
+    BuildContext context,
+    IconData iconData, {
     double size = 24.0,
     Color? color,
     double? padding,
@@ -392,34 +398,32 @@ class ThemeHelper {
     Alignment overlayAlignment = Alignment.bottomRight,
   }) {
     final defaultColor = color ?? ThemeHelper.primary(context);
-    
+
     return Stack(
       alignment: Alignment.center,
-      children:
-        [
-          Icon(
-            iconData,
-            size: size,
-            color: defaultColor,
+      children: [
+        Icon(iconData, size: size, color: defaultColor),
+        if (overlay != null)
+          Positioned.fill(
+            child: Align(alignment: overlayAlignment, child: overlay),
           ),
-          if (overlay != null)
-            Positioned.fill(
-              child: Align(
-                alignment: overlayAlignment,
-                child: overlay,
-              ),
-            ),
-        ],
+      ],
     );
   }
 
   /// 获取主题背景装饰
-  static BoxDecoration backgroundDecoration(BuildContext context, {bool usePattern = false}) {
+  static BoxDecoration backgroundDecoration(
+    BuildContext context, {
+    bool usePattern = false,
+  }) {
     return BoxDecoration(
       color: background(context),
       // 如果启用图案背景，则添加简单的图案
-      image: usePattern && _createPatternImage(context) != null 
-          ? DecorationImage(image: _createPatternImage(context)!, fit: BoxFit.cover) 
+      image: usePattern && _createPatternImage(context) != null
+          ? DecorationImage(
+              image: _createPatternImage(context)!,
+              fit: BoxFit.cover,
+            )
           : null,
     );
   }
@@ -432,7 +436,8 @@ class ThemeHelper {
   }
 
   /// 获取主题输入框装饰
-  static InputDecoration inputDecoration(BuildContext context, {
+  static InputDecoration inputDecoration(
+    BuildContext context, {
     String? labelText,
     String? hintText,
     Widget? prefixIcon,
@@ -452,23 +457,24 @@ class ThemeHelper {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(ScreenUtil().setWidth(8)),
-        borderSide: BorderSide(color: primary(context), width: ScreenUtil().setWidth(2)),
+        borderSide: BorderSide(
+          color: primary(context),
+          width: ScreenUtil().setWidth(2),
+        ),
       ),
       labelStyle: TextStyle(color: onSurfaceVariant(context)),
       hintStyle: TextStyle(color: onSurfaceVariant(context)),
     );
   }
 
-
-
   /// 确保文本颜色与背景有足够对比度
   static Color ensureTextContrast(Color textColor, Color backgroundColor) {
     // 计算对比度
     final double textLuminance = textColor.computeLuminance();
     final double bgLuminance = backgroundColor.computeLuminance();
-    final double contrast = (textLuminance > bgLuminance) 
-      ? (textLuminance + 0.05) / (bgLuminance + 0.05) 
-      : (bgLuminance + 0.05) / (textLuminance + 0.05);
+    final double contrast = (textLuminance > bgLuminance)
+        ? (textLuminance + 0.05) / (bgLuminance + 0.05)
+        : (bgLuminance + 0.05) / (textLuminance + 0.05);
 
     // 如果对比度不足，返回更适合的颜色
     if (contrast < 4.5) {
@@ -479,7 +485,10 @@ class ThemeHelper {
   }
 
   /// 获取与背景色对比度最佳的文本颜色
-  static Color getOptimalTextColor(BuildContext context, Color backgroundColor) {
+  static Color getOptimalTextColor(
+    BuildContext context,
+    Color backgroundColor,
+  ) {
     // 获取主题中的文本颜色选项
     final textColors = [
       onSurface(context),
@@ -495,9 +504,9 @@ class ThemeHelper {
     for (final color in textColors) {
       final double colorLuminance = color.computeLuminance();
       final double bgLuminance = backgroundColor.computeLuminance();
-      final double contrast = (colorLuminance > bgLuminance) 
-        ? (colorLuminance + 0.05) / (bgLuminance + 0.05) 
-        : (bgLuminance + 0.05) / (colorLuminance + 0.05);
+      final double contrast = (colorLuminance > bgLuminance)
+          ? (colorLuminance + 0.05) / (bgLuminance + 0.05)
+          : (bgLuminance + 0.05) / (colorLuminance + 0.05);
 
       if (contrast > bestContrast) {
         bestContrast = contrast;
@@ -509,12 +518,14 @@ class ThemeHelper {
   }
 
   /// 创建带阴影的容器，自动适应深色/浅色主题
-  static Widget shadowedContainer(BuildContext context, Widget child, {
+  static Widget shadowedContainer(
+    BuildContext context,
+    Widget child, {
     double borderRadius = 16.0,
     double elevation = 4.0,
   }) {
     final shadowOpacity = isDarkMode(context) ? 0.1 : 0.05;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: surface(context),
@@ -532,7 +543,9 @@ class ThemeHelper {
   }
 
   /// 创建渐变背景的容器
-  static Widget gradientContainer(BuildContext context, Widget child, {
+  static Widget gradientContainer(
+    BuildContext context,
+    Widget child, {
     double borderRadius = 16.0,
     List<Color>? colors,
   }) {
@@ -550,7 +563,10 @@ class ThemeHelper {
   }
 
   /// 创建带背景图标的按钮
-  static Widget iconButtonWithBackground(BuildContext context, IconData icon, VoidCallback onPressed, {
+  static Widget iconButtonWithBackground(
+    BuildContext context,
+    IconData icon,
+    VoidCallback onPressed, {
     Color? backgroundColor,
     Color? iconColor,
     double size = 24.0,
@@ -570,7 +586,9 @@ class ThemeHelper {
   }
 
   /// 创建高亮文本
-  static Text highlightedText(BuildContext context, String text, {
+  static Text highlightedText(
+    BuildContext context,
+    String text, {
     TextStyle? style,
     Color? highlightColor,
   }) {
@@ -583,7 +601,9 @@ class ThemeHelper {
   }
 
   /// 创建带渐变效果的文本
-  static Widget gradientText(BuildContext context, String text, {
+  static Widget gradientText(
+    BuildContext context,
+    String text, {
     TextStyle? style,
   }) {
     return ShaderMask(

@@ -8,21 +8,19 @@ class StatisticsRoutes {
   static const String result = 'statistics/result';
 
   static List<GoRoute> get routes => [
-        GoRoute(
-          path: root,
-          builder: (context, state) => StatisticsPage(),
-        ),
-        GoRoute(
-          path: result,
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            final statisticsData = extra?['statisticsData'] as Map<String, dynamic>?;
-            final periodType = extra?['periodType'] as String?;
-            return KeepAliveStatsResultPage(
-              statisticsData: statisticsData,
-              periodType: periodType,
-            );
-          },
-        ),
-      ];
+    GoRoute(path: root, builder: (context, state) => StatisticsPage()),
+    GoRoute(
+      path: result,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        final statisticsData =
+            extra?['statisticsData'] as Map<String, dynamic>?;
+        final periodType = extra?['periodType'] as String?;
+        return KeepAliveStatsResultPage(
+          statisticsData: statisticsData,
+          periodType: periodType,
+        );
+      },
+    ),
+  ];
 }

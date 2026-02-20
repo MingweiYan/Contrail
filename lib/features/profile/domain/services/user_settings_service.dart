@@ -53,7 +53,10 @@ class UserSettingsService implements IUserSettingsService {
     await prefs.setString(_keyBackupFrequency, settings.backupFrequency);
   }
 
-  Future<void> restoreSettings(Map<String, dynamic> settings, Set<String> skipKeys) async {
+  Future<void> restoreSettings(
+    Map<String, dynamic> settings,
+    Set<String> skipKeys,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     for (final entry in settings.entries) {
       final key = entry.key;

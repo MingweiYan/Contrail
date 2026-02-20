@@ -11,7 +11,13 @@ class PomodoroSettingsDialog extends StatelessWidget {
   final int initialPomodoroRounds;
   final bool isPomodoroMode;
   final bool isSettingsVisible;
-  final void Function(int workDuration, int shortBreakDuration, int pomodoroRounds, int timerDuration) onSettingsChanged;
+  final void Function(
+    int workDuration,
+    int shortBreakDuration,
+    int pomodoroRounds,
+    int timerDuration,
+  )
+  onSettingsChanged;
 
   const PomodoroSettingsDialog({
     Key? key,
@@ -31,7 +37,13 @@ class PomodoroSettingsDialog extends StatelessWidget {
     required int pomodoroRounds,
     required bool isPomodoroMode,
     required bool isSettingsVisible,
-    required void Function(int workDuration, int shortBreakDuration, int pomodoroRounds, int timerDuration) onSettingsChanged,
+    required void Function(
+      int workDuration,
+      int shortBreakDuration,
+      int pomodoroRounds,
+      int timerDuration,
+    )
+    onSettingsChanged,
   }) {
     showDialog(
       context: context,
@@ -67,7 +79,13 @@ class _PomodoroSettingsDialogContent extends StatefulWidget {
   final int initialPomodoroRounds;
   final bool isPomodoroMode;
   final bool isSettingsVisible;
-  final void Function(int workDuration, int shortBreakDuration, int pomodoroRounds, int timerDuration) onSettingsChanged;
+  final void Function(
+    int workDuration,
+    int shortBreakDuration,
+    int pomodoroRounds,
+    int timerDuration,
+  )
+  onSettingsChanged;
 
   const _PomodoroSettingsDialogContent({
     Key? key,
@@ -80,10 +98,12 @@ class _PomodoroSettingsDialogContent extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<_PomodoroSettingsDialogContent> createState() => _PomodoroSettingsDialogContentState();
+  State<_PomodoroSettingsDialogContent> createState() =>
+      _PomodoroSettingsDialogContentState();
 }
 
-class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogContent> {
+class _PomodoroSettingsDialogContentState
+    extends State<_PomodoroSettingsDialogContent> {
   // 使用State类的成员变量来存储设置，这样状态会在重建之间保持
   late int _workDuration;
   late int _shortBreakDuration;
@@ -97,12 +117,16 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
     _workDuration = widget.initialWorkDuration;
     _shortBreakDuration = widget.initialShortBreakDuration;
     _pomodoroRounds = widget.initialPomodoroRounds;
-    logger.debug('PomodoroSettingsDialog初始化：工作时长=$_workDuration, 休息时长=$_shortBreakDuration, 轮数=$_pomodoroRounds');
+    logger.debug(
+      'PomodoroSettingsDialog初始化：工作时长=$_workDuration, 休息时长=$_shortBreakDuration, 轮数=$_pomodoroRounds',
+    );
   }
 
   // 处理确认按钮点击
   void _handleConfirm() {
-    logger.debug('handleConfirm被调用，准备更新设置：工作时长=$_workDuration, 休息时长=$_shortBreakDuration, 轮数=$_pomodoroRounds');
+    logger.debug(
+      'handleConfirm被调用，准备更新设置：工作时长=$_workDuration, 休息时长=$_shortBreakDuration, 轮数=$_pomodoroRounds',
+    );
     // 无论是否在番茄钟模式下，都更新设置
     widget.onSettingsChanged(
       _workDuration,
@@ -118,7 +142,9 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.dialogBorderRadius),
+        borderRadius: BorderRadius.circular(
+          PomodoroSettingsDialogConstants.dialogBorderRadius,
+        ),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -130,7 +156,9 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
               Theme.of(context).colorScheme.primary.withOpacity(0.8),
             ],
           ),
-          borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.dialogBorderRadius),
+          borderRadius: BorderRadius.circular(
+            PomodoroSettingsDialogConstants.dialogBorderRadius,
+          ),
         ),
         padding: PomodoroSettingsDialogConstants.dialogPadding,
         child: SingleChildScrollView(
@@ -160,10 +188,12 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                   color: ThemeHelper.onPrimary(context),
                 ),
               ),
-              SizedBox(height: PomodoroSettingsDialogConstants.labelValueSpacing),
+              SizedBox(
+                height: PomodoroSettingsDialogConstants.labelValueSpacing,
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children:[
+                children: [
                   Text(
                     '$_workDuration 分钟',
                     style: TextStyle(
@@ -177,18 +207,26 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                       ElevatedButton(
                         onPressed: () {
                           if (_workDuration > 1) {
-                            logger.debug('点击工作时长减号按钮，从 $_workDuration 减为 ${_workDuration-1}');
+                            logger.debug(
+                              '点击工作时长减号按钮，从 $_workDuration 减为 ${_workDuration - 1}',
+                            );
                             setState(() {
                               _workDuration--;
                             });
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                          backgroundColor: ThemeHelper.onPrimary(
+                            context,
+                          ).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              PomodoroSettingsDialogConstants
+                                  .buttonBorderRadius,
+                            ),
                           ),
-                          padding: PomodoroSettingsDialogConstants.buttonPadding,
+                          padding:
+                              PomodoroSettingsDialogConstants.buttonPadding,
                           elevation: 0,
                         ),
                         child: Icon(
@@ -197,20 +235,30 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                           size: PomodoroSettingsDialogConstants.buttonIconSize,
                         ),
                       ),
-                      SizedBox(width: PomodoroSettingsDialogConstants.buttonSpacing),
+                      SizedBox(
+                        width: PomodoroSettingsDialogConstants.buttonSpacing,
+                      ),
                       ElevatedButton(
                         onPressed: () {
-                          logger.debug('点击工作时长加号按钮，从 $_workDuration 加为 ${_workDuration+1}');
+                          logger.debug(
+                            '点击工作时长加号按钮，从 $_workDuration 加为 ${_workDuration + 1}',
+                          );
                           setState(() {
                             _workDuration++;
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                          backgroundColor: ThemeHelper.onPrimary(
+                            context,
+                          ).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              PomodoroSettingsDialogConstants
+                                  .buttonBorderRadius,
+                            ),
                           ),
-                          padding: PomodoroSettingsDialogConstants.buttonPadding,
+                          padding:
+                              PomodoroSettingsDialogConstants.buttonPadding,
                           elevation: 0,
                         ),
                         child: Icon(
@@ -234,10 +282,12 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                   color: ThemeHelper.onPrimary(context),
                 ),
               ),
-              SizedBox(height: PomodoroSettingsDialogConstants.labelValueSpacing),
+              SizedBox(
+                height: PomodoroSettingsDialogConstants.labelValueSpacing,
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children:[
+                children: [
                   Text(
                     '$_shortBreakDuration 分钟',
                     style: TextStyle(
@@ -251,18 +301,26 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                       ElevatedButton(
                         onPressed: () {
                           if (_shortBreakDuration > 1) {
-                            logger.debug('点击休息时长减号按钮，从 $_shortBreakDuration 减为 ${_shortBreakDuration-1}');
+                            logger.debug(
+                              '点击休息时长减号按钮，从 $_shortBreakDuration 减为 ${_shortBreakDuration - 1}',
+                            );
                             setState(() {
                               _shortBreakDuration--;
                             });
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                          backgroundColor: ThemeHelper.onPrimary(
+                            context,
+                          ).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              PomodoroSettingsDialogConstants
+                                  .buttonBorderRadius,
+                            ),
                           ),
-                          padding: PomodoroSettingsDialogConstants.buttonPadding,
+                          padding:
+                              PomodoroSettingsDialogConstants.buttonPadding,
                           elevation: 0,
                         ),
                         child: Icon(
@@ -271,20 +329,30 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                           size: PomodoroSettingsDialogConstants.buttonIconSize,
                         ),
                       ),
-                      SizedBox(width: PomodoroSettingsDialogConstants.buttonSpacing),
+                      SizedBox(
+                        width: PomodoroSettingsDialogConstants.buttonSpacing,
+                      ),
                       ElevatedButton(
                         onPressed: () {
-                          logger.debug('点击休息时长加号按钮，从 $_shortBreakDuration 加为 ${_shortBreakDuration+1}');
+                          logger.debug(
+                            '点击休息时长加号按钮，从 $_shortBreakDuration 加为 ${_shortBreakDuration + 1}',
+                          );
                           setState(() {
                             _shortBreakDuration++;
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                          backgroundColor: ThemeHelper.onPrimary(
+                            context,
+                          ).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              PomodoroSettingsDialogConstants
+                                  .buttonBorderRadius,
+                            ),
                           ),
-                          padding: PomodoroSettingsDialogConstants.buttonPadding,
+                          padding:
+                              PomodoroSettingsDialogConstants.buttonPadding,
                           elevation: 0,
                         ),
                         child: Icon(
@@ -308,10 +376,12 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                   color: ThemeHelper.onPrimary(context),
                 ),
               ),
-              SizedBox(height: PomodoroSettingsDialogConstants.labelValueSpacing),
+              SizedBox(
+                height: PomodoroSettingsDialogConstants.labelValueSpacing,
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children:[
+                children: [
                   Text(
                     '$_pomodoroRounds 轮',
                     style: TextStyle(
@@ -325,18 +395,26 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                       ElevatedButton(
                         onPressed: () {
                           if (_pomodoroRounds > 1) {
-                            logger.debug('点击轮数减号按钮，从 $_pomodoroRounds 减为 ${_pomodoroRounds-1}');
+                            logger.debug(
+                              '点击轮数减号按钮，从 $_pomodoroRounds 减为 ${_pomodoroRounds - 1}',
+                            );
                             setState(() {
                               _pomodoroRounds--;
                             });
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                          backgroundColor: ThemeHelper.onPrimary(
+                            context,
+                          ).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              PomodoroSettingsDialogConstants
+                                  .buttonBorderRadius,
+                            ),
                           ),
-                          padding: PomodoroSettingsDialogConstants.buttonPadding,
+                          padding:
+                              PomodoroSettingsDialogConstants.buttonPadding,
                           elevation: 0,
                         ),
                         child: Icon(
@@ -345,20 +423,30 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                           size: PomodoroSettingsDialogConstants.buttonIconSize,
                         ),
                       ),
-                      SizedBox(width: PomodoroSettingsDialogConstants.buttonSpacing),
+                      SizedBox(
+                        width: PomodoroSettingsDialogConstants.buttonSpacing,
+                      ),
                       ElevatedButton(
                         onPressed: () {
-                          logger.debug('点击轮数加号按钮，从 $_pomodoroRounds 加为 ${_pomodoroRounds+1}');
+                          logger.debug(
+                            '点击轮数加号按钮，从 $_pomodoroRounds 加为 ${_pomodoroRounds + 1}',
+                          );
                           setState(() {
                             _pomodoroRounds++;
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                          backgroundColor: ThemeHelper.onPrimary(
+                            context,
+                          ).withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(PomodoroSettingsDialogConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              PomodoroSettingsDialogConstants
+                                  .buttonBorderRadius,
+                            ),
                           ),
-                          padding: PomodoroSettingsDialogConstants.buttonPadding,
+                          padding:
+                              PomodoroSettingsDialogConstants.buttonPadding,
                           elevation: 0,
                         ),
                         child: Icon(
@@ -371,18 +459,27 @@ class _PomodoroSettingsDialogContentState extends State<_PomodoroSettingsDialogC
                   ),
                 ],
               ),
-              SizedBox(height: PomodoroSettingsDialogConstants.buttonTopSpacing),
+              SizedBox(
+                height: PomodoroSettingsDialogConstants.buttonTopSpacing,
+              ),
 
               // 按钮区域
               Center(
                 child: ElevatedButton(
                   onPressed: _handleConfirm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: ThemeHelper.onPrimary(context).withOpacity(0.2),
+                    backgroundColor: ThemeHelper.onPrimary(
+                      context,
+                    ).withOpacity(0.2),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+                      borderRadius: BorderRadius.circular(
+                        ScreenUtil().setWidth(12),
+                      ),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24), vertical: ScreenUtil().setHeight(12)),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ScreenUtil().setWidth(24),
+                      vertical: ScreenUtil().setHeight(12),
+                    ),
                     elevation: 0,
                   ),
                   child: Text(

@@ -18,7 +18,11 @@ class WebDavStorageService implements StorageServiceInterface {
 
   HttpClient _client = HttpClient();
 
-  Uri _buildUri({required String url, required String basePath, String? fileName}) {
+  Uri _buildUri({
+    required String url,
+    required String basePath,
+    String? fileName,
+  }) {
     final base = url.endsWith('/') ? url : '$url/';
     final path = basePath.startsWith('/') ? basePath.substring(1) : basePath;
     final joined = fileName == null ? '$base$path' : '$base$path/$fileName';
@@ -36,7 +40,9 @@ class WebDavStorageService implements StorageServiceInterface {
       final req = await _client.openUrl('MKCOL', uri);
       _auth(req, _username!, _password!);
       final resp = await req.close();
-      if (resp.statusCode == 201 || resp.statusCode == 405 || resp.statusCode == 200) {
+      if (resp.statusCode == 201 ||
+          resp.statusCode == 405 ||
+          resp.statusCode == 200) {
         return;
       }
     } catch (e) {
@@ -99,7 +105,8 @@ class WebDavStorageService implements StorageServiceInterface {
       _auth(req, _username!, _password!);
       req.headers.set('Depth', '1');
       req.headers.set(HttpHeaders.contentTypeHeader, 'text/xml');
-      const body = '<?xml version="1.0" encoding="utf-8"?>\n'
+      const body =
+          '<?xml version="1.0" encoding="utf-8"?>\n'
           '<d:propfind xmlns:d="DAV:">\n'
           '  <d:prop>\n'
           '    <d:getlastmodified/>\n'
@@ -112,10 +119,15 @@ class WebDavStorageService implements StorageServiceInterface {
       if (resp.statusCode < 200 || resp.statusCode >= 300) return [];
       final content = await resp.transform(utf8.decoder).join();
       final List<BackupFileInfo> files = [];
-      final reResponse = RegExp(r'<(?:[a-zA-Z_]+:)?response[\s\S]*?<\/(?:[a-zA-Z_]+:)?response>', multiLine: true);
+      final reResponse = RegExp(
+        r'<(?:[a-zA-Z_]+:)?response[\s\S]*?<\/(?:[a-zA-Z_]+:)?response>',
+        multiLine: true,
+      );
       for (final respMatch in reResponse.allMatches(content)) {
         final resp = respMatch.group(0) ?? '';
-        final hrefRaw = RegExp(r'<(?:[a-zA-Z_]+:)?href>([\s\S]*?)<\/(?:[a-zA-Z_]+:)?href>').firstMatch(resp)?.group(1);
+        final hrefRaw = RegExp(
+          r'<(?:[a-zA-Z_]+:)?href>([\s\S]*?)<\/(?:[a-zA-Z_]+:)?href>',
+        ).firstMatch(resp)?.group(1);
         if (hrefRaw == null) continue;
         final href = Uri.decodeFull(hrefRaw.trim());
         final nameSeg = href.split('/').where((s) => s.isNotEmpty).toList();
@@ -127,7 +139,9 @@ class WebDavStorageService implements StorageServiceInterface {
         final millis = int.tryParse(mName.group(1)!);
         if (millis == null) continue; // 安全兜底
         final lm = DateTime.fromMillisecondsSinceEpoch(millis);
-        final sizeStr = RegExp(r'<(?:[a-zA-Z_]+:)?getcontentlength>([\s\S]*?)<\/(?:[a-zA-Z_]+:)?getcontentlength>').firstMatch(resp)?.group(1)?.trim();
+        final sizeStr = RegExp(
+          r'<(?:[a-zA-Z_]+:)?getcontentlength>([\s\S]*?)<\/(?:[a-zA-Z_]+:)?getcontentlength>',
+        ).firstMatch(resp)?.group(1)?.trim();
         final sz = int.tryParse(sizeStr ?? '') ?? 0;
         // 规范化 path：确保是以 / 开头的相对路径
         String relPath;
@@ -137,7 +151,9 @@ class WebDavStorageService implements StorageServiceInterface {
         } else {
           relPath = href.startsWith('/') ? href : '/$href';
         }
-        files.add(BackupFileInfo(name: name, path: relPath, lastModified: lm, size: sz));
+        files.add(
+          BackupFileInfo(name: name, path: relPath, lastModified: lm, size: sz),
+        );
       }
       files.sort((a, b) => b.lastModified.compareTo(a.lastModified));
       return files;
@@ -153,7 +169,11 @@ class WebDavStorageService implements StorageServiceInterface {
     try {
       if (!await checkPermissions()) return false;
       await _ensureCollection(_url!, _basePath ?? '/');
-      final uri = _buildUri(url: _url!, basePath: _basePath ?? '/', fileName: fileName);
+      final uri = _buildUri(
+        url: _url!,
+        basePath: _basePath ?? '/',
+        fileName: fileName,
+      );
       final req = await _client.putUrl(uri);
       _auth(req, _username!, _password!);
       req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');

@@ -4,7 +4,7 @@ import 'package:contrail/features/habit/domain/use_cases/delete_habit_use_case.d
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 
 // 创建模拟HabitRepository
-class MockHabitRepository extends Mock implements HabitRepository {} 
+class MockHabitRepository extends Mock implements HabitRepository {}
 
 void main() {
   late MockHabitRepository mockHabitRepository;
@@ -20,7 +20,9 @@ void main() {
 
     test('should delete habit from repository', () async {
       // 安排 - 设置模拟行为
-      when(() => mockHabitRepository.deleteHabit(any())).thenAnswer((_) async {});
+      when(
+        () => mockHabitRepository.deleteHabit(any()),
+      ).thenAnswer((_) async {});
 
       // 行动 - 执行用例
       await deleteHabitUseCase.execute(testHabitId);

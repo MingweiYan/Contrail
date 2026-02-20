@@ -1,7 +1,7 @@
 /// 应用程序公共常量类
 class AppConstants {
   /// 习惯富文本编辑器的默认内容
-static const String defaultHabitRichTextContent = r'''
+  static const String defaultHabitRichTextContent = r'''
   [
     {
         "insert": "🌻 这些要点要记住",

@@ -13,20 +13,42 @@ class BackupListSection extends StatelessWidget {
   final Future<void> Function(BackupFileInfo file) onRestore;
   final Future<bool> Function(BackupFileInfo file) onDelete;
 
-  const BackupListSection({super.key, required this.title, required this.isLoading, required this.files, required this.onRefresh, required this.onRestore, required this.onDelete});
+  const BackupListSection({
+    super.key,
+    required this.title,
+    required this.isLoading,
+    required this.files,
+    required this.onRefresh,
+    required this.onRestore,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(fontSize: ScreenUtil().setSp(29), fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: ScreenUtil().setSp(29),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         SizedBox(height: BaseLayoutConstants.spacingSmall),
         ElevatedButton.icon(
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh),
-          label: Text('刷新备份文件列表', style: TextStyle(fontSize: ScreenUtil().setSp(18))),
-          style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, DataBackupPageConstants.buttonHeight)),
+          label: Text(
+            '刷新备份文件列表',
+            style: TextStyle(fontSize: ScreenUtil().setSp(18)),
+          ),
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(
+              double.infinity,
+              DataBackupPageConstants.buttonHeight,
+            ),
+          ),
         ),
         SizedBox(height: BaseLayoutConstants.spacingLarge),
         Container(
@@ -35,32 +57,43 @@ class BackupListSection extends StatelessWidget {
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
             ],
           ),
           child: isLoading
               ? const Center(child: CircularProgressIndicator())
               : files.isEmpty
-                  ? Center(child: Text('没有找到备份文件', style: TextStyle(fontSize: ScreenUtil().setSp(16))))
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: files.length,
-                      itemBuilder: (context, index) {
-                        final f = files[index];
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: BaseLayoutConstants.spacingMedium),
-                          child: BackupListItem(
-                            file: f,
-                            onRestore: () => onRestore(f),
-                            onDelete: () => onDelete(f),
-                          ),
-                        );
-                      },
-                    ),
+              ? Center(
+                  child: Text(
+                    '没有找到备份文件',
+                    style: TextStyle(fontSize: ScreenUtil().setSp(16)),
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: files.length,
+                  itemBuilder: (context, index) {
+                    final f = files[index];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: BaseLayoutConstants.spacingMedium,
+                      ),
+                      child: BackupListItem(
+                        file: f,
+                        onRestore: () => onRestore(f),
+                        onDelete: () => onDelete(f),
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );
   }
 }
-

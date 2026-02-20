@@ -30,15 +30,14 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   Duration _elapsedTime = Duration.zero;
   int _timerDuration = 30; // 默认25分钟
   TrackingMode _selectedMode = TrackingMode.stopwatch;
-  
+
   // FocusTrackingManager实例
   late FocusTrackingManager _focusManager;
-  
+
   // 番茄钟相关设置通过FocusTrackingManager管理
-  
+
   // 屏幕常亮状态
   bool _isScreenAlwaysOn = false;
-
 
   // 用于显示富文本描述的控制器
   QuillController? descriptionController;
@@ -49,9 +48,10 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     // 初始化FocusTrackingManager
     _focusManager = sl<FocusTrackingManager>();
     logger.debug('HabitTrackingPage初始化，习惯名称: ${widget.habit.name}');
-    _initializeDescriptionController();  
+    _initializeDescriptionController();
     // 检查是否有正在进行的专注会话，并且是当前习惯
-    if (_focusManager.focusStatus != FocusStatus.stop && _focusManager.currentFocusHabit != null &&
+    if (_focusManager.focusStatus != FocusStatus.stop &&
+        _focusManager.currentFocusHabit != null &&
         _focusManager.currentFocusHabit!.id == widget.habit.id) {
       // 如果有正在进行的专注会话且是当前习惯，恢复状态
       setState(() {
@@ -88,18 +88,19 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   // 初始化描述控制器
   void _initializeDescriptionController() {
     // 创建QuillController用于显示富文本内容
-    if (widget.habit.descriptionJson != null && widget.habit.descriptionJson!.isNotEmpty) {
+    if (widget.habit.descriptionJson != null &&
+        widget.habit.descriptionJson!.isNotEmpty) {
       try {
         // logger.debug('准备解析富文本描述: ${widget.habit.descriptionJson}');
         final json = jsonDecode(widget.habit.descriptionJson!);
         // logger.debug('解析成功，JSON数据: $json');
         // 创建文档
-        final document = Document.fromJson(json); 
+        final document = Document.fromJson(json);
         // 创建只读的QuillController
         descriptionController = QuillController(
-            document: document,
-            selection: const TextSelection.collapsed(offset: 0)
-          )..readOnly = true;
+          document: document,
+          selection: const TextSelection.collapsed(offset: 0),
+        )..readOnly = true;
         logger.debug('创建QuillController成功');
       } catch (e) {
         logger.warning('解析富文本描述失败: $e');
@@ -122,9 +123,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   // 时间更新回调
   void _onTimeUpdate(Duration elapsedTime) {
     // 只有在追踪状态时才更新UI，避免不必要的重建
-      setState(() {
-        _elapsedTime = elapsedTime;
-      });
+    setState(() {
+      _elapsedTime = elapsedTime;
+    });
   }
 
   // 切换计时器的运行状态
@@ -152,7 +153,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   void _onCountdownEnd() {
     // 重置倒计时结束标志
     _focusManager.resetCountdownEndedFlag();
-    logger.debug('倒计时结束，当前模式: $_selectedMode');    
+    logger.debug('倒计时结束，当前模式: $_selectedMode');
     // 显示弹窗提示用户时间到了
     if (mounted) {
       _showTimeUpDialog();
@@ -164,7 +165,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     setState(() {
       _isScreenAlwaysOn = !_isScreenAlwaysOn;
     });
-    
+
     if (_isScreenAlwaysOn) {
       await WakelockPlus.enable();
       logger.debug('屏幕常亮已启用');
@@ -173,17 +174,17 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
       logger.debug('屏幕常亮已禁用');
     }
   }
-  
+
   // 显示时间到了的弹窗
   void _showTimeUpDialog() {
     showDialog(
-      context: context, 
+      context: context,
       barrierDismissible: false, // 用户必须点击按钮才能关闭
       builder: (context) {
         // 根据不同模式设置弹窗标题和内容
         String title = '';
         String content = '';
-        
+
         if (_selectedMode == TrackingMode.countdown) {
           title = '倒计时结束';
           content = '您的倒计时时间已结束！';
@@ -191,7 +192,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
           final focusState = _focusManager;
           if (focusState.pomodoroStatus == PomodoroStatus.work) {
             title = '工作时段结束';
-                    if (focusState.currentRound < focusState.pomodoroRounds) {
+            if (focusState.currentRound < focusState.pomodoroRounds) {
               content = '准备开始${focusState.defaultShortBreakDuration}分钟的短休息吗？';
             } else {
               content = '恭喜！您已完成全部${focusState.pomodoroRounds}轮番茄钟！';
@@ -201,7 +202,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             content = '准备开始第${_focusManager.currentRound}轮工作吗？';
           }
         }
-        
+
         return AlertDialog(
           title: Text(title),
           content: Text(content),
@@ -209,35 +210,44 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                
+
                 // 根据不同模式处理用户确认后的逻辑
                 if (_selectedMode == TrackingMode.countdown) {
                   // 倒计时模式：用户确认后没有任何作用，只是关闭弹窗
                   logger.debug('用户确认倒计时结束');
-                  
+
                   // 保存专注记录
                   final duration = _focusManager.getFocusTime();
                   try {
-                    final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-                    habitProvider.stopTracking(widget.habit.id, duration).then((_) {
-                      logger.debug('专注记录保存成功，时长: ${duration.inMinutes}分钟');
-                      
-                      // 显示成功提示
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('已完成 ${widget.habit.name} 的专注计时，记录已保存')),
+                    final habitProvider = Provider.of<HabitProvider>(
+                      context,
+                      listen: false,
                     );
-                  }
+                    habitProvider.stopTracking(widget.habit.id, duration).then((
+                      _,
+                    ) {
+                      logger.debug('专注记录保存成功，时长: ${duration.inMinutes}分钟');
+
+                      // 显示成功提示
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '已完成 ${widget.habit.name} 的专注计时，记录已保存',
+                            ),
+                          ),
+                        );
+                      }
                     });
                   } catch (e) {
                     logger.error('保存专注记录失败', e);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('保存专注记录失败: $e')),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('保存专注记录失败: $e')));
                     }
                   }
-                  
+
                   if (mounted) {
                     setState(() {
                       _showSettings = true;
@@ -245,21 +255,32 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   }
                 } else if (_selectedMode == TrackingMode.pomodoro) {
                   // 调用handlePromato方法
-                  if(_focusManager.handlePromato()) {
+                  if (_focusManager.handlePromato()) {
                     try {
-                    // 获取总工作时长
+                      // 获取总工作时长
                       final duration = _focusManager.totalPomodoroWorkDuration;
                       _focusManager.resetPomodoro();
-                      final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-                      habitProvider.stopTracking(widget.habit.id, duration).then((_) {
-                        logger.debug('番茄钟全部完成，记录已保存，总工作时长: ${duration.inMinutes}分钟');
-                        // 提示用户
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('恭喜！完成了全部${_focusManager.pomodoroRounds}轮番茄钟')),
+                      final habitProvider = Provider.of<HabitProvider>(
+                        context,
+                        listen: false,
+                      );
+                      habitProvider.stopTracking(widget.habit.id, duration).then(
+                        (_) {
+                          logger.debug(
+                            '番茄钟全部完成，记录已保存，总工作时长: ${duration.inMinutes}分钟',
                           );
-                        }
-                      });
+                          // 提示用户
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '恭喜！完成了全部${_focusManager.pomodoroRounds}轮番茄钟',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      );
                     } catch (e) {
                       logger.error('保存番茄钟记录失败', e);
                       if (mounted) {
@@ -269,14 +290,13 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       }
                     }
                   }
-                    
+
                   if (mounted) {
                     setState(() {
                       _showSettings = true;
                     });
                     logger.debug('番茄钟全部完成，重置总工作时长');
                   }
-
                 } else {
                   // 其他模式：不进入下一阶段，只关闭弹窗
                   logger.debug('非倒计时和番茄钟模式，不进入下一阶段');
@@ -289,7 +309,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
       },
     );
   }
-  
+
   // 显示确认对话框
   void _showConfirmationDialog() {
     showDialog(
@@ -321,24 +341,27 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             TextButton(
               onPressed: () async {
                 logger.debug('用户选择保存并停止计时');
-                
+
                 // 获取专注时长
                 final duration = _focusManager.getFocusTime();
                 logger.debug('尝试保存专注记录，时长: ${duration.inMinutes}分钟');
-                
+
                 // 保存专注记录
                 try {
                   // 获取HabitProvider
-                  final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+                  final habitProvider = Provider.of<HabitProvider>(
+                    context,
+                    listen: false,
+                  );
                   await habitProvider.stopTracking(widget.habit.id, duration);
                   logger.debug('专注记录保存成功，时长: ${duration.inMinutes}分钟');
                 } catch (e) {
                   logger.error('保存专注记录失败', e);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('保存专注记录失败: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('保存专注记录失败: $e')));
                 }
-                
+
                 setState(() {
                   _showSettings = true;
                 });
@@ -355,7 +378,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
 
   // 显示番茄钟设置对话框 - 使用独立组件
   void _showPomodoroSettingsDialog() {
-    logger.debug('调用_showPomodoroSettingsDialog，当前设置：工作时长=${_focusManager.defaultWorkDuration}, 休息时长=${_focusManager.defaultShortBreakDuration}, 轮数=${_focusManager.pomodoroRounds}');
+    logger.debug(
+      '调用_showPomodoroSettingsDialog，当前设置：工作时长=${_focusManager.defaultWorkDuration}, 休息时长=${_focusManager.defaultShortBreakDuration}, 轮数=${_focusManager.pomodoroRounds}',
+    );
     PomodoroSettingsDialog.show(
       context: context,
       workDuration: _focusManager.defaultWorkDuration,
@@ -363,19 +388,24 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
       pomodoroRounds: _focusManager.pomodoroRounds,
       isPomodoroMode: _selectedMode == TrackingMode.pomodoro,
       isSettingsVisible: _showSettings,
-      onSettingsChanged: (workDuration, shortBreakDuration, pomodoroRounds, timerDuration) {
-        logger.debug('onSettingsChanged被调用：工作时长=$workDuration, 休息时长=$shortBreakDuration, 轮数=$pomodoroRounds, 计时器时长=$timerDuration');
-        setState(() {
-          // 更新FocusTrackingManager中的设置变量
-          _focusManager.defaultWorkDuration = workDuration;
-          _focusManager.defaultShortBreakDuration = shortBreakDuration;
-          _focusManager.pomodoroRounds = pomodoroRounds;
-          // 立即更新计时器时长，确保UI变化
-          _timerDuration = timerDuration;
-          
-          logger.debug('设置更新完成：工作时长=${_focusManager.defaultWorkDuration}, 休息时长=${_focusManager.defaultShortBreakDuration}, 轮数=${_focusManager.pomodoroRounds}, 计时器时长=$_timerDuration');
-        });
-      },
+      onSettingsChanged:
+          (workDuration, shortBreakDuration, pomodoroRounds, timerDuration) {
+            logger.debug(
+              'onSettingsChanged被调用：工作时长=$workDuration, 休息时长=$shortBreakDuration, 轮数=$pomodoroRounds, 计时器时长=$timerDuration',
+            );
+            setState(() {
+              // 更新FocusTrackingManager中的设置变量
+              _focusManager.defaultWorkDuration = workDuration;
+              _focusManager.defaultShortBreakDuration = shortBreakDuration;
+              _focusManager.pomodoroRounds = pomodoroRounds;
+              // 立即更新计时器时长，确保UI变化
+              _timerDuration = timerDuration;
+
+              logger.debug(
+                '设置更新完成：工作时长=${_focusManager.defaultWorkDuration}, 休息时长=${_focusManager.defaultShortBreakDuration}, 轮数=${_focusManager.pomodoroRounds}, 计时器时长=$_timerDuration',
+              );
+            });
+          },
     );
   }
 
@@ -396,7 +426,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             : ThemeHelper.onSurface(context),
         padding: HabitTrackingPageConstants.modeButtonPadding,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(HabitTrackingPageConstants.buttonBorderRadius),
+          borderRadius: BorderRadius.circular(
+            HabitTrackingPageConstants.buttonBorderRadius,
+          ),
         ),
       ),
       child: Row(
@@ -404,7 +436,12 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
         children: [
           Icon(icon, size: HabitTrackingPageConstants.iconSize),
           SizedBox(width: HabitTrackingPageConstants.extraSmallSpacing),
-          Text(label, style: TextStyle(fontSize: HabitTrackingPageConstants.buttonFontSize)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: HabitTrackingPageConstants.buttonFontSize,
+            ),
+          ),
         ],
       ),
     );
@@ -424,13 +461,17 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               height: MediaQuery.of(context).size.width * 0.75,
               child: ClockWidget(
                 // 根据当前模式设置不同的初始值
-                duration: _selectedMode == TrackingMode.stopwatch ? Duration.zero : Duration(minutes: _timerDuration),
+                duration: _selectedMode == TrackingMode.stopwatch
+                    ? Duration.zero
+                    : Duration(minutes: _timerDuration),
                 focusStatus: _focusStatus,
                 onDurationChanged: (duration) {
                   setState(() {
                     _timerDuration = duration.inMinutes;
                     _focusManager.defaultWorkDuration = duration.inMinutes;
-                    logger.debug('时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟');
+                    logger.debug(
+                      '时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟',
+                    );
                   });
                 },
                 trackingMode: _selectedMode,
@@ -439,20 +480,25 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               ),
             ),
           ),
-          
+
           // 自定义消息块 - 固定在顶部区域
           Column(
             children: [
               // 自定义消息块距离头部增加更多的占位块，使文本块起始点下降
               SizedBox(height: HabitTrackingPageConstants.smallSpacing),
-              
+
               // 显示用户自定义的富文本内容 - 使用QuillEditor
-              if (descriptionController != null) ...[                Container(
+              if (descriptionController != null) ...[
+                Container(
                   margin: HabitTrackingPageConstants.descriptionMargin,
                   padding: HabitTrackingPageConstants.descriptionPadding,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(HabitTrackingPageConstants.descriptionBorderRadius),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(
+                      HabitTrackingPageConstants.descriptionBorderRadius,
+                    ),
                     border: Border.all(
                       color: Theme.of(context).dividerColor,
                       width: HabitTrackingPageConstants.descriptionBorderWidth,
@@ -461,8 +507,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   // 设置固定高度以实现截断效果
                   height: HabitTrackingPageConstants.descriptionHeight,
                   child: QuillEditor.basic(
-                     controller: descriptionController!,
-                      config: const QuillEditorConfig(
+                    controller: descriptionController!,
+                    config: const QuillEditorConfig(
                       padding: EdgeInsets.zero,
                       autoFocus: false,
                       expands: false,
@@ -477,7 +523,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               ],
             ],
           ),
-          
+
           // 模式选择和开始按钮 - 放在时钟下方
           Align(
             alignment: Alignment.bottomCenter,
@@ -496,15 +542,27 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildModeButton(TrackingMode.stopwatch, '正计时', Icons.timer),
-                            _buildModeButton(TrackingMode.countdown, '倒计时', Icons.timer_off),
-                            _buildModeButton(TrackingMode.pomodoro, '番茄钟', Icons.timer_10_select),
+                            _buildModeButton(
+                              TrackingMode.stopwatch,
+                              '正计时',
+                              Icons.timer,
+                            ),
+                            _buildModeButton(
+                              TrackingMode.countdown,
+                              '倒计时',
+                              Icons.timer_off,
+                            ),
+                            _buildModeButton(
+                              TrackingMode.pomodoro,
+                              '番茄钟',
+                              Icons.timer_10_select,
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  
+
                   // 番茄钟设置按钮 - 始终保留空间但只在番茄钟模式下可见
                   Container(
                     height: HabitTrackingPageConstants.settingsButtonHeight,
@@ -517,23 +575,36 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       child: TextButton(
                         onPressed: _showPomodoroSettingsDialog,
                         style: TextButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          padding: HabitTrackingPageConstants.settingsButtonPadding,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.1),
+                          padding:
+                              HabitTrackingPageConstants.settingsButtonPadding,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(HabitTrackingPageConstants.buttonBorderRadius),
+                            borderRadius: BorderRadius.circular(
+                              HabitTrackingPageConstants.buttonBorderRadius,
+                            ),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: HabitTrackingPageConstants.iconSize),
-                            SizedBox(width: HabitTrackingPageConstants.extraSmallSpacing),
+                            Icon(
+                              Icons.settings,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: HabitTrackingPageConstants.iconSize,
+                            ),
+                            SizedBox(
+                              width:
+                                  HabitTrackingPageConstants.extraSmallSpacing,
+                            ),
                             Text(
                               '番茄钟设置',
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w500,
-                                fontSize: HabitTrackingPageConstants.buttonFontSize,
+                                fontSize:
+                                    HabitTrackingPageConstants.buttonFontSize,
                               ),
                             ),
                           ],
@@ -544,7 +615,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
 
                   // 开始按钮 - 有间隔，在时钟下方
                   Padding(
-                    padding: EdgeInsets.only(top: HabitTrackingPageConstants.largeSpacing),
+                    padding: EdgeInsets.only(
+                      top: HabitTrackingPageConstants.largeSpacing,
+                    ),
                     child: ElevatedButton(
                       onPressed: () {
                         setState(() {
@@ -552,23 +625,34 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                           // 根据不同模式设置不同的初始值
                           if (_selectedMode == TrackingMode.stopwatch) {
                             _elapsedTime = Duration.zero; // 正计时初始值为0
-                          } else if (_selectedMode == TrackingMode.countdown || _selectedMode == TrackingMode.pomodoro) {
-                            _elapsedTime = Duration(minutes: _timerDuration); // 倒计时和番茄钟使用_timerDuration的值
+                          } else if (_selectedMode == TrackingMode.countdown ||
+                              _selectedMode == TrackingMode.pomodoro) {
+                            _elapsedTime = Duration(
+                              minutes: _timerDuration,
+                            ); // 倒计时和番茄钟使用_timerDuration的值
                           }
-                          
+
                           // 对于番茄钟模式，如果是从设置界面开始，重置总工作时长
-                          if (_selectedMode == TrackingMode.pomodoro && _showSettings) {
-                            _focusManager.totalPomodoroWorkDuration = Duration.zero;
+                          if (_selectedMode == TrackingMode.pomodoro &&
+                              _showSettings) {
+                            _focusManager.totalPomodoroWorkDuration =
+                                Duration.zero;
                             _focusManager.currentRound = 1;
                             logger.debug('开始新的番茄钟会话，重置总工作时长');
-                            
+
                             // 设置番茄钟状态为工作
-                            _focusManager.setPomodoroStatus(PomodoroStatus.work);
+                            _focusManager.setPomodoroStatus(
+                              PomodoroStatus.work,
+                            );
                           }
-                          
+
                           // 自动开始计时
                           if (_focusStatus == FocusStatus.stop) {
-                            _focusManager.startFocus(widget.habit, _selectedMode, _elapsedTime);
+                            _focusManager.startFocus(
+                              widget.habit,
+                              _selectedMode,
+                              _elapsedTime,
+                            );
                           }
                         });
                       },
@@ -581,7 +665,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                         '开始计时',
                         style: ThemeHelper.textStyleWithTheme(
                           context,
-                          fontSize: HabitTrackingPageConstants.startButtonFontSize,
+                          fontSize:
+                              HabitTrackingPageConstants.startButtonFontSize,
                           fontWeight: FontWeight.bold,
                           color: ThemeHelper.onPrimary(context),
                         ),
@@ -614,91 +699,107 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                          Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.05),
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.0),
                         ],
                         radius: 0.7,
                       ),
                     ),
                   ),
-                  
+
                   // 包裹时钟控件在GestureDetector中，实现点击跳转到全屏时钟页面
-              GestureDetector(
-                onTap: () {
-                  // 只有在专注进行时才跳转到全屏时钟页面
-                  if (_focusStatus == FocusStatus.run) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const FullscreenClockPage(),
-                      ),
-                    );
-                  }
-                },
-              child: ClockWidget(
-                duration: _elapsedTime,
-                focusStatus: _focusStatus,
-                onDurationChanged: (duration) {
-                  setState(() {
-                    _elapsedTime = duration;
-                    _focusManager.defaultWorkDuration = duration.inMinutes;
-                    logger.debug('时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟');
-                  });
-                },
-                trackingMode: _selectedMode,
-                isSettingsMode: false, // 专注进行时不是设置模式
-              ),
-            ),
-            if (_elapsedTime.inHours > 0)
-              Positioned(
-                right: 12,
-                top: 12,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
-                  child: Container(
-                    key: ValueKey(_elapsedTime.inHours),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.shadow,
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '${_elapsedTime.inHours}h',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                  GestureDetector(
+                    onTap: () {
+                      // 只有在专注进行时才跳转到全屏时钟页面
+                      if (_focusStatus == FocusStatus.run) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FullscreenClockPage(),
+                          ),
+                        );
+                      }
+                    },
+                    child: ClockWidget(
+                      duration: _elapsedTime,
+                      focusStatus: _focusStatus,
+                      onDurationChanged: (duration) {
+                        setState(() {
+                          _elapsedTime = duration;
+                          _focusManager.defaultWorkDuration =
+                              duration.inMinutes;
+                          logger.debug(
+                            '时钟上下滑动修改时间，设置番茄钟工作时长为 ${duration.inMinutes} 分钟',
+                          );
+                        });
+                      },
+                      trackingMode: _selectedMode,
+                      isSettingsMode: false, // 专注进行时不是设置模式
                     ),
                   ),
-                ),
-              ),
-              ],
+                  if (_elapsedTime.inHours > 0)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(scale: animation, child: child),
+                        child: Container(
+                          key: ValueKey(_elapsedTime.inHours),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.shadow,
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '${_elapsedTime.inHours}h',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-          
+
           // 自定义消息块 - 固定在顶部区域
           Column(
             children: [
               // 自定义消息块距离头部增加更多的占位块，使文本块起始点下降
               SizedBox(height: HabitTrackingPageConstants.smallSpacing),
-              
+
               // 显示用户自定义的富文本内容 - 使用QuillEditor
-              if (descriptionController != null) ...[                Container(
+              if (descriptionController != null) ...[
+                Container(
                   margin: HabitTrackingPageConstants.descriptionMargin,
                   padding: HabitTrackingPageConstants.descriptionPadding,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(HabitTrackingPageConstants.descriptionBorderRadius),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(
+                      HabitTrackingPageConstants.descriptionBorderRadius,
+                    ),
                     border: Border.all(
                       color: Theme.of(context).dividerColor,
                       width: HabitTrackingPageConstants.descriptionBorderWidth,
@@ -707,8 +808,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   // 设置固定高度以实现截断效果
                   height: HabitTrackingPageConstants.descriptionHeight,
                   child: QuillEditor.basic(
-                     controller: descriptionController!,
-                      config: const QuillEditorConfig(
+                    controller: descriptionController!,
+                    config: const QuillEditorConfig(
                       padding: EdgeInsets.zero,
                       autoFocus: false,
                       expands: false,
@@ -722,18 +823,17 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               ],
             ],
           ),
-          
+
           // 底部内容 - 显示习惯信息和控制按钮
           Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              
               // 显示番茄钟信息
               if (_selectedMode == TrackingMode.pomodoro) ...[
                 Text(
                   _focusManager.pomodoroStatus == PomodoroStatus.work
-                    ? '工作时段 ${_focusManager.currentRound.toString().padLeft(2, '0')}/${_focusManager.pomodoroRounds.toString().padLeft(2, '0')}'
-                    : '短休息中',
+                      ? '工作时段 ${_focusManager.currentRound.toString().padLeft(2, '0')}/${_focusManager.pomodoroRounds.toString().padLeft(2, '0')}'
+                      : '短休息中',
                   style: ThemeHelper.textStyleWithTheme(
                     context,
                     fontSize: HabitTrackingPageConstants.pomodoroStatusFontSize,
@@ -743,10 +843,12 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 ),
                 SizedBox(height: HabitTrackingPageConstants.smallSpacing),
               ],
-              
+
               // 控制按钮
               Padding(
-                padding: EdgeInsets.symmetric(vertical: HabitTrackingPageConstants.maxLargeSpacing),
+                padding: EdgeInsets.symmetric(
+                  vertical: HabitTrackingPageConstants.maxLargeSpacing,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -755,8 +857,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       onPressed: _toggleScreenAlwaysOn,
                       style: ThemeHelper.elevatedButtonStyle(
                         context,
-                        padding: HabitTrackingPageConstants.controlButtonPadding,
-                        backgroundColor: _isScreenAlwaysOn 
+                        padding:
+                            HabitTrackingPageConstants.controlButtonPadding,
+                        backgroundColor: _isScreenAlwaysOn
                             ? Theme.of(context).colorScheme.secondary
                             : Theme.of(context).colorScheme.surface,
                         foregroundColor: _isScreenAlwaysOn
@@ -764,7 +867,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                             : ThemeHelper.onSurface(context),
                       ),
                       child: Icon(
-                        _isScreenAlwaysOn ? Icons.lightbulb : Icons.lightbulb_outline,
+                        _isScreenAlwaysOn
+                            ? Icons.lightbulb
+                            : Icons.lightbulb_outline,
                         size: HabitTrackingPageConstants.largeIconSize,
                       ),
                     ),
@@ -773,7 +878,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       onPressed: _resetTimer,
                       style: ThemeHelper.elevatedButtonStyle(
                         context,
-                        padding: HabitTrackingPageConstants.controlButtonPadding,
+                        padding:
+                            HabitTrackingPageConstants.controlButtonPadding,
                         backgroundColor: Theme.of(context).colorScheme.surface,
                         foregroundColor: ThemeHelper.onSurface(context),
                       ),
@@ -787,11 +893,14 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       onPressed: _toggleTimer,
                       style: ThemeHelper.elevatedButtonStyle(
                         context,
-                        padding: HabitTrackingPageConstants.controlButtonPadding,
+                        padding:
+                            HabitTrackingPageConstants.controlButtonPadding,
                         backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
                       child: Icon(
-                        _focusStatus == FocusStatus.run ? Icons.pause : Icons.play_arrow,
+                        _focusStatus == FocusStatus.run
+                            ? Icons.pause
+                            : Icons.play_arrow,
                         size: HabitTrackingPageConstants.largeIconSize,
                         color: ThemeHelper.onPrimary(context),
                       ),
@@ -802,7 +911,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                       onPressed: _showConfirmationDialog,
                       style: ThemeHelper.elevatedButtonStyle(
                         context,
-                        padding: HabitTrackingPageConstants.controlButtonPadding,
+                        padding:
+                            HabitTrackingPageConstants.controlButtonPadding,
                         backgroundColor: Colors.red,
                       ),
                       child: Icon(
@@ -821,8 +931,6 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     // 检查倒计时是否已结束，如果是，则调用_onCountdownEnd方法
@@ -831,22 +939,18 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
         _onCountdownEnd();
       });
     }
-    
+
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('正在追踪习惯：${widget.habit.name}'),
-      ),
+      appBar: AppBar(title: Text('正在追踪习惯：${widget.habit.name}')),
       body: Container(
         decoration: decoration,
         child: SafeArea(
           child: Column(
             children: [
               // 主要内容 - 计时器控件
-              Expanded(
-                child: _buildTimerControls(),
-              ),
+              Expanded(child: _buildTimerControls()),
               // 底部空间
               SizedBox(height: HabitTrackingPageConstants.mediumSpacing),
             ],

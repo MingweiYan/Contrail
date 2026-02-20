@@ -51,10 +51,12 @@ class ColorHelper {
 
     // 添加到自定义颜色列表
     customColors.add(color);
-    
+
     // 保存到SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final List<String> colorValues = customColors.map((c) => c.toARGB32().toString()).toList();
+    final List<String> colorValues = customColors
+        .map((c) => c.toARGB32().toString())
+        .toList();
     await prefs.setStringList(_customColorsKey, colorValues);
   }
 
@@ -68,17 +70,19 @@ class ColorHelper {
     // 从自定义颜色列表中删除
     final customColors = await getCustomColors();
     customColors.removeWhere((c) => c.toARGB32() == color.toARGB32());
-    
+
     // 保存到SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final List<String> colorValues = customColors.map((c) => c.value.toString()).toList();
+    final List<String> colorValues = customColors
+        .map((c) => c.value.toString())
+        .toList();
     await prefs.setStringList(_customColorsKey, colorValues);
   }
 
   // 判断是否是预定义颜色
   static bool isPredefinedColor(Color color) {
-    return _predefinedColors.any((option) => option.toARGB32() == color.toARGB32());
+    return _predefinedColors.any(
+      (option) => option.toARGB32() == color.toARGB32(),
+    );
   }
-
-  
 }
