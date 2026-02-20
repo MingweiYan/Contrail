@@ -16,9 +16,12 @@ enum PomodoroStatus {
 
 // 专注状态管理类
 class FocusTrackingManager {
-  FocusTrackingManager() : _backgroundTimerService = BackgroundTimerService() {
+  FocusTrackingManager({BackgroundTimerService? backgroundTimerService, bool autoStart = true})
+      : _backgroundTimerService = backgroundTimerService ?? BackgroundTimerService() {
     _backgroundTimerService.setFocusState(this);
-    _backgroundTimerService.start();
+    if (autoStart) {
+      _backgroundTimerService.start();
+    }
   }
 
   // 后台计时器服务实例
