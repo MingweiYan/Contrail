@@ -78,7 +78,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
         _targetDays = maxDays;
       }
       _trackTime = widget.habitToEdit!.trackTime;
-      _targetTimeMinutes = _targetDays * 60; // 使用修正后的_targetDays计算目标时间
+      // 从保存的习惯中加载目标时间，如果没有则使用默认值
+      _targetTimeMinutes = widget.habitToEdit!.targetTimeMinutes ??
+          _habitService.calculateDefaultTargetTimeMinutes(_targetDays);
       _selectedColor = widget.habitToEdit!.color; // 从现有习惯加载颜色
     } else {
       // 添加模式
@@ -91,7 +93,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
       _cycleType = CycleType.monthly; // 默认无周期类型
       _targetDays = 1;
       _trackTime = false; // 默认不追踪目标
-      _targetTimeMinutes = 60; // 默认值为1小时
+      _targetTimeMinutes = 30; // 默认值为30分钟
       _selectedColor = Colors.blue; // 默认蓝色
     }
 
@@ -310,6 +312,97 @@ class _AddHabitPageState extends State<AddHabitPage> {
     });
   }
 
+  // 显示目标天数输入对话框
+  Future<void> _showTargetDaysInputDialog() async {
+    final TextEditingController controller = TextEditingController(
+      text: _targetDays.toString(),
+    );
+    final maxDays = _getMaxDaysForCycleType();
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('设置目标天数'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '请输入 1 到 $maxDays 之间的数字',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text('确定'),
+            onPressed: () {
+              final value = int.tryParse(controller.text);
+              if (value != null) {
+                int clampedValue = value.clamp(1, maxDays);
+                Navigator.pop(context, clampedValue);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _targetDays = result;
+        _updateTargetTimeMinutes();
+      });
+    }
+  }
+
+  // 显示目标时间输入对话框
+  Future<void> _showTargetTimeInputDialog() async {
+    final TextEditingController controller = TextEditingController(
+      text: _targetTimeMinutes.toString(),
+    );
+    final maxMinutes = _getMaxTimeMinutes();
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('设置目标时长'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '请输入 5 到 $maxMinutes 之间的数字（分钟）',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text('确定'),
+            onPressed: () {
+              final value = int.tryParse(controller.text);
+              if (value != null) {
+                int clampedValue = value.clamp(5, maxMinutes);
+                Navigator.pop(context, clampedValue);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _targetTimeMinutes = result;
+      });
+    }
+  }
+
   // 保存习惯
   void _saveHabit() async {
     if (_formKey.currentState!.validate()) {
@@ -342,6 +435,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
           goalType: _goalType,
           trackTime: _trackTime,
           colorValue: _selectedColor.value,
+          targetTimeMinutes: _trackTime ? _targetTimeMinutes : null,
         );
 
         // 保留现有习惯的数据
@@ -445,7 +539,17 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             color: ThemeHelper.onPrimary(context),
                           ),
                         ),
-                        // 去掉右上角的保存按钮
+                        TextButton(
+                          onPressed: _saveHabit,
+                          child: Text(
+                            widget.habitToEdit != null ? '保存' : '添加',
+                            style: TextStyle(
+                              fontSize: AddHabitPageConstants.titleFontSize,
+                              fontWeight: FontWeight.bold,
+                              color: ThemeHelper.onPrimary(context),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -779,12 +883,15 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                   child: RadioListTile<GoalType>(
                                     title: Text(
                                       '培养好习惯',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.onSurface,
                                       ),
                                     ),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
                                     value: GoalType.positive,
                                     groupValue: _goalType,
                                     onChanged: (value) {
@@ -801,12 +908,15 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                   child: RadioListTile<GoalType>(
                                     title: Text(
                                       '戒掉坏习惯',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.onSurface,
                                       ),
                                     ),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
                                     value: GoalType.negative,
                                     groupValue: _goalType,
                                     onChanged: (value) {
@@ -927,17 +1037,20 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                         child: RadioListTile<CycleType>(
                                           title: Text(
                                             '每日',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               color:
                                                   _cycleType == CycleType.daily
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary
-                                                  : Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
+                                                      ? Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary
+                                                      : Theme.of(
+                                                          context,
+                                                        ).colorScheme.onSurface,
                                             ),
                                           ),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
                                           value: CycleType.daily,
                                           groupValue: _cycleType,
                                           onChanged: (value) {
@@ -957,17 +1070,20 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                         child: RadioListTile<CycleType>(
                                           title: Text(
                                             '每周',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               color:
                                                   _cycleType == CycleType.weekly
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary
-                                                  : Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
+                                                      ? Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary
+                                                      : Theme.of(
+                                                          context,
+                                                        ).colorScheme.onSurface,
                                             ),
                                           ),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
                                           value: CycleType.weekly,
                                           groupValue: _cycleType,
                                           onChanged: (value) {
@@ -987,6 +1103,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                         child: RadioListTile<CycleType>(
                                           title: Text(
                                             '每月',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               color:
                                                   _cycleType ==
@@ -999,6 +1117,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                                     ).colorScheme.onSurface,
                                             ),
                                           ),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
                                           value: CycleType.monthly,
                                           groupValue: _cycleType,
                                           onChanged: (value) {
@@ -1078,15 +1197,19 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                           .extraSmallSpacing,
                                     ),
                                     Center(
-                                      child: Text(
-                                        '$_targetDays 天',
-                                        style: TextStyle(
-                                          fontSize: AddHabitPageConstants
-                                              .subtitleFontSize,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                      child: GestureDetector(
+                                        onTap: _showTargetDaysInputDialog,
+                                        child: Text(
+                                          '$_targetDays 天',
+                                          style: TextStyle(
+                                            fontSize: AddHabitPageConstants
+                                                .subtitleFontSize,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            decoration: TextDecoration.underline,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1152,15 +1275,19 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                         AddHabitPageConstants.extraSmallSpacing,
                                   ),
                                   Center(
-                                    child: Text(
-                                      '$_targetTimeMinutes 分钟',
-                                      style: TextStyle(
-                                        fontSize: AddHabitPageConstants
-                                            .subtitleFontSize,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
+                                    child: GestureDetector(
+                                      onTap: _showTargetTimeInputDialog,
+                                      child: Text(
+                                        '$_targetTimeMinutes 分钟',
+                                        style: TextStyle(
+                                          fontSize: AddHabitPageConstants
+                                              .subtitleFontSize,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          decoration: TextDecoration.underline,
+                                        ),
                                       ),
                                     ),
                                   ),

@@ -57,6 +57,9 @@ class Habit extends HiveObject {
   @HiveField(14)
   Map<DateTime, bool> dailyCompletionStatus; // 记录每天的打卡状态，true 表示当天已完成打卡
 
+  @HiveField(17)
+  int? targetTimeMinutes; // 目标时间，单位为分钟
+
   // 获取Color对象
   Color get color => Color(colorValue);
 
@@ -80,6 +83,7 @@ class Habit extends HiveObject {
     int? colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
+    this.targetTimeMinutes,
   }) : colorValue = colorValue ?? Colors.blue.value,
        trackingDurations = trackingDurations ?? {},
        dailyCompletionStatus = dailyCompletionStatus ?? {};
@@ -100,6 +104,7 @@ class Habit extends HiveObject {
     required this.colorValue,
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
+    this.targetTimeMinutes,
   }) : trackingDurations = trackingDurations ?? {},
        dailyCompletionStatus = dailyCompletionStatus ?? {};
 }

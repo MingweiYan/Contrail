@@ -165,6 +165,7 @@ class HabitService {
                 (date, completed) =>
                     MapEntry(date.toIso8601String(), completed),
               ),
+              'targetTimeMinutes': habit.targetTimeMinutes,
             },
           )
           .toList();
@@ -249,6 +250,7 @@ class HabitService {
           descriptionJson: habitMap['descriptionJson'] as String?,
           trackingDurations: trackingDurations,
           dailyCompletionStatus: dailyCompletionStatus,
+          targetTimeMinutes: habitMap['targetTimeMinutes'] as int?,
         );
 
         // 使用Repository添加习惯
@@ -313,6 +315,7 @@ class HabitService {
     Duration totalDuration = Duration.zero,
     Map<DateTime, List<Duration>> trackingDurations = const {},
     Map<DateTime, bool> dailyCompletionStatus = const {},
+    int? targetTimeMinutes,
   }) {
     return Habit(
       id: id,
@@ -328,6 +331,7 @@ class HabitService {
       totalDuration: totalDuration,
       trackingDurations: trackingDurations,
       dailyCompletionStatus: dailyCompletionStatus,
+      targetTimeMinutes: targetTimeMinutes,
     );
   }
 

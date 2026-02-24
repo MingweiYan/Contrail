@@ -61,7 +61,8 @@ class HabitManagementService {
       // 如果追踪时间，显示时间目标
       if (habit.trackTime) {
         int totalMinutesInCycle = getTotalMinutesInCurrentCycle(habit);
-        int targetMinutes = habit.targetDays! * 60; // 目标天数 * 1小时/天
+        int targetMinutes = habit.targetTimeMinutes ?? 
+            _calculateDefaultTargetTimeMinutes(habit.targetDays!);
         buffer.write(
           ' · 时间: ${totalMinutesInCycle ~/ 60}h${totalMinutesInCycle % 60}m/${targetMinutes ~/ 60}h${targetMinutes % 60}m',
         );
@@ -221,12 +222,18 @@ class HabitManagementService {
     return completed / total;
   }
 
+  /// 计算默认目标时间（天数 * 30分钟）
+  int _calculateDefaultTargetTimeMinutes(int targetDays) {
+    return targetDays * 30;
+  }
+
   /// 计算当前周期内的时间完成度（0.0-1.0）
   double getTimeCompletionRateInCurrentCycle(Habit habit) {
     if (!habit.trackTime) return 0.0;
 
     int completedMinutes = getTotalMinutesInCurrentCycle(habit);
-    int targetMinutes = habit.targetDays! * 60; // 目标天数 * 1小时/天
+    int targetMinutes = habit.targetTimeMinutes ?? 
+        _calculateDefaultTargetTimeMinutes(habit.targetDays!);
     return completedMinutes / targetMinutes;
   }
 }
