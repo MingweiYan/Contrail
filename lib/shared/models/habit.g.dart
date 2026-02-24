@@ -29,18 +29,17 @@ class HabitAdapter extends TypeAdapter<Habit> {
       descriptionJson: fields[16] as String?,
       trackTime: fields[11] as bool,
       colorValue: fields[8] as int?,
-      trackingDurations: (fields[13] as Map?)?.map(
-        (dynamic k, dynamic v) =>
-            MapEntry(k as DateTime, (v as List).cast<Duration>()),
-      ),
+      trackingDurations: (fields[13] as Map?)?.map((dynamic k, dynamic v) =>
+          MapEntry(k as DateTime, (v as List).cast<Duration>())),
       dailyCompletionStatus: (fields[14] as Map?)?.cast<DateTime, bool>(),
+      targetTimeMinutes: fields[17] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +67,9 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..writeByte(13)
       ..write(obj.trackingDurations)
       ..writeByte(14)
-      ..write(obj.dailyCompletionStatus);
+      ..write(obj.dailyCompletionStatus)
+      ..writeByte(17)
+      ..write(obj.targetTimeMinutes);
   }
 
   @override
