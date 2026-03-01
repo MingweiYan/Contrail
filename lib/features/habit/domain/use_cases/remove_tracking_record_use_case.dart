@@ -13,18 +13,17 @@ class RemoveTrackingRecordUseCase {
     String habitId,
     DateTime startTime,
     Duration duration,
-    List<Habit> habits,
   ) async {
     try {
       logger.debug(
-        '🗑️  开始删除追踪记录，habitId: $habitId, 开始: ${startTime.toIso8601String()}, 时长: ${duration.inMinutes}分钟',
+        '🗑️  开始删除追踪记录，habitId: $habitId, 开始：${startTime.toIso8601String()}, 时长：${duration.inMinutes}分钟',
       );
 
-      int index = habits.indexWhere((h) => h.id == habitId);
-      Habit? habit = index != -1 ? habits[index] : null;
+      final habit = await _habitRepository.getHabitById(habitId);
       if (habit == null) {
-        logger.error('⚠️  未找到ID为 $habitId 的习惯，无法删除追踪记录');
-        return;
+        final error = '⚠️  未找到 ID 为 $habitId 的习惯，无法删除追踪记录';
+        logger.error(error);
+        throw Exception(error);
       }
 
       _habitService.removeTrackingRecord(habit, startTime, duration);

@@ -117,9 +117,10 @@ class HabitProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _stopTrackingUseCase.execute(habitId, duration, _habits);
+      await _stopTrackingUseCase.execute(habitId, duration);
     } catch (e) {
-      _errorMessage = '停止追踪失败: $e';
+      _errorMessage = '停止追踪失败：$e';
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -140,11 +141,11 @@ class HabitProvider with ChangeNotifier {
         habitId,
         startTime,
         duration,
-        _habits,
       );
       _habitColorRegistry.buildFromHabits(_habits);
     } catch (e) {
-      _errorMessage = '删除追踪记录失败: $e';
+      _errorMessage = '删除追踪记录失败：$e';
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
