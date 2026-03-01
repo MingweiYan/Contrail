@@ -50,18 +50,26 @@ void main() {
     final testDuration = const Duration(minutes: 30);
 
     test('should remove tracking record and save habit', () async {
+      when(() => mockHabitRepository.getHabitById('1')).thenAnswer((_) async => testHabit);
       when(() => mockHabitService.removeTrackingRecord(any(), any(), any())).thenReturn(null);
       when(() => mockHabitRepository.updateHabit(any())).thenAnswer((_) async {});
 
-      await removeTrackingRecordUseCase.execute('1', testStartTime, testDuration, [testHabit]);
+      await removeTrackingRecordUseCase.execute('1', testStartTime, testDuration);
 
+      verify(() => mockHabitRepository.getHabitById('1')).called(1);
       verify(() => mockHabitService.removeTrackingRecord(any(), testStartTime, testDuration)).called(1);
       verify(() => mockHabitRepository.updateHabit(any())).called(1);
     });
 
-    test('should do nothing if habit not found', () async {
-      await removeTrackingRecordUseCase.execute('nonexistent', testStartTime, testDuration, [testHabit]);
+    test('should throw exception if habit not found', () async {
+      when(() => mockHabitRepository.getHabitById('nonexistent')).thenAnswer((_) async => null);
 
+      expect(
+        () => removeTrackingRecordUseCase.execute('nonexistent', testStartTime, testDuration),
+        throwsException,
+      );
+
+      verify(() => mockHabitRepository.getHabitById('nonexistent')).called(1);
       verifyNever(() => mockHabitService.removeTrackingRecord(any(), any(), any()));
       verifyNever(() => mockHabitRepository.updateHabit(any()));
     });

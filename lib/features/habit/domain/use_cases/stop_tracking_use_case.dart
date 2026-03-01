@@ -12,22 +12,18 @@ class StopTrackingUseCase {
   Future<void> execute(
     String habitId,
     Duration duration,
-    List<Habit> habits,
   ) async {
     try {
       logger.debug(
         '📊  开始停止追踪习惯，habitId: $habitId, 时长: ${duration.inMinutes}分钟',
       );
 
-      Habit? habit;
-      int index = habits.indexWhere((h) => h.id == habitId);
-      if (index != -1) {
-        habit = habits[index];
-      }
+      final habit = await _habitRepository.getHabitById(habitId);
 
       if (habit == null) {
-        logger.error('⚠️  无法找到ID为 $habitId 的习惯，无法添加追踪记录');
-        return;
+        final error = '⚠️  无法找到 ID 为 $habitId 的习惯，无法添加追踪记录';
+        logger.error(error);
+        throw Exception(error);
       }
 
       _habitService.addTrackingRecord(habit, DateTime.now(), duration);

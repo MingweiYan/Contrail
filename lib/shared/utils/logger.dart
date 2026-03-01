@@ -47,10 +47,22 @@ class AppLogger implements LoggerPort {
     String directoryPath, {
     int maxBytes = 16 * 1024 * 1024,
   }) {
-    final fileOutput = _ErrorFileOutput(directoryPath, maxBytes);
+    final errorOutput = _LevelFileOutput(
+      directoryPath,
+      maxBytes,
+      'error.log',
+      Level.error,
+    );
+    final infoOutput = _LevelFileOutput(
+      directoryPath,
+      maxBytes,
+      'info.log',
+      Level.info,
+    );
     _logger.i('启用文件日志 dir=$directoryPath maxBytes=$maxBytes');
-    fileOutput.prepare();
-    _output = MultiOutput([ConsoleOutput(), fileOutput]);
+    errorOutput.prepare();
+    infoOutput.prepare();
+    _output = MultiOutput([ConsoleOutput(), errorOutput, infoOutput]);
     _logger = Logger(
       level: _level,
       printer: PrefixPrinter(_printer),
@@ -85,17 +97,18 @@ class AppLogger implements LoggerPort {
   }
 }
 
-// 保留全局 logger 实例，用于向后兼容
 final logger = AppLogger();
 
-class _ErrorFileOutput extends LogOutput {
+class _LevelFileOutput extends LogOutput {
   final String dirPath;
   final int maxBytes;
+  final String fileName;
+  final Level minLevel;
   late final String filePath;
   late final String rotatedPath;
   bool _inited = false;
 
-  _ErrorFileOutput(this.dirPath, this.maxBytes);
+  _LevelFileOutput(this.dirPath, this.maxBytes, this.fileName, this.minLevel);
 
   void prepare() {
     if (_inited) {
@@ -121,8 +134,8 @@ class _ErrorFileOutput extends LogOutput {
         debugPrint('创建日志目录失败: $e');
       }
     }
-    filePath = '$dirPath/error.log';
-    rotatedPath = '$dirPath/error.log.1';
+    filePath = '$dirPath/$fileName';
+    rotatedPath = '$dirPath/$fileName.1';
     final f = File(filePath);
     if (!f.existsSync()) {
       try {
@@ -138,7 +151,7 @@ class _ErrorFileOutput extends LogOutput {
 
   @override
   void output(OutputEvent event) {
-    if (event.level.index < Level.error.index) return;
+    if (event.level.index < minLevel.index) return;
     if (!_inited) {
       try {
         _init();
