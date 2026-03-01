@@ -9,7 +9,7 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val keystoreProps = Properties()
-val keystoreFile = rootProject.file("android/key.properties")
+val keystoreFile = rootProject.file("key.properties")
 val hasReleaseKeystore = if (keystoreFile.exists()) {
     FileInputStream(keystoreFile).use { keystoreProps.load(it) }
     true
