@@ -25,6 +25,11 @@ class TimelineViewWidget extends StatelessWidget {
     return IconHelper.getIconData(iconName);
   }
 
+  String getWeekdayText(DateTime date) {
+    const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    return weekdays[date.weekday - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     // 收集所有专注记录
@@ -92,6 +97,7 @@ class TimelineViewWidget extends StatelessWidget {
             itemCount: focusSessions.length,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.only(bottom: TimelineViewWidgetConstants.itemSpacing),
             itemBuilder: (context, index) {
               final session = focusSessions[index];
               final startTime = DateFormat(
@@ -99,6 +105,8 @@ class TimelineViewWidget extends StatelessWidget {
               ).format(session['startTime']);
               final endTime = DateFormat('HH:mm').format(session['endTime']);
               final date = DateFormat('MM月dd日').format(session['startTime']);
+              final weekday =
+                  getWeekdayText(session['startTime'] as DateTime);
               final duration = session['duration'] as Duration;
               final durationStr =
                   '${duration.inHours}小时${duration.inMinutes % 60}分钟';
@@ -240,13 +248,27 @@ class TimelineViewWidget extends StatelessWidget {
                                       color: color,
                                     ),
                                   ),
-                                  Text(
-                                    date,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade700,
-                                      fontSize: TimelineViewWidgetConstants
-                                          .timeFontSize,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        date,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: TimelineViewWidgetConstants
+                                              .timeFontSize,
+                                        ),
+                                      ),
+                                      Text(
+                                        weekday,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: TimelineViewWidgetConstants
+                                                  .timeFontSize -
+                                              2,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

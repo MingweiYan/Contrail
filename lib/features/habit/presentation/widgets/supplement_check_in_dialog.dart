@@ -59,9 +59,31 @@ class SupplementCheckInDialog extends StatefulWidget {
 
 class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
   Habit? selectedHabit;
-  DateTime selectedDate = DateTime.now();
-  TimeOfDay selectedTime = TimeOfDay.now();
+  late DateTime selectedDate;
+  late TimeOfDay selectedTime;
+  late DateTime defaultEndDateTime;
   int durationMinutes = 30; // 默认时长30分钟
+
+  @override
+  void initState() {
+    super.initState();
+    defaultEndDateTime = DateTime.now();
+    _updateStartDateTime();
+  }
+
+  void _updateStartDateTime() {
+    final startDateTime =
+        defaultEndDateTime.subtract(Duration(minutes: durationMinutes));
+    selectedDate = DateTime(
+      startDateTime.year,
+      startDateTime.month,
+      startDateTime.day,
+    );
+    selectedTime = TimeOfDay(
+      hour: startDateTime.hour,
+      minute: startDateTime.minute,
+    );
+  }
 
   // 处理确认按钮点击
   void handleConfirm() async {
@@ -388,6 +410,7 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                         onChanged: (double value) {
                           setState(() {
                             durationMinutes = value.toInt();
+                            _updateStartDateTime();
                           });
                         },
                         activeColor: ThemeHelper.onPrimary(context),
