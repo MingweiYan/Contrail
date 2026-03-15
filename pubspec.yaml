@@ -55,7 +55,6 @@ flutter:
   
   # 应用资源配置
   assets:
-    - assets/icons/
     - assets/images/
   
   # 应用图标配置
