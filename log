@@ -1,0 +1,68 @@
+2026-03-15 12:01:31.077 13326-24259 ContentCatcher          app.contrail                         I  SettingTrigger : unregister status observer app.contrail.MainActivity
+2026-03-15 12:01:31.078 13326-24259 ContentCatcher          app.contrail                         I  SettingTrigger : unregisterUIAgentListener app.contrail.MainActivity, uid:10418
+2026-03-15 12:01:31.086 13326-13326 VRI[MainActivity]       app.contrail                         D  visibilityChanged oldVisibility=true newVisibility=false
+2026-03-15 12:01:31.095 13326-13326 ViewRootImplStubImpl    app.contrail                         D  onSurfaceViewDetached:
+                                                                                                    , vri:android.view.ViewRootImpl@e78f5da, app.contrail/app.contrail.MainActivity
+                                                                                                    , vri size:1080x2400
+                                                                                                    , surfaceView:Q0.j{f2b3c9 V.E...... ........ 0,0-1080,2400}, SurfaceView[app.contrail/app.contrail.MainActivity]
+                                                                                                    , surfaceView size:1080x2400
+                                                                                                    , surfaceControl:Surface(name=f2b3c9 SurfaceView[app.contrail/app.contrail.MainActivity](BLAST)#212844)/@0x6e70e83
+2026-03-15 12:01:31.097 13326-24250 app.contrail            app.contrail                         W  Binder 0xb4000073135bf5a0 destroyed after setInheritRt before being parceled.
+2026-03-15 12:01:31.117 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 2, new: 1
+2026-03-15 12:01:31.533 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 1, new: 3
+2026-03-15 12:01:36.494 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 3, new: 4
+2026-03-15 12:01:41.517 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 4, new: 3
+2026-03-15 12:01:43.341 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 3, new: 4
+2026-03-15 12:01:43.489 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 4, new: 1
+2026-03-15 12:07:45.283 13326-13326 VRI[MainActivity]       app.contrail                         I  DisplayState - old: 1, new: 2
+2026-03-15 12:07:47.060 13326-24332 AppScoutStateMachine    app.contrail                         D  13326-ScoutStateMachinecreated
+2026-03-15 12:07:47.064 13326-13326 Activity                app.contrail                         D  Activity = ActivityInfo{e522e35 app.contrail.MainActivity}, Resume onConfigurationChanged = {1.0 460mcc?mnc [zh_CN] ldltr sw411dp w411dp h914dp 420dpi nrml long hdr widecg port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0 mInSplitScreen=false letterBoxed=false foScaled=false isSpecificEmbedded=false embeddingScale=1.0} s.2 fontWeightAdjustment=0/d/o themeChanged=0 themeChangedFlags=0 display=0 extraData = Bundle[{}] screenType=0/o}
+2026-03-15 12:07:47.068 13326-13326 WmSystemUiDebug         app.contrail                         D  set navigation bar color,Alpha=1.0, RGB:0,0,0 caller:io.flutter.plugin.platform.d.b:131 io.flutter.plugin.platform.d.c:24 Q0.d.onPostResume:25 android.app.Activity.performResume:9596 android.app.ActivityThread.performResumeActivity:6104 android.app.ActivityThread.handleResumeActivity:6152 android.app.servertransaction.ResumeActivityItem.execute:73 android.app.servertransaction.ActivityTransactionItem.execute:63 android.app.servertransaction.TransactionExecutor.executeLifecycleItem:172 android.app.servertransaction.TransactionExecutor.executeTransactionItems:104 
+2026-03-15 12:07:47.071 13326-24259 ContentCatcher          app.contrail                         I  SettingTrigger : register screen QA status observer app.contrail.MainActivity
+2026-03-15 12:07:47.072 13326-24259 ContentCatcher          app.contrail                         I  SettingTrigger : register global collect status observer app.contrail.MainActivity
+2026-03-15 12:07:47.072 13326-24259 ContentCatcher          app.contrail                         I  SettingTrigger : registerUIAgentListener app.contrail.MainActivity, uid:10418
+2026-03-15 12:07:47.085 13326-13326 ViewRootImplStubImpl    app.contrail                         D  onSurfaceViewAttached:
+                                                                                                    , vri:android.view.ViewRootImpl@e78f5da, app.contrail/app.contrail.MainActivity
+                                                                                                    , vri size:1080x2400
+                                                                                                    , surfaceView:Q0.j{f2b3c9 V.E...... ......ID 0,0-1080,2400}, SurfaceView[app.contrail/app.contrail.MainActivity]
+                                                                                                    , surfaceView size:1080x2400
+                                                                                                    , surfaceControl:Surface(name=f2b3c9 SurfaceView[app.contrail/app.contrail.MainActivity](BLAST)#212890)/@0x242ffc1
+2026-03-15 12:07:47.088 13326-24263 app.contrail            app.contrail                         W  Binder 0xb400007313598ae0 destroyed after setInheritRt before being parceled.
+2026-03-15 12:07:47.089 13326-24263 qdgralloc               app.contrail                         W  GetSize: Pixel format: 0x3b is not supported by gralloc
+2026-03-15 12:07:47.089 13326-24263 qdgralloc               app.contrail                         W  gralloc failed to allocate buffer for size 0 format 59 AWxAH 1x1 usage 2816
+2026-03-15 12:07:47.089 13326-24263 Gralloc4                app.contrail                         E  isSupported(1, 1, 59, 1, ...) failed with 7
+2026-03-15 12:07:47.089 13326-24263 GraphicBufferAllocator  app.contrail                         E  Failed to allocate (4 x 4) layerCount 1 format 59 usage b00: 2
+2026-03-15 12:07:47.089 13326-24263 AHardwareBuffer         app.contrail                         E  GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -2), handle=0x0
+2026-03-15 12:07:47.089 13326-24263 qdgralloc               app.contrail                         W  GetSize: Pixel format: 0x3b is not supported by gralloc
+2026-03-15 12:07:47.089 13326-24263 qdgralloc               app.contrail                         W  gralloc failed to allocate buffer for size 0 format 59 AWxAH 1x1 usage 2816
+2026-03-15 12:07:47.089 13326-24263 Gralloc4                app.contrail                         E  isSupported(1, 1, 59, 1, ...) failed with 7
+2026-03-15 12:07:47.089 13326-24263 GraphicBufferAllocator  app.contrail                         E  Failed to allocate (4 x 4) layerCount 1 format 59 usage b00: 2
+2026-03-15 12:07:47.089 13326-24263 AHardwareBuffer         app.contrail                         E  GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -2), handle=0x0
+2026-03-15 12:07:47.090 13326-24263 qdgralloc               app.contrail                         W  getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+2026-03-15 12:07:47.091 13326-24263 qdgralloc               app.contrail                         W  getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+2026-03-15 12:07:47.092 13326-24263 qdgralloc               app.contrail                         W  getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+2026-03-15 12:07:47.094 13326-24263 qdgralloc               app.contrail                         W  getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+2026-03-15 12:07:47.095 13326-24263 qdgralloc               app.contrail                         W  getInterlacedFlag: getMetaData returned 3, defaulting to interlaced_flag = 0
+2026-03-15 12:07:47.097 13326-13326 VRI[MainActivity]       app.contrail                         D  vri.reportNextDraw 0 Rect(0, 0 - 1080, 2400) android.view.ViewRootImpl.performTraversals:5618 android.view.ViewRootImpl.doTraversal:4165 android.view.ViewRootImpl$TraversalRunnable.run:12567 android.view.Choreographer$CallbackRecord.run:2040 android.view.Choreographer$CallbackRecord.run:2049 
+2026-03-15 12:07:47.097 13326-13326 SurfaceView             app.contrail                         D  UPDATE Surface(name=f2b3c9 SurfaceView[app.contrail/app.contrail.MainActivity]#212889)/@0x95316a7, mIsProjectionMode = false
+2026-03-15 12:07:47.097 13326-13326 VRI[MainActivity]       app.contrail                         D  vri.Setup new sync=wmsSync-VRI[MainActivity]#9
+2026-03-15 12:07:47.107 13326-13326 VRI[MainActivity]       app.contrail                         D  vri.reportNextDraw 0 Rect(0, 0 - 1080, 2400) android.view.ViewRootImpl.handleResized:3284 android.view.ViewRootImpl.-$$Nest$mhandleResized:0 android.view.ViewRootImpl$W.resized:13774 android.app.servertransaction.WindowStateResizeItem.execute:93 android.app.servertransaction.WindowStateTransactionItem.execute:62 
+2026-03-15 12:07:47.112 13326-13326 VRI[MainActivity]       app.contrail                         D  vri.Setup new sync=wmsSync-VRI[MainActivity]#11
+2026-03-15 12:07:47.117 13326-13326 VRI[MainActivity]       app.contrail                         D  vri.reportDrawFinished 0 0 Rect(0, 0 - 1080, 2400)
+2026-03-15 12:07:47.135 13326-13326 VRI[MainActivity]       app.contrail                         D  vri.reportDrawFinished 0 0 Rect(0, 0 - 1080, 2400)
+2026-03-15 12:07:47.160 13326-13326 HandWritingStubImpl     app.contrail                         I  refreshLastKeyboardType: 1
+2026-03-15 12:07:47.160 13326-13326 HandWritingStubImpl     app.contrail                         I  getCurrentKeyboardType: 1
+2026-03-15 12:07:47.166 13326-13326 InsetsController        app.contrail                         D  hide(ime(), fromIme=false)
+2026-03-15 12:07:47.166 13326-13326 ImeTracker              app.contrail                         I  app.contrail:58a48534: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+2026-03-15 12:07:47.844 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=577321103, downTime=577321103, phoneEventTime=12:07:47.842 } moveCount:0
+2026-03-15 12:07:47.845 13326-13326 VRI[MainActivity]       app.contrail                         D  getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+2026-03-15 12:07:47.893 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=577321153, downTime=577321103, phoneEventTime=12:07:47.891 } moveCount:0
+2026-03-15 12:07:54.088 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=577327345, downTime=577327345, phoneEventTime=12:07:54.083 } moveCount:0
+2026-03-15 12:07:54.089 13326-13326 VRI[MainActivity]       app.contrail                         D  getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+2026-03-15 12:07:54.178 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=577327438, downTime=577327345, phoneEventTime=12:07:54.176 } moveCount:0
+2026-03-15 12:07:54.602 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=577327861, downTime=577327861, phoneEventTime=12:07:54.599 } moveCount:0
+2026-03-15 12:07:54.603 13326-13326 VRI[MainActivity]       app.contrail                         D  getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+2026-03-15 12:07:54.702 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=577327961, downTime=577327861, phoneEventTime=12:07:54.700 } moveCount:0
+2026-03-15 12:07:55.881 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=577329138, downTime=577329138, phoneEventTime=12:07:55.877 } moveCount:0
+2026-03-15 12:07:55.882 13326-13326 VRI[MainActivity]       app.contrail                         D  getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+2026-03-15 12:07:55.971 13326-13326 MIUIInput               app.contrail                         I  [MotionEvent] ViewRootImpl windowName 'app.contrail/app.contrail.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=577329230, downTime=577329138, phoneEventTime=12:07:55.968 } moveCount:0

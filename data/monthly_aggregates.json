@@ -1,0 +1,133 @@
+{
+    "habits": [
+        {
+            "name": "锻炼",
+            "months": {
+                "2024-05": {"count": 12, "duration_ms": 49680000},
+                "2024-06": {"count": 11, "duration_ms": 40320000},
+                "2024-07": {"count": 12, "duration_ms": 39600000},
+                "2024-08": {"count": 7, "duration_ms": 36000000},
+                "2024-09": {"count": 5, "duration_ms": 15840000},
+                "2024-10": {"count": 10, "duration_ms": 34200000},
+                "2024-11": {"count": 6, "duration_ms": 18000000},
+                "2024-12": {"count": 4, "duration_ms": 11520000},
+                "2025-01": {"count": 10, "duration_ms": 26532000},
+                "2025-02": {"count": 7, "duration_ms": 23508000},
+                "2025-03": {"count": 10, "duration_ms": 26676000},
+                "2025-04": {"count": 8, "duration_ms": 25776000},
+                "2025-05": {"count": 10, "duration_ms": 23688000},
+                "2025-06": {"count": 9, "duration_ms": 33120000},
+                "2025-07": {"count": 5, "duration_ms": 14400000},
+                "2025-08": {"count": 10, "duration_ms": 33948000},
+                "2025-09": {"count": 10, "duration_ms": 32580000},
+                "2025-10": {"count": 10, "duration_ms": 21600000},
+                "2025-11": {"count": 7, "duration_ms": 18900000}
+            }
+        },
+        {
+            "name": "blue",
+            "months": {
+                "2024-09": {"count": 6},
+                "2024-10": {"count": 4},
+                "2024-11": {"count": 3},
+                "2024-12": {"count": 6},
+                "2025-01": {"count": 4},
+                "2025-02": {"count": 3},
+                "2025-03": {"count": 5},
+                "2025-04": {"count": 5},
+                "2025-05": {"count": 5},
+                "2025-06": {"count": 4},
+                "2025-07": {"count": 5},
+                "2025-08": {"count": 6},
+                "2025-09": {"count": 6},
+                "2025-10": {"count": 5},
+                "2025-11": {"count": 4}
+            }
+        },
+        {
+            "name": "吉他",
+            "months": {
+                "2024-05": {"count": 10, "duration_ms": 22860000},
+                "2024-06": {"count": 14, "duration_ms": 26244000},
+                "2024-07": {"count": 10, "duration_ms": 14400000},
+                "2024-08": {"count": 11, "duration_ms": 18720000},
+                "2024-09": {"count": 4, "duration_ms": 7200000},
+                "2024-10": {"count": 8, "duration_ms": 22680000},
+                "2024-11": {"count": 10, "duration_ms": 22680000},
+                "2024-12": {"count": 9, "duration_ms": 11304000},
+                "2025-01": {"count": 12, "duration_ms": 23328000},
+                "2025-02": {"count": 12, "duration_ms": 29376000},
+                "2025-03": {"count": 13, "duration_ms": 26100000},
+                "2025-04": {"count": 9, "duration_ms": 19440000},
+                "2025-05": {"count": 6, "duration_ms": 12384000},
+                "2025-06": {"count": 10, "duration_ms": 19224000},
+                "2025-07": {"count": 9, "duration_ms": 18072000},
+                "2025-08": {"count": 13, "duration_ms": 26244000},
+                "2025-09": {"count": 11, "duration_ms": 21600000},
+                "2025-10": {"count": 6, "duration_ms": 8460000},
+                "2025-11": {"count": 7, "duration_ms": 15012000}
+            }
+        },
+        {
+            "name": "编程",
+            "months": {
+                "2025-01": {"count": 11, "duration_ms": 29700000},
+                "2025-02": {"count": 16, "duration_ms": 37512000},
+                "2025-03": {"count": 18, "duration_ms": 47988000},
+                "2025-04": {"count": 16, "duration_ms": 30384000},
+                "2025-05": {"count": 8, "duration_ms": 25200000},
+                "2025-06": {"count": 13, "duration_ms": 32976000},
+                "2025-07": {"count": 9, "duration_ms": 18900000},
+                "2025-08": {"count": 18, "duration_ms": 47880000},
+                "2025-09": {"count": 14, "duration_ms": 32940000},
+                "2025-10": {"count": 14, "duration_ms": 36000000},
+                "2025-11": {"count": 11, "duration_ms": 25776000}
+            }
+        },
+        {
+            "name": "英语",
+            "months": {
+                "2025-01": {"count": 1, "duration_ms": 1008000},
+                "2025-02": {"count": 9, "duration_ms": 11304000},
+                "2025-03": {"count": 10, "duration_ms": 18000000},
+                "2025-04": {"count": 9, "duration_ms": 15840000},
+                "2025-05": {"count": 3, "duration_ms": 4680000},
+                "2025-06": {"count": 7, "duration_ms": 12528000},
+                "2025-07": {"count": 5, "duration_ms": 8928000},
+                "2025-08": {"count": 10, "duration_ms": 18288000},
+                "2025-09": {"count": 8, "duration_ms": 14544000},
+                "2025-10": {"count": 5, "duration_ms": 11196000},
+                "2025-11": {"count": 5, "duration_ms": 8460000}
+            }
+        },
+        {
+            "name": "阅读",
+            "months": {
+                "2025-02": {"count": 5, "duration_ms": 8424000},
+                "2025-03": {"count": 7, "duration_ms": 12276000},
+                "2025-04": {"count": 2, "duration_ms": 19080000},
+                "2025-05": {"count": 4, "duration_ms": 8244000},
+                "2025-06": {"count": 4, "duration_ms": 7380000},
+                "2025-07": {"count": 4, "duration_ms": 7848000},
+                "2025-08": {"count": 5, "duration_ms": 11772000},
+                "2025-09": {"count": 5, "duration_ms": 8568000},
+                "2025-10": {"count": 4, "duration_ms": 7956000},
+                "2025-11": {"count": 0, "duration_ms": 0}
+            }
+        },
+        {
+            "name": "早睡",
+            "months": {
+                "2025-03": {"count": 6},
+                "2025-04": {"count": 9},
+                "2025-05": {"count": 7},
+                "2025-06": {"count": 5},
+                "2025-07": {"count": 3},
+                "2025-08": {"count": 0},
+                "2025-09": {"count": 0},
+                "2025-10": {"count": 4},
+                "2025-11": {"count": 2}
+            }
+        }
+    ]
+}
