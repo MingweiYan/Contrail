@@ -1,5 +1,6 @@
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -15,12 +16,88 @@ abstract class LoggerPort {
   });
 }
 
+class NativeLogger {
+  static const MethodChannel _channel = MethodChannel('app.contrail/logging');
+
+  static Future<void> log({
+    required String level,
+    String tag = 'Contrail',
+    required String message,
+  }) async {
+    if (!Platform.isAndroid) {
+      _fallbackLog(level, tag, message);
+      return;
+    }
+    try {
+      await _channel.invokeMethod('log', {
+        'level': level,
+        'tag': tag,
+        'message': message,
+      });
+    } on PlatformException catch (e) {
+      debugPrint('NativeLogger error: $e');
+      _fallbackLog(level, tag, message);
+    } catch (e) {
+      debugPrint('NativeLogger unexpected error: $e');
+      _fallbackLog(level, tag, message);
+    }
+  }
+
+  static void _fallbackLog(String level, String tag, String message) {
+    final logMessage = '[$tag] $message';
+    debugPrint(logMessage);
+  }
+}
+
+class _NativeLogOutput extends LogOutput {
+  static const String _tag = 'Contrail';
+
+  String _levelToString(Level level) {
+    switch (level) {
+      case Level.verbose:
+        return 'verbose';
+      case Level.debug:
+        return 'debug';
+      case Level.info:
+        return 'info';
+      case Level.warning:
+        return 'warning';
+      case Level.error:
+        return 'error';
+      case Level.fatal:
+        return 'fatal';
+      default:
+        return 'info';
+    }
+  }
+
+  @override
+  void output(OutputEvent event) {
+    final message = event.lines.join('\n');
+    final level = _levelToString(event.level);
+    NativeLogger.log(
+      level: level,
+      tag: _tag,
+      message: message,
+    );
+  }
+}
+
+class _DebugPrintOutput extends LogOutput {
+  @override
+  void output(OutputEvent event) {
+    for (final line in event.lines) {
+      debugPrint(line);
+    }
+  }
+}
+
 class AppLogger implements LoggerPort {
   static final AppLogger _instance = AppLogger._internal();
   late Logger _logger;
   Level _level = kDebugMode ? Level.verbose : Level.info;
   late final PrettyPrinter _printer;
-  LogOutput _output = ConsoleOutput();
+  LogOutput _output = _NativeLogOutput();
 
   factory AppLogger() {
     return _instance;
@@ -62,7 +139,7 @@ class AppLogger implements LoggerPort {
     _logger.i('启用文件日志 dir=$directoryPath maxBytes=$maxBytes');
     errorOutput.prepare();
     infoOutput.prepare();
-    _output = MultiOutput([ConsoleOutput(), errorOutput, infoOutput]);
+    _output = MultiOutput([_NativeLogOutput(), errorOutput, infoOutput]);
     _logger = Logger(
       level: _level,
       printer: PrefixPrinter(_printer),
