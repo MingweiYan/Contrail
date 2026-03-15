@@ -84,19 +84,37 @@ jobs:
           echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
           echo "storeFile=release.keystore" >> android/key.properties
       - run: flutter pub get
-      - run: flutter build apk --release
-      - name: Rename APK
+      - name: Build Fat APK (universal)
+        run: flutter build apk --release
+      - name: Build Split APKs (per ABI)
+        run: flutter build apk --release --split-per-abi
+      - name: Rename and prepare APKs
         run: |
-          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
-          NEW_APK_NAME="Contrail-${VERSION_NAME}.apk"
-          NEW_APK_PATH="build/app/outputs/flutter-apk/$NEW_APK_NAME"
-          mv "$APK_PATH" "$NEW_APK_PATH"
-          echo "NEW_APK_PATH=$NEW_APK_PATH" >> $GITHUB_ENV
+          # Rename Fat APK
+          FAT_APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          FAT_APK_NAME="Contrail-${VERSION_NAME}-universal.apk"
+          FAT_APK_NEW_PATH="build/app/outputs/flutter-apk/$FAT_APK_NAME"
+          mv "$FAT_APK_PATH" "$FAT_APK_NEW_PATH"
+          
+          # Rename Split APKs
+          for ABI in arm64-v8a armeabi-v7a x86_64; do
+            APK_PATH="build/app/outputs/flutter-apk/app-${ABI}-release.apk"
+            APK_NAME="Contrail-${VERSION_NAME}-${ABI}.apk"
+            APK_NEW_PATH="build/app/outputs/flutter-apk/$APK_NAME"
+            mv "$APK_PATH" "$APK_NEW_PATH"
+          done
+          
+          # List all APKs to upload
+          echo "APKS_TO_UPLOAD=$(ls -1 build/app/outputs/flutter-apk/Contrail-*.apk | tr '\n' ' ')" >> $GITHUB_ENV
+      - name: List built APKs
+        run: |
+          echo "=== Built APKs ==="
+          ls -lh build/app/outputs/flutter-apk/
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: ${{ env.RELEASE_NAME }}
-          files: ${{ env.NEW_APK_PATH }}
+          files: build/app/outputs/flutter-apk/Contrail-*.apk
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
