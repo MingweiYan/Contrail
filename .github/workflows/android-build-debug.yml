@@ -1,4 +1,4 @@
-name: Android Debug Build (Verbose)
+name: Android Release Build (Verbose)
 on:
   workflow_dispatch:
 
@@ -56,15 +56,15 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
       
-      - name: Build APK (Debug)
-        run: flutter build apk --debug -v
+      - name: Build APK (Release)
+        run: flutter build apk --release -v
       
       - name: Analyze Build Output
         run: |
           echo -e "\n=== Build Directory ==="
           ls -la build/app/outputs/flutter-apk/
           
-          APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
           if [ -f "$APK_PATH" ]; then
             echo -e "\n=== APK Size ==="
             du -h "$APK_PATH"
