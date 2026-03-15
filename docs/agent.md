@@ -32,10 +32,7 @@ Contrail 是一个使用 Flutter 开发的习惯追踪应用，采用 Clean Arch
 ### 4. 性能说明
 - [statistics_perf_notes.md](./statistics_perf_notes.md) - 统计聚合性能说明
 
-### 5. 项目待办
-- [note.md](./note.md) - 项目待办事项清单
-
-### 6. 草稿文档
+### 5. 草稿文档
 - [draft/](./draft/) - 草稿文档目录（App想法草稿、页面结构整理等）
 
 ---
