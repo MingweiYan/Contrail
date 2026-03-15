@@ -83,7 +83,6 @@ jobs:
           echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
           echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
           echo "storeFile=release.keystore" >> android/key.properties
-      - run: flutter clean
       - run: flutter pub get
       - run: flutter build apk --release
       - name: Rename APK
