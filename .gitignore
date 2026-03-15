@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 .trae/
+.coco/
 
 # IntelliJ related
 *.iml
