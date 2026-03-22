@@ -113,6 +113,7 @@ class AppLogger implements LoggerPort {
       dateTimeFormat: DateTimeFormat.dateAndTime,
     );
     _logger = Logger(
+      filter: ProductionFilter(),
       level: _level,
       printer: PrefixPrinter(_printer),
       output: _output,
@@ -141,6 +142,7 @@ class AppLogger implements LoggerPort {
     infoOutput.prepare();
     _output = MultiOutput([_NativeLogOutput(), errorOutput, infoOutput]);
     _logger = Logger(
+      filter: ProductionFilter(),
       level: _level,
       printer: PrefixPrinter(_printer),
       output: _output,
