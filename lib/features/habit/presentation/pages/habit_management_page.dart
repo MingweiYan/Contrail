@@ -127,8 +127,64 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     return _habitManagementService.getFinalProgress(habit);
   }
 
+  Future<bool> _showRepeatCompletionConfirmation(Habit habit) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('今日已完成'),
+          content: Text('「${habit.name}」今天已经完成过，再次继续会新增一条记录，是否继续？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('继续'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  Future<void> _completeCountOnlyHabit(Habit habit) async {
+    final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+    final shouldContinue =
+        !_habitManagementService.isTodayCompleted(habit) ||
+        await _showRepeatCompletionConfirmation(habit);
+
+    if (!shouldContinue) {
+      return;
+    }
+
+    try {
+      await habitProvider.stopTracking(habit.id, Duration(minutes: 1));
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已完成 ${habit.name}')));
+      await _loadHabits();
+      if (!mounted) {
+        return;
+      }
+      _resortWithAnimation();
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('完成习惯失败: ${e.toString()}')));
+    }
+  }
+
   // 导航到追踪页面
-  void _navigateToTrackingPage(Habit habit) {
+  Future<void> _navigateToTrackingPage(Habit habit) async {
     // 检查是否有正在进行的专注会话
     final focusState = sl<FocusTrackingManager>();
     if (focusState.focusStatus != FocusStatus.stop &&
@@ -161,23 +217,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
         }
       });
     } else {
-      // 如果习惯没有设置追踪时间，则直接完成该习惯的追踪
-      final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-      habitProvider.stopTracking(
-        habit.id,
-        Duration(minutes: 1),
-      ); // 添加1分钟的默认追踪记录
-
-      // 显示成功提示
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('已完成 ${habit.name}')));
-
-      // 刷新UI以显示更新后的进度
-      setState(() {
-        _loadHabits();
-      });
-      _resortWithAnimation();
+      await _completeCountOnlyHabit(habit);
     }
   }
 

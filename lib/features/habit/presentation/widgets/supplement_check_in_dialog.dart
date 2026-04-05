@@ -64,6 +64,31 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
   late DateTime defaultEndDateTime;
   int durationMinutes = 30; // 默认时长30分钟
 
+  Future<bool> _showRepeatCompletionConfirmation(Habit habit) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('当天已完成'),
+          content: Text(
+            '「${habit.name}」在 ${DateFormat('MM月dd日').format(selectedDate)} 已经完成过，再次继续会新增一条记录，是否继续？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('继续'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -86,7 +111,7 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
   }
 
   // 处理确认按钮点击
-  void handleConfirm() async {
+  Future<void> handleConfirm() async {
     if (selectedHabit == null) {
       ScaffoldMessenger.of(
         context,
@@ -106,6 +131,24 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
     final duration = selectedHabit!.trackTime
         ? Duration(minutes: durationMinutes)
         : Duration.zero;
+
+    final dateOnly = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+    final hasCompletedSelectedDay =
+        !selectedHabit!.trackTime &&
+        selectedHabit!.dailyCompletionStatus[dateOnly] == true;
+
+    if (hasCompletedSelectedDay) {
+      final shouldContinue = await _showRepeatCompletionConfirmation(
+        selectedHabit!,
+      );
+      if (!shouldContinue) {
+        return;
+      }
+    }
 
     // 使用HabitService添加追踪记录
     sl<HabitService>().addTrackingRecord(
