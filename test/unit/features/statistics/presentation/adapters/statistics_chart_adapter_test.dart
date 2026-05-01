@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/features/statistics/presentation/adapters/statistics_chart_adapter.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 void main() {
   setUpAll(() {
@@ -200,5 +199,325 @@ void main() {
       expect(result.length, 1);
       expect(result[0].value, completedDays.toDouble());
     }, skip: 'ScreenUtil 初始化问题');
+
+    // ---------- 滚动窗口（近 N 天）方法测试 ----------
+
+    test('generateRollingTitles week 应返回 7 个标签', () {
+      final titles = adapter.generateRollingTitles('week');
+      expect(titles.length, 7);
+      // 每个标签都形如 M/d
+      for (final t in titles) {
+        expect(t.contains('/'), true);
+      }
+    });
+
+    test('generateRollingTitles month 应返回 30 个标签（首尾 + 每 5 天可见）', () {
+      final titles = adapter.generateRollingTitles('month');
+      expect(titles.length, 30);
+      // 首尾必须可见
+      expect(titles[0].isNotEmpty, true);
+      expect(titles[29].isNotEmpty, true);
+      // 可见标签数量应为 首/尾 + 每 5 天 的并集（允许首尾与 %5 重合，去重后至少 7 个、最多 8 个）
+      final visibleCount = titles.where((t) => t.isNotEmpty).length;
+      expect(visibleCount >= 6 && visibleCount <= 8, true);
+    });
+
+    test('generateRollingTitles year 应返回 12 个标签（稀疏 M月 格式）', () {
+      final titles = adapter.generateRollingTitles('year');
+      expect(titles.length, 12);
+      // 首尾必须可见
+      expect(titles[0].isNotEmpty, true);
+      expect(titles[11].isNotEmpty, true);
+      // 可见标签必须是「X月」格式（不带年份，不带斜杠）
+      for (final t in titles) {
+        if (t.isNotEmpty) {
+          expect(t.endsWith('月'), true);
+          expect(t.contains('/'), false);
+        }
+      }
+      // 末尾（当月）应等于今天所在月
+      final now = DateTime.now();
+      expect(titles.last, '${now.month}月');
+    });
+
+    test('generateCompletionRateTitles month 应按周分桶生成标题', () {
+      final titles = adapter.generateCompletionRateTitles(
+        'month',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 30),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+      expect(titles.isNotEmpty, true);
+      expect(titles.first, '4/1-5');
+    });
+
+    test('generateRollingCompletionRateSpots week 对日习惯应返回 0/100', () {
+      final habit = Habit(
+        id: 'daily-week',
+        name: '日习惯',
+        colorValue: Colors.blue.value,
+        cycleType: CycleType.daily,
+        dailyCompletionStatus: {
+          DateTime(2026, 4, 1): true,
+          DateTime(2026, 4, 3): true,
+        },
+      );
+
+      final spots = adapter.generateRollingCompletionRateSpots(
+        habit,
+        'week',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 7),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(spots.length, 7);
+      expect(spots[0].y, 100);
+      expect(spots[1].y, 0);
+      expect(spots[2].y, 100);
+    });
+
+    test('generateRollingCompletionRateSpots month 对日习惯应返回每周平均完成率', () {
+      final habit = Habit(
+        id: 'daily-month',
+        name: '日习惯',
+        colorValue: Colors.blue.value,
+        cycleType: CycleType.daily,
+        dailyCompletionStatus: {
+          DateTime(2026, 4, 1): true,
+          DateTime(2026, 4, 2): true,
+          DateTime(2026, 4, 3): true,
+        },
+      );
+
+      final spots = adapter.generateRollingCompletionRateSpots(
+        habit,
+        'month',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 30),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(spots.isNotEmpty, true);
+      expect(spots.first.y, closeTo(60.0, 0.01));
+    });
+
+    test('generateRollingCompletionRateSpots month 对周习惯应返回每周目标完成率', () {
+      final habit = Habit(
+        id: 'weekly-month',
+        name: '周习惯',
+        colorValue: Colors.green.value,
+        cycleType: CycleType.weekly,
+        targetDays: 5,
+        dailyCompletionStatus: {
+          DateTime(2026, 4, 1): true,
+          DateTime(2026, 4, 2): true,
+          DateTime(2026, 4, 3): true,
+        },
+      );
+
+      final spots = adapter.generateRollingCompletionRateSpots(
+        habit,
+        'month',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 30),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(spots.first.y, closeTo(60.0, 0.01));
+    });
+
+    test('generateRollingCompletionRateSpots month 对月习惯应返回按周累计进度', () {
+      final habit = Habit(
+        id: 'monthly-month',
+        name: '月习惯',
+        colorValue: Colors.orange.value,
+        cycleType: CycleType.monthly,
+        targetDays: 10,
+        dailyCompletionStatus: {
+          DateTime(2026, 4, 1): true,
+          DateTime(2026, 4, 2): true,
+          DateTime(2026, 4, 3): true,
+          DateTime(2026, 4, 7): true,
+          DateTime(2026, 4, 8): true,
+        },
+      );
+
+      final spots = adapter.generateRollingCompletionRateSpots(
+        habit,
+        'month',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 30),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(spots[0].y, closeTo(30.0, 0.01));
+      expect(spots[1].y, closeTo(50.0, 0.01));
+    });
+
+    test('generateRollingCompletionRateSpots year 对年习惯应返回按月累计进度', () {
+      final habit = Habit(
+        id: 'annual-year',
+        name: '年习惯',
+        colorValue: Colors.purple.value,
+        cycleType: CycleType.annual,
+        targetDays: 12,
+        dailyCompletionStatus: {
+          DateTime(2026, 1, 1): true,
+          DateTime(2026, 1, 2): true,
+          DateTime(2026, 2, 1): true,
+        },
+      );
+
+      final spots = adapter.generateRollingCompletionRateSpots(
+        habit,
+        'year',
+        range: DateTimeRange(
+          start: DateTime(2026, 1, 1),
+          end: DateTime(2026, 12, 31),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(spots.length, 12);
+      expect(spots[0].y, closeTo(16.666, 0.01));
+      expect(spots[1].y, closeTo(25.0, 0.01));
+    });
+
+    test('getCompletionRateTooltipLabel 应返回百分比文案', () {
+      final label = adapter.getCompletionRateTooltipLabel(
+        0,
+        60,
+        'month',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 30),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(label.contains('完成率 60%'), true);
+    });
+
+    test('generateRollingCompletionRateSpots 无 targetDays 时应返回 0%', () {
+      final habit = Habit(
+        id: 'weekly-no-target',
+        name: '周习惯',
+        colorValue: Colors.red.value,
+        cycleType: CycleType.weekly,
+      );
+
+      final spots = adapter.generateRollingCompletionRateSpots(
+        habit,
+        'month',
+        range: DateTimeRange(
+          start: DateTime(2026, 4, 1),
+          end: DateTime(2026, 4, 30),
+        ),
+        weekStartDay: WeekStartDay.monday,
+      );
+
+      expect(spots.isNotEmpty, true);
+      for (final spot in spots) {
+        expect(spot.y, 0.0);
+      }
+    });
+
+    test('generateRollingTrendSpots week count 应返回 7 个点并读取 dailyCompletionStatus', () {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final habit = Habit(
+        id: 'test',
+        name: '测试习惯',
+        colorValue: Colors.blue.value,
+        icon: 'run',
+      );
+      // 今天完成一次
+      habit.dailyCompletionStatus[today] = true;
+      // 昨天也完成
+      habit.dailyCompletionStatus[today.subtract(const Duration(days: 1))] = true;
+
+      final spots = adapter.generateRollingTrendSpots(habit, 'count', 'week');
+      expect(spots.length, 7);
+      // 最后一个点（index=6）对应今天
+      expect(spots[6].y, 1.0);
+      // 倒数第二个点（index=5）对应昨天
+      expect(spots[5].y, 1.0);
+      // 其他日期默认 0
+      expect(spots[0].y, 0.0);
+    });
+
+    test('generateRollingTrendSpots month count 应返回 30 个点', () {
+      final habit = Habit(
+        id: 'test',
+        name: '测试习惯',
+        colorValue: Colors.blue.value,
+        icon: 'run',
+      );
+      final spots = adapter.generateRollingTrendSpots(habit, 'count', 'month');
+      expect(spots.length, 30);
+      for (final s in spots) {
+        expect(s.y, 0.0);
+      }
+    });
+
+    test('generateRollingTrendSpots year count 应返回 12 个点（按月聚合）', () {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final habit = Habit(
+        id: 'test',
+        name: '测试习惯',
+        colorValue: Colors.blue.value,
+        icon: 'run',
+      );
+      // 今天完成一次，应累加到最后一个月（index=11）的当月
+      habit.dailyCompletionStatus[today] = true;
+
+      final spots = adapter.generateRollingTrendSpots(habit, 'count', 'year');
+      expect(spots.length, 12);
+      expect(spots[11].y, 1.0);
+    });
+
+    test('generateRollingTrendSpots time 对不追踪时间的习惯返回全 0', () {
+      final habit = Habit(
+        id: 'test',
+        name: '测试习惯',
+        colorValue: Colors.blue.value,
+        icon: 'run',
+        trackTime: false,
+      );
+      final weekSpots = adapter.generateRollingTrendSpots(habit, 'time', 'week');
+      final monthSpots = adapter.generateRollingTrendSpots(habit, 'time', 'month');
+      final yearSpots = adapter.generateRollingTrendSpots(habit, 'time', 'year');
+      expect(weekSpots.length, 7);
+      expect(monthSpots.length, 30);
+      expect(yearSpots.length, 12);
+      for (final s in [...weekSpots, ...monthSpots, ...yearSpots]) {
+        expect(s.y, 0.0);
+      }
+    });
+
+    test('getRollingTooltipLabel 应包含关键信息', () {
+      final weekLabel = adapter.getRollingTooltipLabel('count', 6, 1.0, 'week');
+      expect(weekLabel.contains('完成'), true);
+      expect(weekLabel.contains('次'), true);
+
+      final monthLabel = adapter.getRollingTooltipLabel('time', 29, 15.0, 'month');
+      expect(monthLabel.contains('分钟'), true);
+
+      final yearLabel = adapter.getRollingTooltipLabel('count', 11, 2.0, 'year');
+      expect(yearLabel.contains('/'), true);
+      expect(yearLabel.contains('完成'), true);
+    });
   });
 }

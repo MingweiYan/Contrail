@@ -89,8 +89,17 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                     onPressed: provider.previousPeriod,
                   ),
                   IconButton(
-                    icon: Icon(Icons.chevron_right),
-                    onPressed: provider.nextPeriod,
+                    icon: Icon(
+                      Icons.chevron_right,
+                      // 禁用时显著变灰，增强视觉反馈
+                      color: provider.canGoNextPeriod
+                          ? null
+                          : ThemeHelper.onBackground(context).withOpacity(0.25),
+                    ),
+                    // 不允许推到比「最近 N」滚动窗口更靠未来：置灰不可点
+                    onPressed: provider.canGoNextPeriod
+                        ? provider.nextPeriod
+                        : null,
                   ),
                 ],
               ),
@@ -262,7 +271,8 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             height: HabitDetailStatisticsPageConstants.titleSectionSpacing,
           ),
           Container(
-            height: HabitDetailStatisticsPageConstants.calendarContainerHeight,
+            // 移除固定 height：由 CalendarViewWidget 内部按实际周数（5 或 6 周）自撑开，
+            // 否则 6 周的月份最后一行会被裁切。
             child: CalendarViewWidget(
               habits: habits,
               selectedYear: provider.calendarSelectedYear,
@@ -313,11 +323,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             ),
           ),
           Text(
-            provider.selectedPeriod == 'week'
-                ? '${provider.selectedYear}年第${provider.selectedWeek}周'
-                : provider.selectedPeriod == 'month'
-                ? '${provider.selectedYear}年${provider.selectedMonth}月'
-                : '${provider.selectedYear}年',
+            provider.getDisplayTimeLabel(),
             style: TextStyle(
               fontSize: ScreenUtil().setSp(20),
               fontWeight: FontWeight.bold,
@@ -325,10 +331,15 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () => provider.navigateToNextTimeUnit(),
+            onPressed: provider.canGoNextTimeUnit
+                ? () => provider.navigateToNextTimeUnit()
+                : null,
             icon: Icon(
               Icons.arrow_right,
-              color: ThemeHelper.onBackground(context),
+              // 禁用时显著变灰，增强视觉反馈
+              color: provider.canGoNextTimeUnit
+                  ? ThemeHelper.onBackground(context)
+                  : ThemeHelper.onBackground(context).withOpacity(0.25),
             ),
           ),
         ],
@@ -487,18 +498,10 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                     context,
                     listen: false,
                   ).selectedPeriod,
-                  selectedYear: Provider.of<HabitDetailStatisticsProvider>(
+                  rollingRange: Provider.of<HabitDetailStatisticsProvider>(
                     context,
                     listen: false,
-                  ).selectedYear,
-                  selectedMonth: Provider.of<HabitDetailStatisticsProvider>(
-                    context,
-                    listen: false,
-                  ).selectedMonth,
-                  selectedWeek: Provider.of<HabitDetailStatisticsProvider>(
-                    context,
-                    listen: false,
-                  ).selectedWeek,
+                  ).getRollingDateRange(),
                   isHabitVisible: const [true],
                   weekStartDay: Provider.of<PersonalizationProvider>(
                     context,

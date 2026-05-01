@@ -185,5 +185,117 @@ void main() {
 
       expect(find.byType(CalendarViewWidget), findsOneWidget);
     });
+
+    Future<void> pumpCalendar(
+      WidgetTester tester, {
+      required int year,
+      required int month,
+      required WeekStartDay weekStartDay,
+    }) async {
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(375, 812),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: SizedBox(
+                  width: 375,
+                  child: CalendarViewWidget(
+                    habits: const [],
+                    selectedYear: year,
+                    selectedMonth: month,
+                    habitColors: const {},
+                    weekStartDay: weekStartDay,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('2025-04 displays all days including 30', (tester) async {
+      await pumpCalendar(
+        tester,
+        year: 2025,
+        month: 4,
+        weekStartDay: WeekStartDay.sunday,
+      );
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('15'), findsOneWidget);
+      expect(find.text('30'), findsOneWidget);
+    });
+
+    testWidgets('leap year 2024-02 displays 29', (tester) async {
+      await pumpCalendar(
+        tester,
+        year: 2024,
+        month: 2,
+        weekStartDay: WeekStartDay.monday,
+      );
+      expect(find.text('29'), findsOneWidget);
+    });
+
+    testWidgets('non-leap year 2023-02 displays 28 but not 29', (tester) async {
+      await pumpCalendar(
+        tester,
+        year: 2023,
+        month: 2,
+        weekStartDay: WeekStartDay.monday,
+      );
+      expect(find.text('28'), findsOneWidget);
+      expect(find.text('29'), findsNothing);
+    });
+
+    testWidgets('2025-12 displays 31', (tester) async {
+      await pumpCalendar(
+        tester,
+        year: 2025,
+        month: 12,
+        weekStartDay: WeekStartDay.monday,
+      );
+      expect(find.text('31'), findsOneWidget);
+    });
+
+    testWidgets(
+      'every month in 2025 displays its last day (monday start)',
+      (tester) async {
+        for (int month = 1; month <= 12; month++) {
+          final lastDay = DateTime(2025, month + 1, 0).day;
+          await pumpCalendar(
+            tester,
+            year: 2025,
+            month: month,
+            weekStartDay: WeekStartDay.monday,
+          );
+          expect(
+            find.text('$lastDay'),
+            findsOneWidget,
+            reason: '2025-$month 应该显示最后一天 $lastDay',
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'every month in 2025 displays its last day (sunday start)',
+      (tester) async {
+        for (int month = 1; month <= 12; month++) {
+          final lastDay = DateTime(2025, month + 1, 0).day;
+          await pumpCalendar(
+            tester,
+            year: 2025,
+            month: month,
+            weekStartDay: WeekStartDay.sunday,
+          );
+          expect(
+            find.text('$lastDay'),
+            findsOneWidget,
+            reason: '2025-$month 应该显示最后一天 $lastDay',
+          );
+        }
+      },
+    );
   });
 }

@@ -1,7 +1,5 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/logger.dart';
@@ -11,6 +9,7 @@ import 'package:contrail/features/habit/data/repositories/habit_repository.dart'
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
+import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
 
 class WebDavBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
@@ -19,12 +18,10 @@ class WebDavBackupService implements BackupChannelService {
     : _storageService = storageService;
 
   static const String _autoBackupEnabledKey = 'autoBackupEnabled';
-  static const String _backupFrequencyKey = 'backupFrequency';
+  // 与 AutoBackupService 共用同一个新 key（int 天数）
+  static const String _backupFrequencyKey = 'autoBackupFrequencyDays';
   static const String _lastBackupTimeKey = 'webdav_lastBackupTime';
   static const String _backupRetentionPrefix = 'webdav_backupRetention_';
-
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
@@ -38,10 +35,17 @@ class WebDavBackupService implements BackupChannelService {
   Future<Map<String, dynamic>> loadAutoBackupSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(_autoBackupEnabledKey) ?? false;
-    final dynamic rawFreq = prefs.get(_backupFrequencyKey);
-    final int freq = rawFreq is int
-        ? rawFreq
-        : (int.tryParse(rawFreq?.toString() ?? '') ?? 1);
+    // 新 key 是 int；若不存在则回退读旧 key（可能是 String）
+    int freq;
+    final dynamic rawNew = prefs.get(_backupFrequencyKey);
+    if (rawNew is int) {
+      freq = rawNew;
+    } else {
+      final dynamic rawOld = prefs.get('backupFrequency');
+      freq = rawOld is int
+          ? rawOld
+          : (int.tryParse(rawOld?.toString() ?? '') ?? 1);
+    }
     final lastMillis = prefs.getInt(_lastBackupTimeKey);
     final last = lastMillis != null
         ? DateTime.fromMillisecondsSinceEpoch(lastMillis)
@@ -131,10 +135,8 @@ class WebDavBackupService implements BackupChannelService {
       bool settingsOk = true;
       if (backupData.containsKey('settings')) {
         final settings = backupData['settings'] as Map<String, dynamic>;
-        final skip = {
-          'autoBackupEnabled',
-          'backupFrequency',
-          'lastBackupTime',
+        final skip = <String>{
+          ...AutoBackupService.restoreSkipKeys,
           'webdav_url',
           'webdav_username',
           'webdav_password',

@@ -44,8 +44,25 @@ class StatisticsTrendView extends StatelessWidget {
     );
   }
 
-  // 构建时间选择器
+  // 构建时间范围说明（自然周期标题 + 起止日期 + 左右翻页）
   Widget _buildTimeSelector(BuildContext context) {
+    final period = statisticsProvider.trendSelectedPeriod;
+    final isRolling = statisticsProvider.isRollingWindow;
+    final int days = period == 'week'
+        ? 7
+        : period == 'month'
+            ? 30
+            : 365;
+    final range = statisticsProvider.getRollingDateRange();
+    final start = range.start;
+    final end = range.end;
+    final String rangeText = period == 'year'
+        ? '${start.year}/${start.month}/${start.day} – ${end.year}/${end.month}/${end.day}'
+        : '${start.month}/${start.day} – ${end.month}/${end.day}';
+
+    // 标题：自然周期显示具体时间，滚动窗口显示"最近 N"
+    final String titleText = statisticsProvider.getDisplayTimeLabel();
+
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: ScreenUtil().setWidth(16),
@@ -64,33 +81,49 @@ class StatisticsTrendView extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: () => statisticsProvider.navigateToPreviousTimeUnit(),
-            icon: Icon(
-              Icons.arrow_left,
-              color: ThemeHelper.onBackground(context),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.chevron_left,
+                  color: ThemeHelper.onBackground(context),
+                ),
+                onPressed: () =>
+                    statisticsProvider.navigateToPreviousTimeUnit(),
+              ),
+              Text(
+                titleText,
+                style: TextStyle(
+                  fontSize: ScreenUtil().setSp(20),
+                  fontWeight: FontWeight.bold,
+                  color: ThemeHelper.onBackground(context),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.chevron_right,
+                  // 按钮禁用时显著变灰，增强视觉反馈
+                  color: statisticsProvider.canGoNextTimeUnit
+                      ? ThemeHelper.onBackground(context)
+                      : ThemeHelper.onBackground(context).withOpacity(0.25),
+                ),
+                onPressed: statisticsProvider.canGoNextTimeUnit
+                    ? () => statisticsProvider.navigateToNextTimeUnit()
+                    : null,
+              ),
+            ],
           ),
+          SizedBox(height: ScreenUtil().setHeight(6)),
           Text(
-            statisticsProvider.trendSelectedPeriod == 'week'
-                ? '${statisticsProvider.trendSelectedYear}年第${statisticsProvider.trendSelectedWeek}周'
-                : statisticsProvider.trendSelectedPeriod == 'month'
-                ? '${statisticsProvider.trendSelectedYear}年${statisticsProvider.trendSelectedMonth}月'
-                : '${statisticsProvider.trendSelectedYear}年',
+            // 滚动窗口模式下不重复标题，只显示起止日期；自然周期显示「近 N 天数据 · 起止」
+            isRolling ? rangeText : '近 $days 天数据 · $rangeText',
             style: TextStyle(
-              fontSize: ScreenUtil().setSp(20),
-              fontWeight: FontWeight.bold,
-              color: ThemeHelper.onBackground(context),
-            ),
-          ),
-          IconButton(
-            onPressed: () => statisticsProvider.navigateToNextTimeUnit(),
-            icon: Icon(
-              Icons.arrow_right,
-              color: ThemeHelper.onBackground(context),
+              fontSize: ScreenUtil().setSp(14),
+              color: ThemeHelper.onBackground(context).withOpacity(0.7),
             ),
           ),
         ],
@@ -312,9 +345,7 @@ class StatisticsTrendView extends StatelessWidget {
     return StatisticsChartWidget(
       habits: visibleHabits,
       selectedPeriod: statisticsProvider.trendSelectedPeriod,
-      selectedYear: statisticsProvider.trendSelectedYear,
-      selectedMonth: statisticsProvider.trendSelectedMonth,
-      selectedWeek: statisticsProvider.trendSelectedWeek,
+      rollingRange: statisticsProvider.getRollingDateRange(),
       isHabitVisible: isHabitVisible,
       weekStartDay: Provider.of<PersonalizationProvider>(
         context,

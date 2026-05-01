@@ -10,9 +10,7 @@ import 'package:contrail/shared/utils/time_management_util.dart';
 class StatisticsChartWidget extends StatefulWidget {
   final List<Habit> habits;
   final String selectedPeriod;
-  final int selectedYear;
-  final int selectedMonth;
-  final int selectedWeek;
+  final DateTimeRange rollingRange;
   final List<bool> isHabitVisible;
   final WeekStartDay weekStartDay;
 
@@ -20,9 +18,7 @@ class StatisticsChartWidget extends StatefulWidget {
     super.key,
     required this.habits,
     required this.selectedPeriod,
-    required this.selectedYear,
-    required this.selectedMonth,
-    required this.selectedWeek,
+    required this.rollingRange,
     required this.isHabitVisible,
     required this.weekStartDay,
   });
@@ -52,11 +48,13 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         .toList();
 
     final chartAdapter = StatisticsChartAdapter();
-    final titles = chartAdapter.generateTitlesData(
+    final titles = chartAdapter.generateRollingTitles(
       widget.selectedPeriod,
-      selectedYear: widget.selectedYear,
-      selectedMonth: widget.selectedMonth,
-      selectedWeek: widget.selectedWeek,
+      endDate: widget.rollingRange.end,
+    );
+    final completionTitles = chartAdapter.generateCompletionRateTitles(
+      widget.selectedPeriod,
+      range: widget.rollingRange,
       weekStartDay: widget.weekStartDay,
     );
 
@@ -66,14 +64,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     ) {
       final index = entry.key;
       final habit = entry.value;
-      final data = chartAdapter.generateTrendSpots(
+      final data = chartAdapter.generateRollingTrendSpots(
         habit,
         'count',
         widget.selectedPeriod,
-        widget.selectedYear,
-        widget.selectedMonth,
-        widget.selectedWeek,
-        widget.weekStartDay,
+        endDate: widget.rollingRange.end,
       );
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
@@ -83,14 +78,25 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     ) {
       final index = entry.key;
       final habit = entry.value;
-      final data = chartAdapter.generateTrendSpots(
+      final data = chartAdapter.generateRollingTrendSpots(
         habit,
         'time',
         widget.selectedPeriod,
-        widget.selectedYear,
-        widget.selectedMonth,
-        widget.selectedWeek,
-        widget.weekStartDay,
+        endDate: widget.rollingRange.end,
+      );
+      return _createLineChartBarData(data, habit.color, index);
+    }).toList();
+
+    final List<LineChartBarData> completionData = widget.habits.asMap().entries.map((
+      entry,
+    ) {
+      final index = entry.key;
+      final habit = entry.value;
+      final data = chartAdapter.generateRollingCompletionRateSpots(
+        habit,
+        widget.selectedPeriod,
+        range: widget.rollingRange,
+        weekStartDay: widget.weekStartDay,
       );
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
@@ -100,9 +106,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     // 过滤显示的数据
     final List<LineChartBarData> filteredCountData = [];
     final List<LineChartBarData> filteredTimeData = [];
+    final List<LineChartBarData> filteredCompletionData = [];
     for (int i = 0; i < widget.habits.length; i++) {
       if (widget.isHabitVisible[i]) {
         filteredCountData.add(countData[i]);
+        filteredCompletionData.add(completionData[i]);
         if (widget.habits[i].trackTime) {
           filteredTimeData.add(timeData[i]);
         }
@@ -278,6 +286,84 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                     ),
                   ),
                 ),
+
+              Container(
+                margin: StatisticsChartWidgetConstants.containerMargin,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    StatisticsChartWidgetConstants.containerBorderRadius,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: StatisticsChartWidgetConstants.containerPadding,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: chartHeight,
+                      width: double.infinity,
+                      child: Semantics(
+                        label: '习惯完成率趋势折线图，点击数据点查看提示',
+                        child: LineChart(
+                          _createLineChartData(
+                            filteredCompletionData.isEmpty
+                                ? completionData
+                                : filteredCompletionData,
+                            completionTitles,
+                            'completionRate',
+                            habitNames,
+                            habitColors,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: ScreenUtil().setSp(14),
+                            color: ThemeHelper.onBackground(
+                              context,
+                            ).withOpacity(0.7),
+                          ),
+                          SizedBox(width: ScreenUtil().setWidth(6)),
+                          Text(
+                            '提示：点击数据点查看完成率',
+                            style: TextStyle(
+                              fontSize: ScreenUtil().setSp(12),
+                              color: ThemeHelper.onBackground(
+                                context,
+                              ).withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: StatisticsChartWidgetConstants.titlePadding,
+                child: Text(
+                  '习惯完成率趋势',
+                  style: TextStyle(
+                    fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.onBackground(context),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -349,10 +435,20 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
 
     // 根据图表类型和最大值设置不同的边距策略
 
-    maxY = maxY == 0 ? 10 : maxY * 1.1;
+    if (chartType == 'completionRate') {
+      maxY = 100;
+    } else {
+      maxY = maxY == 0 ? 10 : maxY * 1.1;
 
-    // 向上取整到整数，以获得更规整的坐标上限
-    maxY = maxY.ceil().toDouble();
+      // 向上取整到整数，以获得更规整的坐标上限
+      maxY = maxY.ceil().toDouble();
+    }
+
+    final leftInterval = chartType == 'count'
+        ? 1.0
+        : chartType == 'completionRate'
+            ? 25.0
+            : maxY / 5;
 
     return LineChartData(
       // 启用交互功能
@@ -384,16 +480,21 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             final chartAdapter = StatisticsChartAdapter();
             return touchedSpots.map((touchedSpot) {
               final habitName = habitNames[touchedSpot.barIndex];
-              final text = chartAdapter.getTooltipLabel(
-                chartType,
-                touchedSpot.x.toInt(),
-                touchedSpot.y,
-                widget.selectedPeriod,
-                selectedYear: widget.selectedYear,
-                selectedMonth: widget.selectedMonth,
-                selectedWeek: widget.selectedWeek,
-                weekStartDay: widget.weekStartDay,
-              );
+              final text = chartType == 'completionRate'
+                  ? chartAdapter.getCompletionRateTooltipLabel(
+                      touchedSpot.x.toInt(),
+                      touchedSpot.y,
+                      widget.selectedPeriod,
+                      range: widget.rollingRange,
+                      weekStartDay: widget.weekStartDay,
+                    )
+                  : chartAdapter.getRollingTooltipLabel(
+                      chartType,
+                      touchedSpot.x.toInt(),
+                      touchedSpot.y,
+                      widget.selectedPeriod,
+                      endDate: widget.rollingRange.end,
+                    );
               return LineTooltipItem(
                 '$habitName: $text\n',
                 TextStyle(color: habitColors[touchedSpot.barIndex]),
@@ -450,15 +551,17 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: ScreenUtil().setWidth(48),
-            interval: chartType == 'count' ? 1 : maxY / 5,
+            interval: leftInterval,
             getTitlesWidget: (value, meta) {
               if (value == meta.min ||
                   value == meta.max ||
-                  value % (chartType == 'count' ? 1 : maxY / 5) < 0.01) {
+                  value % leftInterval < 0.01) {
                 return Text(
                   chartType == 'count'
                       ? value.toInt().toString()
-                      : value.toStringAsFixed(0),
+                      : chartType == 'completionRate'
+                          ? '${value.toInt()}%'
+                          : value.toStringAsFixed(0),
                   style: TextStyle(
                     fontSize: MediaQuery.of(context).textScaleFactor * 12,
                     color: ThemeHelper.onSurfaceVariant(context),
@@ -475,7 +578,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         show: true,
         drawHorizontalLine: true,
         drawVerticalLine: false,
-        horizontalInterval: chartType == 'count' ? 1 : maxY / 5,
+        horizontalInterval: leftInterval,
         getDrawingHorizontalLine: (value) => FlLine(
           color: ThemeHelper.outline(context).withValues(alpha: 0.06),
           strokeWidth: ScreenUtil().setWidth(1),

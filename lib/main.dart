@@ -18,6 +18,7 @@ import 'features/profile/presentation/providers/backup_provider.dart';
 import 'features/profile/presentation/providers/personalization_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/profile/domain/services/auto_backup_service.dart';
+import 'features/profile/domain/services/auto_backup_scheduler.dart';
 import 'features/profile/domain/services/user_settings_service.dart';
 import 'shared/utils/debug_menu_manager.dart';
 
@@ -51,7 +52,7 @@ void main() async {
 
         final directory = await getApplicationDocumentsDirectory();
         final logsPath = '${directory.path}/logs';
-        logger.enableFileLogging(logsPath, maxBytes: 16 * 1024 * 1024);
+        logger.enableFileLogging(logsPath, maxBytes: 4 * 1024 * 1024);
         logger.debug('初始化依赖注入...');
         await init();
         logger.debug('依赖注入初始化成功');
@@ -68,6 +69,22 @@ void main() async {
         final autoService = AutoBackupService();
         await autoService.initialize();
         await autoService.checkAndPerformAutoBackup();
+
+        // 后台调度：根据当前开关注册/取消 workmanager 周期任务
+        try {
+          final scheduler = AutoBackupScheduler();
+          await scheduler.initialize();
+          final settings = await autoService.loadAutoBackupSettings();
+          final enabled = settings['autoBackupEnabled'] as bool;
+          final freq = settings['backupFrequency'] as int;
+          if (enabled) {
+            await scheduler.schedule(freq);
+          } else {
+            await scheduler.cancel();
+          }
+        } catch (e) {
+          logger.warning('后台自动备份调度初始化失败: $e');
+        }
 
         logger.info('启动应用...');
         runApp(const ContrailApp());
@@ -88,7 +105,35 @@ class ContrailApp extends StatefulWidget {
   State<ContrailApp> createState() => _ContrailAppState();
 }
 
-class _ContrailAppState extends State<ContrailApp> {
+class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // 前台恢复时兜底触发一次自动备份检查；不 await，不阻塞 UI。
+      // checkAndPerformAutoBackup 内部有窗口判断，不会重复备份。
+      AutoBackupService()
+          .initialize()
+          .then((_) => AutoBackupService().checkAndPerformAutoBackup())
+          .catchError((e) {
+            logger.warning('resume 触发自动备份检查失败: $e');
+            return false;
+          });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
