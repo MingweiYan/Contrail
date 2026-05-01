@@ -44,6 +44,8 @@ class _PersonalizationSettingsPageState
                       padding: const EdgeInsets.all(20),
                       child: Row(
                         children: [
+                          _buildHeaderButton(context),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +70,6 @@ class _PersonalizationSettingsPageState
                               ],
                             ),
                           ),
-                          _buildHeaderButton(context),
                         ],
                       ),
                     ),

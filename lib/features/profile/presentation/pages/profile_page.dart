@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/shared/models/habit.dart';
@@ -7,6 +6,7 @@ import 'package:contrail/features/habit/presentation/providers/habit_provider.da
 import 'package:contrail/features/profile/presentation/pages/theme_selection_page.dart';
 import 'package:contrail/features/profile/presentation/pages/data_backup_page.dart';
 import 'package:contrail/features/profile/presentation/pages/personalization_settings_page.dart';
+import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
@@ -20,6 +20,14 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BackupProvider>().initialize();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -84,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       SizedBox(height: 8.h),
                       Text(
-                        '把主题、资料和备份统一收进控制中心',
+                        '把握当前的状态才能更好的前进',
                         style: ThemeHelper.textStyleWithTheme(
                           context,
                           fontSize: 15.sp,
@@ -169,40 +177,306 @@ class _ProfilePageState extends State<ProfilePage> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _buildUserInfoCard(viewModel),
-          _buildSettingsCard(viewModel),
+          _buildWeeklyOverviewCard(topMargin: 16.h),
+          _buildSystemStatusCard(viewModel),
           _buildClearDataCard(),
         ],
       ),
     );
   }
 
-  Widget _buildUserInfoCard(ProfileViewModel viewModel) {
+  Widget _buildSystemStatusCard(ProfileViewModel viewModel) {
+    final themeName = ThemeHelper.currentTheme(context).name;
+    final backupProvider = context.watch<BackupProvider>();
+    final lastBackupText = backupProvider.lastBackupTime != null
+        ? _formatDateTime(backupProvider.lastBackupTime!)
+        : '暂未检测到备份记录';
+    final backupBadge = backupProvider.lastBackupTime != null ? '最近备份' : '未备份';
+
     return Container(
-      margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 12.h),
-      decoration: ThemeHelper.panelDecoration(context, radius: 24.w),
-      padding: EdgeInsets.all(24.w),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
+      decoration: ThemeHelper.panelDecoration(
+        context,
+        secondary: true,
+        radius: 24.w,
+      ),
+      padding: EdgeInsets.all(18.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildAvatar(viewModel),
-          SizedBox(width: 18.w),
+          Text(
+            '系统状态',
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+              color: ThemeHelper.onBackground(context),
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '知彼知己百战不殆',
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
+            ),
+          ),
+          SizedBox(height: 16.h),
+          _buildStatusRow(
+            icon: Icons.palette_outlined,
+            title: '主题风格',
+            subtitle: '当前主题：$themeName',
+            badge: '已启用',
+            onTap: _openThemeSelection,
+          ),
+          SizedBox(height: 10.h),
+          _buildStatusRow(
+            icon: Icons.cloud_done_outlined,
+            title: '数据备份',
+            subtitle: '最近一次备份：$lastBackupText',
+            badge: backupBadge,
+            onTap: _openBackupSettings,
+          ),
+          SizedBox(height: 10.h),
+          _buildStatusRow(
+            icon: Icons.info_outline_rounded,
+            title: '应用信息',
+            subtitle: 'Contrail--- A Habit Recorder',
+            badge: '关于',
+            onTap: _showAboutDialog,
+          ),
+          if (viewModel.showDebugTab) ...[
+            SizedBox(height: 10.h),
+            _buildStatusRow(
+              icon: Icons.developer_mode_rounded,
+              title: 'Debug 工具',
+              subtitle: '调试页已就绪，点击查看内部工具',
+              badge: '开发',
+              onTap: () {
+                final debugTab = viewModel.buildDebugTab(context);
+                if (debugTab != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => debugTab),
+                  );
+                }
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String badge,
+    VoidCallback? onTap,
+  }) {
+    final content = Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+      decoration: BoxDecoration(
+        color: ThemeHelper.visualTheme(context).panelColor,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: ThemeHelper.visualTheme(context).panelBorderColor,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40.w,
+            height: 40.w,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            child: Icon(icon, color: ThemeHelper.primary(context), size: 20.sp),
+          ),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '个人名片',
+                  title,
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w700,
-                    color: ThemeHelper.primary(context),
+                    color: ThemeHelper.onBackground(context),
                   ),
                 ),
-                SizedBox(height: 6.h),
-                _buildAvatarHint(),
-                SizedBox(height: 16.h),
-                _buildUsernameField(viewModel),
+                SizedBox(height: 4.h),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    height: 1.35,
+                    color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(999.r),
+            ),
+            child: Text(
+              badge,
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                color: ThemeHelper.primary(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18.r),
+        child: content,
+      ),
+    );
+  }
+
+  Widget _buildWeeklyOverviewCard({double? topMargin}) {
+    final habits = context.watch<HabitProvider>().habits;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 7));
+
+    int weeklyCompletions = 0;
+    int weeklyMinutes = 0;
+
+    for (final habit in habits) {
+      weeklyCompletions += habit.dailyCompletionStatus.entries
+          .where(
+            (entry) =>
+                entry.value &&
+                !entry.key.isBefore(weekStart) &&
+                entry.key.isBefore(weekEnd),
+          )
+          .length;
+
+      for (final entry in habit.trackingDurations.entries) {
+        if (!entry.key.isBefore(weekStart) && entry.key.isBefore(weekEnd)) {
+          weeklyMinutes += entry.value.fold(
+            0,
+            (sum, duration) => sum + duration.inMinutes,
+          );
+        }
+      }
+    }
+
+    final completedToday = habits.where((habit) {
+      return habit.dailyCompletionStatus.entries.any(
+        (entry) =>
+            entry.value &&
+            entry.key.year == today.year &&
+            entry.key.month == today.month &&
+            entry.key.day == today.day,
+      );
+    }).length;
+
+    final minutesText = weeklyMinutes >= 60
+        ? '${weeklyMinutes ~/ 60}h ${weeklyMinutes % 60}m'
+        : '$weeklyMinutes min';
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(16.w, topMargin ?? 0, 16.w, 12.h),
+      decoration: ThemeHelper.panelDecoration(
+        context,
+        secondary: true,
+        radius: 24.w,
+      ),
+      padding: EdgeInsets.all(18.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '本周总览',
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+              color: ThemeHelper.onBackground(context),
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '快速查看这周的活跃情况与专注表现',
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
+            ),
+          ),
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              Expanded(
+                child: _buildWeeklyMetric(
+                  label: '活跃习惯',
+                  value: '${habits.length}',
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _buildWeeklyMetric(
+                  label: '完成记录',
+                  value: '$weeklyCompletions',
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _buildWeeklyMetric(
+                  label: '专注时长',
+                  value: minutesText,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: ThemeHelper.visualTheme(context).panelColor,
+              borderRadius: BorderRadius.circular(18.r),
+              border: Border.all(
+                color: ThemeHelper.visualTheme(context).panelBorderColor,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: ThemeHelper.primary(context),
+                  size: 18.sp,
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    '今天已完成 $completedToday / ${habits.length} 个习惯',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeHelper.onBackground(context),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -211,331 +485,41 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAvatar(ProfileViewModel viewModel) {
+  Widget _buildWeeklyMetric({
+    required String label,
+    required String value,
+  }) {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            spreadRadius: 3,
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: ThemeHelper.primary(context).withValues(alpha: 0.25),
-            spreadRadius: 6,
-            blurRadius: 12,
-            offset: const Offset(0, 0),
-          ),
-        ],
-      ),
-      child: Semantics(
-        label: '更换头像',
-        button: true,
-        child: Tooltip(
-          message: '点击头像更换头像',
-          child: GestureDetector(
-            onTap: () => viewModel.pickImage(),
-            child: CircleAvatar(
-              radius: 60.w,
-              backgroundImage:
-                  viewModel.avatarPath != null &&
-                      viewModel.avatarPath!.isNotEmpty
-                  ? FileImage(File(viewModel.avatarPath!))
-                  : null,
-              backgroundColor: ThemeHelper.primary(
-                context,
-              ).withValues(alpha: 0.1),
-              child:
-                  (viewModel.avatarPath == null ||
-                      viewModel.avatarPath!.isEmpty)
-                  ? ThemeHelper.styledIcon(
-                      context,
-                      Icons.person,
-                      size: 48.w,
-                      color: ThemeHelper.primary(context),
-                    )
-                  : null,
-            ),
-          ),
+        color: ThemeHelper.visualTheme(context).panelColor,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: ThemeHelper.visualTheme(context).panelBorderColor,
         ),
-      ),
-    );
-  }
-
-  Widget _buildAvatarHint() {
-    return Text(
-      '点击头像即可更换展示形象',
-      style: TextStyle(
-        fontSize: 13.sp,
-        color: ThemeHelper.onBackground(context).withValues(alpha: 0.64),
-      ),
-    );
-  }
-
-  Widget _buildUsernameField(ProfileViewModel viewModel) {
-    return Container(
-      decoration: BoxDecoration(
-        color: ThemeHelper.visualTheme(context).inputFillColor,
-        borderRadius: BorderRadius.circular(16.w),
-        border: Border.all(color: ThemeHelper.visualTheme(context).panelBorderColor),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
-      child: TextFormField(
-        initialValue: viewModel.username,
-        textAlign: TextAlign.left,
-        decoration: const InputDecoration(border: InputBorder.none),
-        style: TextStyle(
-          color: ThemeHelper.onBackground(context),
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w700,
-        ),
-        onChanged: (value) {
-          viewModel.updateUsername(value);
-        },
-        onEditingComplete: () {
-          FocusScope.of(context).unfocus();
-        },
-      ),
-    );
-  }
-
-  Widget _buildSettingsCard(ProfileViewModel viewModel) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16.w),
-      decoration: ThemeHelper.panelDecoration(
-        context,
-        secondary: true,
-        radius: 24.w,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildThemeSetting(),
-          _buildDivider(),
-          _buildPersonalizationSetting(),
-          _buildDivider(),
-          _buildBackupSetting(),
-          _buildDivider(),
-          _buildAboutSetting(),
-          if (viewModel.showDebugTab) ...[
-            _buildDivider(),
-            _buildDebugSetting(viewModel),
-          ] else ...[
-            _buildBottomRoundedContainer(),
-          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.6),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w800,
+              color: ThemeHelper.onBackground(context),
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildThemeSetting() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.w),
-          topRight: Radius.circular(20.w),
-        ),
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 40.w,
-          height: 40.w,
-          decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.color_lens, color: ThemeHelper.primary(context)),
-        ),
-        title: Text(
-          '主题设置',
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w500,
-            color: ThemeHelper.onBackground(context),
-          ),
-        ),
-        subtitle: Text(
-          '选择应用的外观风格',
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
-          ),
-        ),
-        trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ThemeSelectionPage()),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPersonalizationSetting() {
-    return ListTile(
-      leading: Container(
-        width: 40.w,
-        height: 40.w,
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.tune, color: ThemeHelper.primary(context)),
-      ),
-      title: Text(
-        '个性化设置',
-        style: TextStyle(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w500,
-          color: ThemeHelper.onBackground(context),
-        ),
-      ),
-      subtitle: Text(
-        '自定义应用的行为和显示方式',
-        style: TextStyle(
-          fontSize: 14.sp,
-          color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
-        ),
-      ),
-      trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const PersonalizationSettingsPage(),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBackupSetting() {
-    return ListTile(
-      leading: Container(
-        width: 40.w,
-        height: 40.w,
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.cloud_upload, color: ThemeHelper.primary(context)),
-      ),
-      title: Text(
-        '数据备份',
-        style: TextStyle(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w500,
-          color: ThemeHelper.onBackground(context),
-        ),
-      ),
-      subtitle: Text(
-        '备份和恢复应用数据',
-        style: TextStyle(
-          fontSize: 14.sp,
-          color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
-        ),
-      ),
-      trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const DataBackupPage()),
-        );
-      },
-    );
-  }
-
-  Widget _buildAboutSetting() {
-    return ListTile(
-      leading: Container(
-        width: 40.w,
-        height: 40.w,
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.info_outline, color: ThemeHelper.primary(context)),
-      ),
-      title: Text(
-        '关于',
-        style: TextStyle(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w500,
-          color: ThemeHelper.onBackground(context),
-        ),
-      ),
-      onTap: () {
-        showAboutDialog(
-          context: context,
-          applicationIcon: Icon(
-            Icons.info_outline,
-            color: ThemeHelper.primary(context),
-            size: 28.sp,
-          ),
-          applicationName: 'Contrail',
-          applicationVersion: '1.0.0',
-          applicationLegalese: '© 吃葡萄不吃葡萄皮. 保留所有权利.',
-        );
-      },
-    );
-  }
-
-  Widget _buildDebugSetting(ProfileViewModel viewModel) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20.w),
-          bottomRight: Radius.circular(20.w),
-        ),
-      ),
-      child: ListTile(
-        title: Text(
-          'Debug工具',
-          style: TextStyle(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.blue,
-          ),
-        ),
-        trailing: ThemeHelper.styledIcon(context, Icons.arrow_forward_ios),
-        onTap: () {
-          final debugTab = viewModel.buildDebugTab(context);
-          if (debugTab != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => debugTab),
-            );
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildBottomRoundedContainer() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20.w),
-          bottomRight: Radius.circular(20.w),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      height: 1.h,
-      color: ThemeHelper.onBackground(context).withValues(alpha: 0.1),
     );
   }
 
@@ -677,6 +661,28 @@ class _ProfilePageState extends State<ProfilePage> {
       context,
       MaterialPageRoute(builder: (context) => const DataBackupPage()),
     );
+  }
+
+  void _showAboutDialog() {
+    showAboutDialog(
+      context: context,
+      applicationIcon: Icon(
+        Icons.info_outline,
+        color: ThemeHelper.primary(context),
+        size: 28.sp,
+      ),
+      applicationName: 'Contrail',
+      applicationVersion: '1.0.0',
+      applicationLegalese: '© 吃葡萄不吃葡萄皮. 保留所有权利.',
+    );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$month-$day $hour:$minute';
   }
 
   Widget _buildHeaderShortcut({
