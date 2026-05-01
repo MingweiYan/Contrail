@@ -67,7 +67,7 @@ class _MainTabPageState extends State<MainTabPage> {
         child: Padding(
           padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
           child: Container(
-            padding: EdgeInsets.all(8.w),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
             decoration: ThemeHelper.navigationDecoration(context),
             child: Row(
               children: List.generate(items.length, (index) {
@@ -79,31 +79,31 @@ class _MainTabPageState extends State<MainTabPage> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
                       padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 12.h,
+                        horizontal: 8.w,
+                        vertical: 10.h,
                       ),
                       decoration: isSelected
                           ? ThemeHelper.selectedNavigationItemDecoration(context)
                           : BoxDecoration(
                               borderRadius: BorderRadius.circular(18.r),
                             ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             item.icon,
-                            size: ScreenUtil().setSp(22),
+                            size: ScreenUtil().setSp(19),
                             color: isSelected
                                 ? visualTheme.navSelectedForeground
                                 : visualTheme.navUnselectedForeground,
                           ),
-                          SizedBox(height: 6.h),
+                          SizedBox(width: 6.w),
                           Text(
                             item.label,
                             style: TextStyle(
-                              fontSize: ScreenUtil().setSp(14),
+                              fontSize: ScreenUtil().setSp(13),
                               fontWeight: isSelected
-                                  ? FontWeight.w700
+                                  ? FontWeight.w800
                                   : FontWeight.w600,
                               color: isSelected
                                   ? visualTheme.navSelectedForeground

@@ -45,42 +45,147 @@ class _FullEditorPageState extends State<FullEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('完整文本编辑'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveAndExit,
-            tooltip: '保存并返回',
-          ),
-        ],
-      ),
       body: Container(
         decoration: ThemeHelper.generateBackgroundDecoration(context),
         child: SafeArea(
           child: Column(
-          children: [
-            // 根据Flutter Quill官方文档，显式添加工具栏
-            QuillSimpleToolbar(
-              controller: _controller,
-              config: const QuillSimpleToolbarConfig(),
-            ),
-
-            // 编辑器主体
-            Expanded(
-              child: Padding(
+            children: [
+              Padding(
                 padding: FullEditorPageConstants.editorContainerPadding,
-                child: QuillEditor.basic(
-                  controller: _controller,
-                  config: QuillEditorConfig(
-                    padding: FullEditorPageConstants.editorPadding,
-                    placeholder: widget.placeholder,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 24),
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '完整文本编辑',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: heroForeground,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.placeholder,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: ThemeHelper.visualTheme(
+                                  context,
+                                ).heroSecondaryForeground,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildHeaderAction(
+                            context,
+                            icon: Icons.arrow_back_rounded,
+                            label: '返回',
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          const SizedBox(width: 10),
+                          _buildHeaderAction(
+                            context,
+                            icon: Icons.save_rounded,
+                            label: '保存',
+                            onTap: _saveAndExit,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Container(
+                  decoration: ThemeHelper.panelDecoration(
+                    context,
+                    secondary: true,
+                    radius: 22,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: QuillSimpleToolbar(
+                    controller: _controller,
+                    config: const QuillSimpleToolbarConfig(),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    decoration: ThemeHelper.panelDecoration(
+                      context,
+                      radius: 24,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: QuillEditor.basic(
+                        controller: _controller,
+                        config: QuillEditorConfig(
+                          padding: FullEditorPageConstants.editorPadding,
+                          placeholder: widget.placeholder,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: heroForeground),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
           ),
         ),
       ),
