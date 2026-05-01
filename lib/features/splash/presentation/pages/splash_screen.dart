@@ -25,47 +25,133 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     final splashColors = ThemeHelper.splashColors(context);
     final visualTheme = ThemeHelper.visualTheme(context);
+    final illustrationSize = ScreenUtil().screenWidth * 0.62;
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: ThemeHelper.generateBackgroundDecoration(context)?.gradient,
           color: splashColors.first,
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 显示SVG图像
-              SizedBox(
-                width: ScreenUtil().setWidth(800),
-                height: ScreenUtil().setHeight(800),
-                child: SvgPicture.asset(
-                  'assets/images/cover.svg',
-                  fit: BoxFit.contain,
+        child: Stack(
+          children: [
+            Positioned(
+              top: -ScreenUtil().setHeight(80),
+              right: -ScreenUtil().setWidth(50),
+              child: Container(
+                width: ScreenUtil().setWidth(220),
+                height: ScreenUtil().setWidth(220),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: ThemeHelper.primary(context).withValues(alpha: 0.12),
                 ),
               ),
-              SizedBox(height: ScreenUtil().setHeight(40)),
-              // 应用名称或其他文字
-              Text(
-                'Contrail',
-                style: TextStyle(
-                  fontSize: ScreenUtil().setSp(36),
-                  fontWeight: FontWeight.bold,
-                  color: splashColors.last,
+            ),
+            Positioned(
+              bottom: -ScreenUtil().setHeight(40),
+              left: -ScreenUtil().setWidth(30),
+              child: Container(
+                width: ScreenUtil().setWidth(180),
+                height: ScreenUtil().setWidth(180),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: visualTheme.heroSecondaryForeground.withValues(
+                    alpha: 0.10,
+                  ),
                 ),
               ),
-              SizedBox(height: ScreenUtil().setHeight(16)),
-              Text(
-                'Every step leaves a trace',
-                style: TextStyle(
-                  fontSize: ScreenUtil().setSp(18),
-                  color: visualTheme.heroSecondaryForeground,
-                  letterSpacing: 0.4,
+            ),
+            Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(24)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(14),
+                        vertical: ScreenUtil().setHeight(8),
+                      ),
+                      decoration: BoxDecoration(
+                        color: visualTheme.panelColor.withValues(alpha: 0.56),
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(999),
+                        ),
+                        border: Border.all(color: visualTheme.panelBorderColor),
+                      ),
+                      child: Text(
+                        'FOCUS / HABIT / TRACE',
+                        style: TextStyle(
+                          fontSize: ScreenUtil().setSp(11),
+                          letterSpacing: 1.4,
+                          fontWeight: FontWeight.w700,
+                          color: visualTheme.heroForeground,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: ScreenUtil().setHeight(28)),
+                    Container(
+                      width: illustrationSize,
+                      height: illustrationSize,
+                      padding: EdgeInsets.all(ScreenUtil().setWidth(20)),
+                      decoration: ThemeHelper.panelDecoration(
+                        context,
+                        secondary: true,
+                        radius: ScreenUtil().setWidth(36),
+                      ),
+                      child: SvgPicture.asset(
+                        'assets/images/cover.svg',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    SizedBox(height: ScreenUtil().setHeight(28)),
+                    Text(
+                      'Contrail',
+                      style: TextStyle(
+                        fontSize: ScreenUtil().setSp(36),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                        color: splashColors.last,
+                      ),
+                    ),
+                    SizedBox(height: ScreenUtil().setHeight(12)),
+                    Text(
+                      'Every step leaves a trace',
+                      style: TextStyle(
+                        fontSize: ScreenUtil().setSp(17),
+                        color: visualTheme.heroSecondaryForeground,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    SizedBox(height: ScreenUtil().setHeight(18)),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(16),
+                        vertical: ScreenUtil().setHeight(10),
+                      ),
+                      decoration: BoxDecoration(
+                        color: visualTheme.panelColor.withValues(alpha: 0.62),
+                        borderRadius: BorderRadius.circular(
+                          ScreenUtil().setWidth(16),
+                        ),
+                        border: Border.all(color: visualTheme.panelBorderColor),
+                      ),
+                      child: Text(
+                        '专注记录 · 习惯沉淀 · 数据回看',
+                        style: TextStyle(
+                          fontSize: ScreenUtil().setSp(13),
+                          fontWeight: FontWeight.w600,
+                          color: ThemeHelper.onBackground(
+                            context,
+                          ).withValues(alpha: 0.82),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

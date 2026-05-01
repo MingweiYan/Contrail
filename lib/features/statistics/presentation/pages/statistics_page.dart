@@ -5,11 +5,11 @@ import 'package:contrail/features/habit/presentation/providers/habit_provider.da
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/features/statistics/presentation/widgets/statistics_detail_view.dart';
 import 'package:contrail/features/statistics/presentation/widgets/statistics_trend_view.dart';
-import 'package:contrail/shared/widgets/header_card_widget.dart';
 import 'package:contrail/core/routing/app_router.dart';
 import 'package:contrail/shared/services/habit_statistics_service.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -90,33 +90,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         child: Consumer2<HabitProvider, StatisticsProvider>(
           builder: (context, habitProvider, statisticsProvider, child) {
             final habits = habitProvider.habits;
-
-            // 延迟初始化习惯可见性列表，避免在build过程中调用notifyListeners
-            if (statisticsProvider.isHabitVisible == null ||
-                statisticsProvider.isHabitVisible!.length != habits.length) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (context.mounted) {
-                  statisticsProvider.initializeHabitVisibility(habits);
-                }
-              });
-            }
-
-            // 确保isHabitVisible不为null，提供默认值用于初始渲染
-            final isHabitVisible =
-                statisticsProvider.isHabitVisible ??
-                List<bool>.filled(habits.length, true);
-
-            // 过滤可见习惯时添加索引安全检查
-            final visibleHabits = habits
-                .asMap()
-                .entries
-                .where(
-                  (entry) =>
-                      entry.key < isHabitVisible.length &&
-                      isHabitVisible[entry.key],
-                )
-                .map((entry) => entry.value)
-                .toList();
+            final visibleHabits = habits;
 
             // 使用习惯的颜色属性，不再需要固定的颜色列表
             final Map<String, Color> habitColors = {};
@@ -128,13 +102,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
             final stats = sl<HabitStatisticsService>().getHabitDetailedStats(
               visibleHabits,
             );
+            final rangeCount = _currentRangeCount(stats);
+            final rangeLabel = _currentRangeLabel();
 
             return SingleChildScrollView(
               padding:
                   PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
               child: Column(
                 children: [
-                  // 渐变背景的头部（与习惯页面统一使用主题颜色）
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.easeOut,
@@ -148,81 +123,103 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       crossAxisAlignment:
                           CrossAxisAlignment.start, // 与习惯页面统一对齐方式
                       children: [
-                        Text(
-                          '习惯统计',
-                          style: ThemeHelper.textStyleWithTheme(
-                            context,
-                            fontSize: StatisticsPageConstants
-                                .titleFontSize, // 与习惯页面统一标题大小
-                            fontWeight: FontWeight.bold,
-                            color: ThemeHelper.visualTheme(context).heroForeground,
-                          ),
-                        ),
-                        SizedBox(
-                          height: StatisticsPageConstants.titleSubtitleSpacing,
-                        ), // 添加标题与副标题间距
-                        Text(
-                          '每一次努力都会留下踪迹', // 添加副标题
-                          style: ThemeHelper.textStyleWithTheme(
-                            context,
-                            fontSize: StatisticsPageConstants.subtitleFontSize,
-                            color: ThemeHelper.visualTheme(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '习惯统计',
+                                    style: ThemeHelper.textStyleWithTheme(
+                                      context,
+                                      fontSize:
+                                          StatisticsPageConstants
+                                                  .titleFontSize +
+                                              2,
+                                      fontWeight: FontWeight.w800,
+                                      color: ThemeHelper.visualTheme(
+                                        context,
+                                      ).heroForeground,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: StatisticsPageConstants
+                                        .titleSubtitleSpacing,
+                                  ),
+                                  Text(
+                                    '把每一次坚持变成清晰可读的轨迹',
+                                    style: ThemeHelper.textStyleWithTheme(
+                                      context,
+                                      fontSize: StatisticsPageConstants
+                                          .subtitleFontSize,
+                                      color: ThemeHelper.visualTheme(
+                                        context,
+                                      ).heroSecondaryForeground,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _buildHeaderBadge(
                               context,
-                            ).heroSecondaryForeground,
-                          ),
+                              icon: Icons.insights_outlined,
+                              label: _isDetailView ? '明细模式' : '趋势模式',
+                            ),
+                          ],
                         ),
                         SizedBox(
                           height: StatisticsPageConstants.subtitleCardSpacing,
-                        ), // 添加与统计卡片的间距
-                        // 功能按钮 - 与习惯页面风格一致
+                        ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            // 第一个按钮：视图切换
-                            StatisticsCardWidget(
-                              icon: Icons.timeline,
-                              title: _isDetailView ? '明细视图' : '趋势视图',
-                              onTap: () => _toggleView(statisticsProvider),
+                            Expanded(
+                              child: _buildHeaderAction(
+                                context,
+                                icon: _isDetailView
+                                    ? Icons.timeline_rounded
+                                    : Icons.stacked_line_chart_rounded,
+                                title: '切换视图',
+                                detail: _isDetailView ? '明细' : '趋势',
+                                onTap: () => _toggleView(statisticsProvider),
+                              ),
                             ),
-
-                            // 第二个按钮：点击切换显示周/月/年统计
-                            StatisticsCardWidget(
-                              text: _statsTimeRange == 'week'
-                                  ? '${stats['completedWeekTasks']}'
-                                  : _statsTimeRange == 'month'
-                                  ? '${stats['completedMonthTasks']}'
-                                  : '${stats['completedYearTasks']}',
-                              title: _statsTimeRange == 'week'
-                                  ? '本周次数'
-                                  : _statsTimeRange == 'month'
-                                  ? '本月次数'
-                                  : '本年次数',
-                              onTap: () {
-                                // 点击时切换显示的时间范围
-                                setState(() {
-                                  if (_statsTimeRange == 'week') {
-                                    _statsTimeRange = 'month';
-                                  } else if (_statsTimeRange == 'month') {
-                                    _statsTimeRange = 'year';
-                                  } else {
-                                    _statsTimeRange = 'week';
-                                  }
-                                });
-                              },
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: _buildHeaderAction(
+                                context,
+                                value: '$rangeCount',
+                                title: rangeLabel,
+                                detail: '点击切换',
+                                onTap: () {
+                                  setState(() {
+                                    if (_statsTimeRange == 'week') {
+                                      _statsTimeRange = 'month';
+                                    } else if (_statsTimeRange == 'month') {
+                                      _statsTimeRange = 'year';
+                                    } else {
+                                      _statsTimeRange = 'week';
+                                    }
+                                  });
+                                },
+                              ),
                             ),
-
-                            // 第三个按钮：分享按钮
-                            StatisticsCardWidget(
-                              icon: Icons.send,
-                              title: '分享报告',
-                              onTap: () => _sendProgressReport(context),
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: _buildHeaderAction(
+                                context,
+                                icon: Icons.send_rounded,
+                                title: '分享报告',
+                                detail: '导出统计',
+                                onTap: () => _sendProgressReport(context),
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  // 主体内容 - 使用拆分为独立组件的视图
                   AnimatedBuilder(
                     animation: _fadeAnimation,
                     builder: (context, child) {
@@ -235,15 +232,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                 visibleHabits: visibleHabits,
                                 statisticsProvider: statisticsProvider,
                                 habitColors: habitColors,
-                                isHabitVisible: isHabitVisible,
-                                allHabits: habits,
                               )
                             : StatisticsTrendView(
                                 visibleHabits: visibleHabits,
                                 statisticsProvider: statisticsProvider,
-                                habitColors: habitColors,
-                                isHabitVisible: isHabitVisible,
-                                allHabits: habits,
                               ),
                       );
                     },
@@ -252,6 +244,119 @@ class _StatisticsPageState extends State<StatisticsPage> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  int _currentRangeCount(Map<String, dynamic> stats) {
+    if (_statsTimeRange == 'month') {
+      return (stats['completedMonthTasks'] as num?)?.toInt() ?? 0;
+    }
+    if (_statsTimeRange == 'year') {
+      return (stats['completedYearTasks'] as num?)?.toInt() ?? 0;
+    }
+    return (stats['completedWeekTasks'] as num?)?.toInt() ?? 0;
+  }
+
+  String _currentRangeLabel() {
+    if (_statsTimeRange == 'month') {
+      return '本月次数';
+    }
+    if (_statsTimeRange == 'year') {
+      return '本年次数';
+    }
+    return '本周次数';
+  }
+
+  Widget _buildHeaderBadge(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14.sp, color: heroForeground.withValues(alpha: 0.92)),
+          SizedBox(width: 6.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w700,
+              color: heroForeground.withValues(alpha: 0.92),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderAction(
+    BuildContext context, {
+    IconData? icon,
+    String? value,
+    required String title,
+    required String detail,
+    required VoidCallback onTap,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Column(
+            children: [
+              if (value != null)
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: heroForeground,
+                    height: 1,
+                  ),
+                )
+              else if (icon != null)
+                Icon(icon, size: 20.sp, color: heroForeground),
+              SizedBox(height: 8.h),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                detail,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w500,
+                  color: heroForeground.withValues(alpha: 0.72),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
