@@ -155,6 +155,7 @@ class HabitService {
               'trackTime': habit.trackTime,
               'colorValue': habit.colorValue,
               'descriptionJson': habit.descriptionJson,
+              'shortDescription': habit.shortDescription,
               'trackingDurations': habit.trackingDurations.map(
                 (date, durations) => MapEntry(
                   date.toIso8601String(),
@@ -248,6 +249,7 @@ class HabitService {
           trackTime: habitMap['trackTime'] as bool,
           colorValue: habitMap['colorValue'] as int?,
           descriptionJson: habitMap['descriptionJson'] as String?,
+          shortDescription: habitMap['shortDescription'] as String?,
           trackingDurations: trackingDurations,
           dailyCompletionStatus: dailyCompletionStatus,
           targetTimeMinutes: habitMap['targetTimeMinutes'] as int?,
@@ -308,6 +310,7 @@ class HabitService {
     required GoalType goalType,
     String? icon,
     String? descriptionJson,
+    String? shortDescription,
     CycleType? cycleType,
     required bool trackTime,
     int? colorValue,
@@ -324,6 +327,7 @@ class HabitService {
       goalType: goalType,
       icon: icon,
       descriptionJson: descriptionJson,
+      shortDescription: shortDescription,
       cycleType: cycleType,
       trackTime: trackTime,
       colorValue: colorValue,

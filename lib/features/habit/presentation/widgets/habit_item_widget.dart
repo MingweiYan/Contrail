@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/features/habit/domain/services/habit_management_service.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/features/habit/presentation/pages/add_habit_page.dart';
 import 'package:contrail/features/statistics/presentation/pages/habit_detail_statistics_page.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
@@ -47,7 +48,6 @@ class HabitItemWidget extends StatelessWidget {
         ? habitManagementService.getCompletedDaysInCurrentCycle(habit)
         : (isCompletedToday ? 1 : 0);
     final targetInCycle = habit.targetDays ?? 1;
-    final remainingFocusCount = (targetInCycle - completedInCycle).clamp(0, 999);
     final countProgress = habit.cycleType != null && habit.targetDays != null
         ? habitManagementService.getCompletionRateInCurrentCycle(habit).clamp(
             0.0,
@@ -74,9 +74,10 @@ class HabitItemWidget extends StatelessWidget {
     final displayProgress = habit.trackTime ? timeProgress : countProgress;
     const statusLabel = '已完成';
     final actionLabel = habit.trackTime ? '继续' : '记录';
-    final remainingFocusText = '当前周期还剩 $remainingFocusCount';
+    final shortDescription = habit.effectiveShortDescription;
     final countMetricText = '$completedInCycle/$targetInCycle';
     final timeMetricText = '$completedMinutes/$targetMinutes';
+    final habitIcon = IconHelper.getIconData(habit.icon, logError: false);
 
     return Dismissible(
       // 唯一标识符
@@ -278,6 +279,12 @@ class HabitItemWidget extends StatelessWidget {
                                   ),
                                 ),
                                 SizedBox(width: 10.w),
+                                _buildInlineIconBadge(
+                                  context,
+                                  accentColor: timelineColor,
+                                  icon: habitIcon,
+                                ),
+                                SizedBox(width: 8.w),
                                 _buildStatusChip(
                                   context,
                                   label: statusLabel,
@@ -301,7 +308,7 @@ class HabitItemWidget extends StatelessWidget {
                             top: 52.h,
                             right: 108.w,
                             child: Text(
-                              remainingFocusText,
+                              shortDescription,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -476,6 +483,29 @@ class HabitItemWidget extends StatelessWidget {
             color: accentColor.withValues(alpha: 0.92),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInlineIconBadge(
+    BuildContext context, {
+    required Color accentColor,
+    required IconData icon,
+  }) {
+    return Container(
+      width: 26.w,
+      height: 26.w,
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.34),
+        ),
+      ),
+      child: Icon(
+        icon,
+        size: 14.sp,
+        color: accentColor,
       ),
     );
   }

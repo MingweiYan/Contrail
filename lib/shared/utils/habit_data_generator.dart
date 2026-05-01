@@ -83,6 +83,7 @@ class HabitDataGenerator {
         descriptionJson: _generateDefaultRichTextDescription(
           _habitNames[i],
         ), // 添加富文本描述
+        shortDescription: Habit.defaultShortDescription,
         trackTime: true, // 所有习惯都跟踪时间
         colorValue: _colors[i].toARGB32(),
         trackingDurations: {},

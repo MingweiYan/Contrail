@@ -431,6 +431,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
           name: _nameController.text.trim(),
           icon: _selectedIcon,
           descriptionJson: descriptionJson,
+          shortDescription:
+              widget.habitToEdit?.shortDescription ??
+              Habit.defaultShortDescription,
           targetDays: _targetDays,
           cycleType: _isSetGoal ? _cycleType : null,
           goalType: _goalType,
