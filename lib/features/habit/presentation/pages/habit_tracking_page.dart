@@ -13,6 +13,7 @@ import 'package:contrail/features/habit/presentation/pages/fullscreen_clock_page
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/habit/presentation/widgets/pomodoro_settings_dialog.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HabitTrackingPage extends StatefulWidget {
   final Habit habit;
@@ -411,38 +412,63 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
 
   // 构建模式选择按钮
   Widget _buildModeButton(TrackingMode mode, String label, IconData icon) {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          _selectedMode = mode;
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _selectedMode == mode
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.surface,
-        foregroundColor: _selectedMode == mode
-            ? ThemeHelper.onPrimary(context)
-            : ThemeHelper.onSurface(context),
-        padding: HabitTrackingPageConstants.modeButtonPadding,
-        shape: RoundedRectangleBorder(
+    final isSelected = _selectedMode == mode;
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _selectedMode = mode;
+            });
+          },
           borderRadius: BorderRadius.circular(
             HabitTrackingPageConstants.buttonBorderRadius,
           ),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: HabitTrackingPageConstants.iconSize),
-          SizedBox(width: HabitTrackingPageConstants.extraSmallSpacing),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: HabitTrackingPageConstants.buttonFontSize,
+          child: Ink(
+            padding: HabitTrackingPageConstants.modeButtonPadding,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? scheme.primary.withValues(alpha: 0.15)
+                  : ThemeHelper.visualTheme(context).panelSecondaryColor,
+              borderRadius: BorderRadius.circular(
+                HabitTrackingPageConstants.buttonBorderRadius,
+              ),
+              border: Border.all(
+                color: isSelected
+                    ? scheme.primary.withValues(alpha: 0.45)
+                    : ThemeHelper.visualTheme(context).panelBorderColor,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: HabitTrackingPageConstants.iconSize,
+                  color: isSelected ? scheme.primary : ThemeHelper.onSurface(context),
+                ),
+                SizedBox(width: HabitTrackingPageConstants.extraSmallSpacing),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: HabitTrackingPageConstants.buttonFontSize,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected
+                          ? scheme.primary
+                          : ThemeHelper.onSurface(context),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -492,17 +518,10 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 Container(
                   margin: HabitTrackingPageConstants.descriptionMargin,
                   padding: HabitTrackingPageConstants.descriptionPadding,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surface.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(
-                      HabitTrackingPageConstants.descriptionBorderRadius,
-                    ),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                      width: HabitTrackingPageConstants.descriptionBorderWidth,
-                    ),
+                  decoration: ThemeHelper.panelDecoration(
+                    context,
+                    secondary: true,
+                    radius: HabitTrackingPageConstants.descriptionBorderRadius,
                   ),
                   // 设置固定高度以实现截断效果
                   height: HabitTrackingPageConstants.descriptionHeight,
@@ -530,150 +549,129 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             child: Container(
               width: double.infinity,
               padding: HabitTrackingPageConstants.bottomPadding,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 模式选择 - 按钮更小，移除白色背景块
-                  Container(
-                    padding: HabitTrackingPageConstants.containerPadding,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: Container(
+                padding: HabitTrackingPageConstants.containerPadding,
+                decoration: ThemeHelper.panelDecoration(context, radius: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildModeButton(
-                              TrackingMode.stopwatch,
-                              '正计时',
-                              Icons.timer,
-                            ),
-                            _buildModeButton(
-                              TrackingMode.countdown,
-                              '倒计时',
-                              Icons.timer_off,
-                            ),
-                            _buildModeButton(
-                              TrackingMode.pomodoro,
-                              '番茄钟',
-                              Icons.timer_10_select,
-                            ),
-                          ],
+                        _buildModeButton(
+                          TrackingMode.stopwatch,
+                          '正计时',
+                          Icons.timer,
+                        ),
+                        SizedBox(width: 8.w),
+                        _buildModeButton(
+                          TrackingMode.countdown,
+                          '倒计时',
+                          Icons.timer_off,
+                        ),
+                        SizedBox(width: 8.w),
+                        _buildModeButton(
+                          TrackingMode.pomodoro,
+                          '番茄钟',
+                          Icons.timer_10_select,
                         ),
                       ],
                     ),
-                  ),
-
-                  // 番茄钟设置按钮 - 始终保留空间但只在番茄钟模式下可见
-                  Container(
-                    height: HabitTrackingPageConstants.settingsButtonHeight,
-                    alignment: Alignment.center,
-                    child: Visibility(
-                      visible: _selectedMode == TrackingMode.pomodoro,
-                      maintainSize: true,
-                      maintainAnimation: true,
-                      maintainState: true,
-                      child: TextButton(
-                        onPressed: _showPomodoroSettingsDialog,
-                        style: TextButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.1),
-                          padding:
-                              HabitTrackingPageConstants.settingsButtonPadding,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              HabitTrackingPageConstants.buttonBorderRadius,
+                    SizedBox(height: 12.h),
+                    Container(
+                      height: HabitTrackingPageConstants.settingsButtonHeight,
+                      alignment: Alignment.center,
+                      child: Visibility(
+                        visible: _selectedMode == TrackingMode.pomodoro,
+                        maintainSize: true,
+                        maintainAnimation: true,
+                        maintainState: true,
+                        child: TextButton.icon(
+                          onPressed: _showPomodoroSettingsDialog,
+                          style: TextButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.10),
+                            padding:
+                                HabitTrackingPageConstants.settingsButtonPadding,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                HabitTrackingPageConstants.buttonBorderRadius,
+                              ),
+                            ),
+                          ),
+                          icon: Icon(
+                            Icons.settings,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: HabitTrackingPageConstants.iconSize,
+                          ),
+                          label: Text(
+                            '番茄钟设置',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize:
+                                  HabitTrackingPageConstants.buttonFontSize,
                             ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.settings,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: HabitTrackingPageConstants.iconSize,
-                            ),
-                            SizedBox(
-                              width:
-                                  HabitTrackingPageConstants.extraSmallSpacing,
-                            ),
-                            Text(
-                              '番茄钟设置',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize:
-                                    HabitTrackingPageConstants.buttonFontSize,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
-                  ),
-
-                  // 开始按钮 - 有间隔，在时钟下方
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: HabitTrackingPageConstants.largeSpacing,
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _showSettings = false;
-                          // 根据不同模式设置不同的初始值
-                          if (_selectedMode == TrackingMode.stopwatch) {
-                            _elapsedTime = Duration.zero; // 正计时初始值为0
-                          } else if (_selectedMode == TrackingMode.countdown ||
-                              _selectedMode == TrackingMode.pomodoro) {
-                            _elapsedTime = Duration(
-                              minutes: _timerDuration,
-                            ); // 倒计时和番茄钟使用_timerDuration的值
-                          }
-
-                          // 对于番茄钟模式，如果是从设置界面开始，重置总工作时长
-                          if (_selectedMode == TrackingMode.pomodoro &&
-                              _showSettings) {
-                            _focusManager.totalPomodoroWorkDuration =
-                                Duration.zero;
-                            _focusManager.currentRound = 1;
-                            logger.debug('开始新的番茄钟会话，重置总工作时长');
-
-                            // 设置番茄钟状态为工作
-                            _focusManager.setPomodoroStatus(
-                              PomodoroStatus.work,
-                            );
-                          }
-
-                          // 自动开始计时
-                          if (_focusStatus == FocusStatus.stop) {
-                            _focusManager.startFocus(
-                              widget.habit,
-                              _selectedMode,
-                              _elapsedTime,
-                            );
-                          }
-                        });
-                      },
-                      style: ThemeHelper.elevatedButtonStyle(
-                        context,
-                        padding: HabitTrackingPageConstants.startButtonPadding,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: HabitTrackingPageConstants.largeSpacing,
                       ),
-                      child: Text(
-                        '开始计时',
-                        style: ThemeHelper.textStyleWithTheme(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _showSettings = false;
+                            if (_selectedMode == TrackingMode.stopwatch) {
+                              _elapsedTime = Duration.zero;
+                            } else if (_selectedMode == TrackingMode.countdown ||
+                                _selectedMode == TrackingMode.pomodoro) {
+                              _elapsedTime = Duration(
+                                minutes: _timerDuration,
+                              );
+                            }
+
+                            if (_selectedMode == TrackingMode.pomodoro &&
+                                _showSettings) {
+                              _focusManager.totalPomodoroWorkDuration =
+                                  Duration.zero;
+                              _focusManager.currentRound = 1;
+                              logger.debug('开始新的番茄钟会话，重置总工作时长');
+                              _focusManager.setPomodoroStatus(
+                                PomodoroStatus.work,
+                              );
+                            }
+
+                            if (_focusStatus == FocusStatus.stop) {
+                              _focusManager.startFocus(
+                                widget.habit,
+                                _selectedMode,
+                                _elapsedTime,
+                              );
+                            }
+                          });
+                        },
+                        style: ThemeHelper.elevatedButtonStyle(
                           context,
-                          fontSize:
-                              HabitTrackingPageConstants.startButtonFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: ThemeHelper.onPrimary(context),
+                          padding: HabitTrackingPageConstants.startButtonPadding,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                        ),
+                        child: Text(
+                          '开始计时',
+                          style: ThemeHelper.textStyleWithTheme(
+                            context,
+                            fontSize:
+                                HabitTrackingPageConstants.startButtonFontSize,
+                            fontWeight: FontWeight.bold,
+                            color: ThemeHelper.onPrimary(context),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -701,10 +699,10 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                         colors: [
                           Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.05),
+                          ).colorScheme.primary.withValues(alpha: 0.05),
                           Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.0),
+                          ).colorScheme.primary.withValues(alpha: 0.0),
                         ],
                         radius: 0.7,
                       ),
@@ -793,17 +791,10 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 Container(
                   margin: HabitTrackingPageConstants.descriptionMargin,
                   padding: HabitTrackingPageConstants.descriptionPadding,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surface.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(
-                      HabitTrackingPageConstants.descriptionBorderRadius,
-                    ),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                      width: HabitTrackingPageConstants.descriptionBorderWidth,
-                    ),
+                  decoration: ThemeHelper.panelDecoration(
+                    context,
+                    secondary: true,
+                    radius: HabitTrackingPageConstants.descriptionBorderRadius,
                   ),
                   // 设置固定高度以实现截断效果
                   height: HabitTrackingPageConstants.descriptionHeight,
@@ -849,79 +840,40 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 padding: EdgeInsets.symmetric(
                   vertical: HabitTrackingPageConstants.maxLargeSpacing,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // 屏幕常亮按钮
-                    ElevatedButton(
-                      onPressed: _toggleScreenAlwaysOn,
-                      style: ThemeHelper.elevatedButtonStyle(
-                        context,
-                        padding:
-                            HabitTrackingPageConstants.controlButtonPadding,
-                        backgroundColor: _isScreenAlwaysOn
-                            ? Theme.of(context).colorScheme.secondary
-                            : Theme.of(context).colorScheme.surface,
-                        foregroundColor: _isScreenAlwaysOn
-                            ? ThemeHelper.onSecondary(context)
-                            : ThemeHelper.onSurface(context),
-                      ),
-                      child: Icon(
-                        _isScreenAlwaysOn
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+                  decoration: ThemeHelper.panelDecoration(context, radius: 28),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildControlButton(
+                        icon: _isScreenAlwaysOn
                             ? Icons.lightbulb
                             : Icons.lightbulb_outline,
-                        size: HabitTrackingPageConstants.largeIconSize,
+                        onTap: _toggleScreenAlwaysOn,
+                        active: _isScreenAlwaysOn,
                       ),
-                    ),
-                    SizedBox(width: HabitTrackingPageConstants.buttonSpacing),
-                    ElevatedButton(
-                      onPressed: _resetTimer,
-                      style: ThemeHelper.elevatedButtonStyle(
-                        context,
-                        padding:
-                            HabitTrackingPageConstants.controlButtonPadding,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        foregroundColor: ThemeHelper.onSurface(context),
+                      SizedBox(width: HabitTrackingPageConstants.buttonSpacing),
+                      _buildControlButton(
+                        icon: Icons.restart_alt,
+                        onTap: _resetTimer,
                       ),
-                      child: Icon(
-                        Icons.restart_alt,
-                        size: HabitTrackingPageConstants.largeIconSize,
-                      ),
-                    ),
-                    SizedBox(width: HabitTrackingPageConstants.buttonSpacing),
-                    ElevatedButton(
-                      onPressed: _toggleTimer,
-                      style: ThemeHelper.elevatedButtonStyle(
-                        context,
-                        padding:
-                            HabitTrackingPageConstants.controlButtonPadding,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                      ),
-                      child: Icon(
-                        _focusStatus == FocusStatus.run
+                      SizedBox(width: HabitTrackingPageConstants.buttonSpacing),
+                      _buildControlButton(
+                        icon: _focusStatus == FocusStatus.run
                             ? Icons.pause
                             : Icons.play_arrow,
-                        size: HabitTrackingPageConstants.largeIconSize,
-                        color: ThemeHelper.onPrimary(context),
+                        onTap: _toggleTimer,
+                        accent: true,
                       ),
-                    ),
-                    SizedBox(width: HabitTrackingPageConstants.buttonSpacing),
-                    // 停止按钮
-                    ElevatedButton(
-                      onPressed: _showConfirmationDialog,
-                      style: ThemeHelper.elevatedButtonStyle(
-                        context,
-                        padding:
-                            HabitTrackingPageConstants.controlButtonPadding,
-                        backgroundColor: Colors.red,
+                      SizedBox(width: HabitTrackingPageConstants.buttonSpacing),
+                      _buildControlButton(
+                        icon: Icons.stop,
+                        onTap: _showConfirmationDialog,
+                        destructive: true,
                       ),
-                      child: Icon(
-                        Icons.stop,
-                        size: HabitTrackingPageConstants.largeIconSize,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -941,14 +893,60 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     }
 
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
 
     return Scaffold(
-      appBar: AppBar(title: Text('正在追踪习惯：${widget.habit.name}')),
       body: Container(
         decoration: decoration,
         child: SafeArea(
           child: Column(
             children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                  padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
+                  child: Row(
+                    children: [
+                      _buildTopAction(
+                        context,
+                        icon: Icons.arrow_back_rounded,
+                        label: '返回',
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      SizedBox(width: 14.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.habit.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 24.sp,
+                                fontWeight: FontWeight.w800,
+                                color: heroForeground,
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            Text(
+                              _showSettings ? '专注模式设置' : '正在进行专注追踪',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                color: heroSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildStatusPill(context),
+                    ],
+                  ),
+                ),
+              ),
               // 主要内容 - 计时器控件
               Expanded(child: _buildTimerControls()),
               // 底部空间
@@ -956,6 +954,105 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18.sp, color: heroForeground),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final label = _showSettings
+        ? '待开始'
+        : (_focusStatus == FocusStatus.run ? '进行中' : '已暂停');
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w700,
+          color: heroForeground,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool active = false,
+    bool accent = false,
+    bool destructive = false,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final backgroundColor = destructive
+        ? const Color(0xFFD84D5C)
+        : accent
+        ? scheme.primary
+        : active
+        ? scheme.secondary
+        : ThemeHelper.visualTheme(context).panelSecondaryColor;
+    final foregroundColor = destructive || accent
+        ? Colors.white
+        : active
+        ? ThemeHelper.onSecondary(context)
+        : ThemeHelper.onSurface(context);
+
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ThemeHelper.elevatedButtonStyle(
+        context,
+        padding: HabitTrackingPageConstants.controlButtonPadding,
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+      ),
+      child: Icon(
+        icon,
+        size: HabitTrackingPageConstants.largeIconSize,
+        color: foregroundColor,
       ),
     );
   }

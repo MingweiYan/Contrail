@@ -11,7 +11,6 @@ import 'package:contrail/features/profile/domain/services/webdav_backup_service.
 import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup/backup_list_section.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup/webdav_settings_card.dart';
-import 'package:contrail/features/profile/presentation/widgets/backup_delete_confirmation_dialog.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup_restore_confirmation_dialog.dart';
 
 class DataBackupPage extends StatefulWidget {
@@ -103,7 +102,6 @@ class _DataBackupPageState extends State<DataBackupPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('数据备份与恢复')),
       body: Container(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
@@ -130,32 +128,17 @@ class _DataBackupPageState extends State<DataBackupPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 备份设置标题
-                  Text(
-                    '备份设置',
-                    style: TextStyle(
-                      fontSize: DataBackupPageConstants.fontSize_29,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  _buildHeroHeader(context),
+                  SizedBox(height: BaseLayoutConstants.spacingLarge),
+                  _buildSectionTitle(context, '备份设置'),
                   SizedBox(height: BaseLayoutConstants.spacingSmall),
 
                   // 自动备份设置
                   Container(
                     padding: DataBackupPageConstants.containerPadding,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(
-                        ScreenUtil().setWidth(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                    decoration: ThemeHelper.panelDecoration(
+                      context,
+                      radius: ScreenUtil().setWidth(24),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,61 +221,25 @@ class _DataBackupPageState extends State<DataBackupPage>
                           ),
                           SizedBox(height: BaseLayoutConstants.spacingSmall),
                           if (backupProvider.lastBackupTime != null)
-                            Text(
-                              '上次备份时间: ' +
-                                  backupProvider.lastBackupTime!
-                                      .toIso8601String()
-                                      .replaceAll('T', ' ')
-                                      .substring(0, 19),
-                              style: TextStyle(
-                                color: ThemeHelper.onBackground(
-                                  context,
-                                ).withValues(alpha: 0.6),
-                                fontSize: DataBackupPageConstants.fontSize_16,
-                              ),
+                            _buildInfoText(
+                              context,
+                              '上次备份时间: '
+                              '${backupProvider.lastBackupTime!.toIso8601String().replaceAll('T', ' ').substring(0, 19)}',
                             ),
-                          Text(
-                            '下次备份: ' +
-                                (backupProvider.lastBackupTime != null
-                                    ? backupProvider.lastBackupTime!
-                                          .add(
-                                            Duration(
-                                              days: backupProvider
-                                                  .backupFrequency,
-                                            ),
-                                          )
-                                          .toIso8601String()
-                                          .replaceAll('T', ' ')
-                                          .substring(0, 19)
-                                    : '开启后立即执行第一次备份'),
-                            style: TextStyle(
-                              color: ThemeHelper.onBackground(
-                                context,
-                              ).withValues(alpha: 0.6),
-                              fontSize: ScreenUtil().setSp(16),
-                            ),
+                          _buildInfoText(
+                            context,
+                            '下次备份: '
+                            '${backupProvider.lastBackupTime != null ? backupProvider.lastBackupTime!.add(Duration(days: backupProvider.backupFrequency)).toIso8601String().replaceAll('T', ' ').substring(0, 19) : '开启后立即执行第一次备份'}',
                           ),
                           if (backupProvider.autoBackupLastRun != null)
-                            Text(
-                              '最近检查: ' +
-                                  backupProvider.autoBackupLastRun!
-                                      .toIso8601String()
-                                      .replaceAll('T', ' ')
-                                      .substring(0, 19),
-                              style: TextStyle(
-                                color: ThemeHelper.onBackground(
-                                  context,
-                                ).withValues(alpha: 0.6),
-                                fontSize: ScreenUtil().setSp(16),
-                              ),
+                            _buildInfoText(
+                              context,
+                              '最近检查: '
+                              '${backupProvider.autoBackupLastRun!.toIso8601String().replaceAll('T', ' ').substring(0, 19)}',
                             ),
                           if (backupProvider.autoBackupLastError != null)
                             Text(
-                              '最近错误: ${backupProvider.autoBackupLastError}'
-                                      .length >
-                                  80
-                                  ? '最近错误: ${backupProvider.autoBackupLastError!.substring(0, 80)}…'
-                                  : '最近错误: ${backupProvider.autoBackupLastError}',
+                              '最近错误: ${backupProvider.autoBackupLastError!.length > 80 ? '${backupProvider.autoBackupLastError!.substring(0, 80)}…' : backupProvider.autoBackupLastError!}',
                               style: TextStyle(
                                 color: Colors.redAccent.withValues(alpha: 0.8),
                                 fontSize: ScreenUtil().setSp(16),
@@ -305,31 +252,15 @@ class _DataBackupPageState extends State<DataBackupPage>
                   ),
                   SizedBox(height: BaseLayoutConstants.spacingLarge),
                   // 本地备份标题
-                  Text(
-                    '本地备份',
-                    style: TextStyle(
-                      fontSize: DataBackupPageConstants.fontSize_29,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  _buildSectionTitle(context, '本地备份'),
                   SizedBox(height: BaseLayoutConstants.spacingSmall),
 
                   // 本地备份设置
                   Container(
                     padding: DataBackupPageConstants.containerPadding,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(
-                        ScreenUtil().setWidth(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                    decoration: ThemeHelper.panelDecoration(
+                      context,
+                      radius: ScreenUtil().setWidth(24),
                     ),
                     child: Column(
                       children: [
@@ -475,11 +406,13 @@ class _DataBackupPageState extends State<DataBackupPage>
                             '执行本地备份',
                             style: TextStyle(fontSize: ScreenUtil().setSp(18)),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: Size(
-                              double.infinity,
-                              DataBackupPageConstants.buttonHeight,
+                          style: ThemeHelper.elevatedButtonStyle(
+                            context,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ScreenUtil().setWidth(18),
+                              vertical: ScreenUtil().setHeight(16),
                             ),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         SizedBox(height: BaseLayoutConstants.spacingMedium),
@@ -504,11 +437,13 @@ class _DataBackupPageState extends State<DataBackupPage>
                       '刷新备份文件列表',
                       style: TextStyle(fontSize: ScreenUtil().setSp(18)),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(
-                        double.infinity,
-                        DataBackupPageConstants.buttonHeight,
+                    style: ThemeHelper.elevatedButtonStyle(
+                      context,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ScreenUtil().setWidth(18),
+                        vertical: ScreenUtil().setHeight(16),
                       ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   SizedBox(height: BaseLayoutConstants.spacingLarge),
@@ -516,19 +451,9 @@ class _DataBackupPageState extends State<DataBackupPage>
                   // 本地恢复卡片
                   Container(
                     padding: DataBackupPageConstants.containerPadding,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(
-                        ScreenUtil().setWidth(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                    decoration: ThemeHelper.panelDecoration(
+                      context,
+                      radius: ScreenUtil().setWidth(24),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -804,13 +729,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '网络备份（WebDAV）',
-                              style: TextStyle(
-                                fontSize: DataBackupPageConstants.fontSize_29,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            _buildSectionTitle(context, '网络备份（WebDAV）'),
                             SizedBox(height: BaseLayoutConstants.spacingSmall),
                             WebDavSettingsCard(
                               url: webdavProvider.webdavUrl,
@@ -970,6 +889,110 @@ class _DataBackupPageState extends State<DataBackupPage>
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroHeader(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: ThemeHelper.heroDecoration(context, radius: 28),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          _buildTopAction(context),
+          SizedBox(width: ScreenUtil().setWidth(14)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '数据备份与恢复',
+                  style: TextStyle(
+                    fontSize: ScreenUtil().setSp(24),
+                    fontWeight: FontWeight.w800,
+                    color: heroForeground,
+                  ),
+                ),
+                SizedBox(height: ScreenUtil().setHeight(6)),
+                Text(
+                  '统一管理本地备份、自动备份与 WebDAV 网络备份',
+                  style: TextStyle(
+                    fontSize: ScreenUtil().setSp(13),
+                    color: heroSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopAction(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pop(context),
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+        child: Ink(
+          padding: EdgeInsets.symmetric(
+            horizontal: ScreenUtil().setWidth(14),
+            vertical: ScreenUtil().setHeight(11),
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_back_rounded,
+                size: ScreenUtil().setSp(18),
+                color: heroForeground,
+              ),
+              SizedBox(width: ScreenUtil().setWidth(6)),
+              Text(
+                '返回',
+                style: TextStyle(
+                  fontSize: ScreenUtil().setSp(12),
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: DataBackupPageConstants.fontSize_29,
+        fontWeight: FontWeight.w800,
+        color: ThemeHelper.onBackground(context),
+      ),
+    );
+  }
+
+  Widget _buildInfoText(BuildContext context, String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: ScreenUtil().setHeight(6)),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: ThemeHelper.onBackground(context).withValues(alpha: 0.6),
+          fontSize: ScreenUtil().setSp(16),
         ),
       ),
     );

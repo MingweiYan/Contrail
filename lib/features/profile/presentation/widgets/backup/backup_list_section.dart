@@ -32,7 +32,7 @@ class BackupListSection extends StatelessWidget {
           title,
           style: TextStyle(
             fontSize: ScreenUtil().setSp(29),
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
           ),
         ),
         SizedBox(height: BaseLayoutConstants.spacingSmall),
@@ -43,27 +43,21 @@ class BackupListSection extends StatelessWidget {
             '刷新备份文件列表',
             style: TextStyle(fontSize: ScreenUtil().setSp(18)),
           ),
-          style: ElevatedButton.styleFrom(
-            minimumSize: Size(
-              double.infinity,
-              DataBackupPageConstants.buttonHeight,
+          style: ThemeHelper.elevatedButtonStyle(
+            context,
+            padding: EdgeInsets.symmetric(
+              horizontal: ScreenUtil().setWidth(18),
+              vertical: ScreenUtil().setHeight(16),
             ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         ),
         SizedBox(height: BaseLayoutConstants.spacingLarge),
         Container(
           padding: DataBackupPageConstants.containerPadding,
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
+          decoration: ThemeHelper.panelDecoration(
+            context,
+            radius: ScreenUtil().setWidth(24),
           ),
           child: isLoading
               ? const Center(child: CircularProgressIndicator())

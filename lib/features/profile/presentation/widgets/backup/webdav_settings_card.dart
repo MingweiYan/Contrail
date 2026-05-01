@@ -37,17 +37,9 @@ class WebDavSettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: DataBackupPageConstants.containerPadding,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
+      decoration: ThemeHelper.panelDecoration(
+        context,
+        radius: ScreenUtil().setWidth(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,11 +149,13 @@ class WebDavSettingsCard extends StatelessWidget {
               '保存配置',
               style: TextStyle(fontSize: ScreenUtil().setSp(18)),
             ),
-            style: ElevatedButton.styleFrom(
-              minimumSize: Size(
-                double.infinity,
-                DataBackupPageConstants.buttonHeight,
+            style: ThemeHelper.elevatedButtonStyle(
+              context,
+              padding: EdgeInsets.symmetric(
+                horizontal: ScreenUtil().setWidth(18),
+                vertical: ScreenUtil().setHeight(16),
               ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           ),
           Divider(
@@ -209,11 +203,13 @@ class WebDavSettingsCard extends StatelessWidget {
               '执行网络备份',
               style: TextStyle(fontSize: ScreenUtil().setSp(18)),
             ),
-            style: ElevatedButton.styleFrom(
-              minimumSize: Size(
-                double.infinity,
-                DataBackupPageConstants.buttonHeight,
+            style: ThemeHelper.elevatedButtonStyle(
+              context,
+              padding: EdgeInsets.symmetric(
+                horizontal: ScreenUtil().setWidth(18),
+                vertical: ScreenUtil().setHeight(16),
               ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
