@@ -138,30 +138,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.easeOut,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(
-                          StatisticsPageConstants.headerBorderRadius,
-                        ),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          spreadRadius: 5,
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                    decoration: ThemeHelper.heroDecoration(
+                      context,
+                      radius: StatisticsPageConstants.headerBorderRadius,
                     ),
                     padding:
                         StatisticsPageConstants.headerPadding, // 与习惯页面统一内边距
@@ -176,7 +155,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             fontSize: StatisticsPageConstants
                                 .titleFontSize, // 与习惯页面统一标题大小
                             fontWeight: FontWeight.bold,
-                            color: ThemeHelper.onPrimary(context),
+                            color: ThemeHelper.visualTheme(context).heroForeground,
                           ),
                         ),
                         SizedBox(
@@ -187,9 +166,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           style: ThemeHelper.textStyleWithTheme(
                             context,
                             fontSize: StatisticsPageConstants.subtitleFontSize,
-                            color: ThemeHelper.onPrimary(
+                            color: ThemeHelper.visualTheme(
                               context,
-                            ).withOpacity(0.9),
+                            ).heroSecondaryForeground,
                           ),
                         ),
                         SizedBox(

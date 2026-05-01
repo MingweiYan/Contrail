@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
 
 /// 统计页面的功能卡片组件
 /// 用于显示各种功能按钮，如视图切换、数据显示、操作按钮等
@@ -34,55 +35,55 @@ class StatisticsCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-          HeaderCardWidgetConstants.statisticsCardBorderRadius,
-        ),
+    return Container(
+      decoration: ThemeHelper.settingCardDecoration(
+        context,
+        radius: HeaderCardWidgetConstants.statisticsCardBorderRadius,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(
-          HeaderCardWidgetConstants.statisticsCardBorderRadius,
-        ),
-        child: Container(
-          width: HeaderCardWidgetConstants.statisticsCardWidth,
-          height: HeaderCardWidgetConstants.statisticsCardHeight,
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 根据提供的数据显示图标或文本
-              if (icon != null)
-                Icon(
-                  icon,
-                  size: HeaderCardWidgetConstants.statisticsCardIconSize,
-                  color: iconColor ?? Colors.black,
-                )
-              else
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(
+            HeaderCardWidgetConstants.statisticsCardBorderRadius,
+          ),
+          child: Container(
+            width: HeaderCardWidgetConstants.statisticsCardWidth,
+            height: HeaderCardWidgetConstants.statisticsCardHeight,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null)
+                  Icon(
+                    icon,
+                    size: HeaderCardWidgetConstants.statisticsCardIconSize,
+                    color: iconColor ?? ThemeHelper.primary(context),
+                  )
+                else
+                  Text(
+                    text!,
+                    style:
+                        textStyle ??
+                        TextStyle(
+                          fontSize: HeaderCardWidgetConstants
+                              .statisticsCardTextFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeHelper.onBackground(context),
+                        ),
+                  ),
+                SizedBox(height: HeaderCardWidgetConstants.statisticsCardSpacing),
                 Text(
-                  text!,
-                  style:
-                      textStyle ??
-                      TextStyle(
-                        fontSize: HeaderCardWidgetConstants
-                            .statisticsCardTextFontSize,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                  title,
+                  style: TextStyle(
+                    fontSize:
+                        HeaderCardWidgetConstants.statisticsCardTitleFontSize,
+                    color: ThemeHelper.onBackground(context),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              SizedBox(height: HeaderCardWidgetConstants.statisticsCardSpacing),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize:
-                      HeaderCardWidgetConstants.statisticsCardTitleFontSize,
-                  color: Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

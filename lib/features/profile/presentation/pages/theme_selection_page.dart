@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import 'package:contrail/core/state/theme_provider.dart';
@@ -17,107 +18,155 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final currentThemeName = themeProvider.currentTheme.name;
+    final currentThemeId = themeProvider.selectedThemeId;
 
     return Scaffold(
-      appBar: AppBar(title: Text('主题设置')),
-      body: Container(
+      appBar: AppBar(title: const Text('主题设置')),
+      body: DecoratedBox(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
-        width: double.infinity,
-        height: double.infinity,
-        padding: PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 主题样式选择
-              Text(
-                '主题样式',
-                style: TextStyle(
-                  fontSize: ThemeSelectionPageConstants.titleFontSize,
-                  fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: PageLayoutConstants.getPageContainerPadding(),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '完整视觉主题',
+                  style: TextStyle(
+                    fontSize: ThemeSelectionPageConstants.titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.onBackground(context),
+                  ),
                 ),
-              ),
-              SizedBox(height: ThemeSelectionPageConstants.titleGridSpacing),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // 减少列数，增加每个卡片的可用宽度
-                  crossAxisSpacing:
-                      ThemeSelectionPageConstants.gridCrossAxisSpacing,
-                  mainAxisSpacing:
-                      ThemeSelectionPageConstants.gridMainAxisSpacing,
-                  childAspectRatio:
-                      ThemeSelectionPageConstants.gridChildAspectRatio,
+                SizedBox(height: ThemeSelectionPageConstants.checkIconSpacing),
+                Text(
+                  '当前仅保留 3 套完整视觉主题，支持快捷切换并持久化保存。',
+                  style: TextStyle(
+                    fontSize: ThemeSelectionPageConstants.subtitleFontSize,
+                    color: ThemeHelper.onBackground(context).withOpacity(0.72),
+                    height: 1.6,
+                  ),
                 ),
-                itemCount: themeProvider.availableThemes.length, // 仅显示可用主题
-                itemBuilder: (context, index) {
-                  // 普通主题选项
-                  final theme = themeProvider.availableThemes[index];
-                  final isSelected = theme.name == currentThemeName;
-
-                  return GestureDetector(
-                    onTap: () {
-                      themeProvider.setThemeByName(theme.name);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          width: isSelected
-                              ? ThemeSelectionPageConstants.selectedBorderWidth
-                              : ThemeSelectionPageConstants.borderWidth,
-                          color: isSelected
-                              ? Theme.of(context).primaryColor
-                              : Colors.grey,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          ThemeSelectionPageConstants.borderRadius,
-                        ),
-                        color:
-                            themeProvider.themeMode == app_theme.ThemeMode.dark
-                            ? theme.darkTheme.colorScheme.primary
-                            : theme.lightTheme.colorScheme.primary,
-                      ),
-                      padding: ThemeSelectionPageConstants.containerPadding,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            theme.name,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize:
-                                  ThemeSelectionPageConstants.themeNameFontSize,
-                            ),
-                            textAlign: TextAlign.center,
+                SizedBox(height: ThemeSelectionPageConstants.sectionSpacing),
+                ...themeProvider.availableThemes.map((theme) {
+                  final isSelected = theme.id == currentThemeId;
+                  final scheme =
+                      theme.preferredMode == app_theme.ThemeMode.dark
+                      ? theme.darkTheme.colorScheme
+                      : theme.lightTheme.colorScheme;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: ThemeSelectionPageConstants.cardSpacing,
+                    ),
+                    child: GestureDetector(
+                      onTap: () => themeProvider.setThemeById(theme.id),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        padding: ThemeSelectionPageConstants.cardPadding,
+                        decoration: ThemeHelper.settingCardDecoration(
+                          context,
+                          radius: ThemeSelectionPageConstants.borderRadius,
+                        ).copyWith(
+                          border: Border.all(
+                            width: isSelected
+                                ? ThemeSelectionPageConstants.selectedBorderWidth
+                                : ThemeSelectionPageConstants.borderWidth,
+                            color: isSelected
+                                ? scheme.primary
+                                : ThemeHelper.visualTheme(
+                                    context,
+                                  ).panelBorderColor,
                           ),
-                          if (isSelected)
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    theme.name,
+                                    style: TextStyle(
+                                      fontSize:
+                                          ThemeSelectionPageConstants
+                                              .themeNameFontSize,
+                                      fontWeight: FontWeight.w700,
+                                      color: ThemeHelper.onBackground(context),
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Container(
+                                    width:
+                                        ThemeSelectionPageConstants.checkIconSize +
+                                        ScreenUtil().setWidth(10),
+                                    height:
+                                        ThemeSelectionPageConstants.checkIconSize +
+                                        ScreenUtil().setWidth(10),
+                                    decoration: BoxDecoration(
+                                      color: scheme.primary.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(
+                                        ScreenUtil().setWidth(16),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.check,
+                                      color: scheme.primary,
+                                      size:
+                                          ThemeSelectionPageConstants
+                                              .checkIconSize,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: ThemeSelectionPageConstants.checkIconSpacing,
+                            ),
+                            Text(
+                              theme.description,
+                              style: TextStyle(
+                                fontSize: ThemeSelectionPageConstants
+                                    .themeDescriptionFontSize,
+                                color: ThemeHelper.onBackground(
+                                  context,
+                                ).withOpacity(0.68),
+                                height: 1.6,
+                              ),
+                            ),
                             SizedBox(
                               height:
-                                  ThemeSelectionPageConstants.checkIconSpacing,
+                                  ThemeSelectionPageConstants.sectionSpacing,
                             ),
-                          if (isSelected)
-                            Icon(
-                              Icons.check,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              size: ThemeSelectionPageConstants.checkIconSize,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                ScreenUtil().setWidth(999),
+                              ),
+                              child: Row(
+                                children: theme.previewColors
+                                    .map(
+                                      (color) => Expanded(
+                                        child: Container(
+                                          height: ThemeSelectionPageConstants
+                                              .previewStripHeight,
+                                          color: color,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
-                },
-              ),
-            ],
+                }),
+              ],
+            ),
           ),
         ),
       ),

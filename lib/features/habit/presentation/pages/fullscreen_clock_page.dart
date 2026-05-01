@@ -4,6 +4,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:async';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
 
 class FullscreenClockPage extends StatefulWidget {
   const FullscreenClockPage({super.key});
@@ -80,7 +81,7 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
         Navigator.pop(context);
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: ThemeHelper.visualTheme(context).splashBackground,
         body: SafeArea(
           child: Center(
             child: Column(
@@ -92,7 +93,7 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
                   style: TextStyle(
                     fontSize: FullscreenClockPageConstants.mainClockFontSize,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: ThemeHelper.visualTheme(context).heroForeground,
                   ),
                 ),
                 SizedBox(
@@ -103,7 +104,9 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
                   '点击屏幕返回专注页面',
                   style: TextStyle(
                     fontSize: FullscreenClockPageConstants.hintTextFontSize,
-                    color: Colors.grey,
+                    color: ThemeHelper.visualTheme(
+                      context,
+                    ).heroSecondaryForeground,
                   ),
                 ),
               ],

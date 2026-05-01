@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
 
 class FullEditorPage extends StatefulWidget {
   final String? initialContent; // 初始富文本内容
@@ -55,8 +56,10 @@ class _FullEditorPageState extends State<FullEditorPage> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
+      body: Container(
+        decoration: ThemeHelper.generateBackgroundDecoration(context),
+        child: SafeArea(
+          child: Column(
           children: [
             // 根据Flutter Quill官方文档，显式添加工具栏
             QuillSimpleToolbar(
@@ -78,6 +81,7 @@ class _FullEditorPageState extends State<FullEditorPage> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -110,7 +114,7 @@ class _FullEditorPageState extends State<FullEditorPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('保存失败: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: ThemeHelper.visualTheme(context).destructiveColor,
         ),
       );
     }

@@ -754,31 +754,20 @@ class ClockWidgetConstants extends BaseLayoutConstants {
 
 /// 主题选择页面专用常量
 class ThemeSelectionPageConstants extends BaseLayoutConstants {
-  // 标题相关参数
   static final double titleFontSize = ScreenUtil().setSp(24);
-
-  // 间距相关参数
-  static final double titleGridSpacing = ScreenUtil().setHeight(12);
-  static final double gridCrossAxisSpacing = ScreenUtil().setWidth(16);
-  static final double gridMainAxisSpacing = ScreenUtil().setWidth(16);
-
-  // 网格相关参数
-  static const double gridChildAspectRatio = 2.0 / 1;
-
-  // 边框相关参数
+  static final double subtitleFontSize = ScreenUtil().setSp(15);
+  static final double sectionSpacing = ScreenUtil().setHeight(16);
+  static final double cardSpacing = ScreenUtil().setHeight(14);
   static final double selectedBorderWidth = ScreenUtil().setWidth(3);
   static final double borderWidth = ScreenUtil().setWidth(1);
-  static final double borderRadius = ScreenUtil().setWidth(12);
-
-  // 容器相关参数
+  static final double borderRadius = ScreenUtil().setWidth(24);
   static final EdgeInsets containerPadding = EdgeInsets.all(
-    ScreenUtil().setWidth(16),
+    ScreenUtil().setWidth(20),
   );
-
-  // 文本相关参数
+  static final EdgeInsets cardPadding = EdgeInsets.all(ScreenUtil().setWidth(20));
   static final double themeNameFontSize = ScreenUtil().setSp(20);
-
-  // 图标相关参数
+  static final double themeDescriptionFontSize = ScreenUtil().setSp(14);
+  static final double previewStripHeight = ScreenUtil().setHeight(10);
   static final double checkIconSpacing = ScreenUtil().setHeight(8);
   static final double checkIconSize = ScreenUtil().setSp(22);
 }

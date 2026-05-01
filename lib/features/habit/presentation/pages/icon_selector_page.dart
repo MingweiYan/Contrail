@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
 
 class IconSelectorPage extends StatefulWidget {
   final String? selectedIcon;
@@ -94,12 +95,17 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
               // 返回当前选中的图标名称
               Navigator.pop(context, _currentSelectedIcon);
             },
-            child: const Text('完成', style: TextStyle(color: Colors.white)),
+            child: Text(
+              '完成',
+              style: TextStyle(color: ThemeHelper.primary(context)),
+            ),
           ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
+      body: Container(
+        decoration: ThemeHelper.generateBackgroundDecoration(context),
+        child: SafeArea(
+          child: Padding(
           padding: IconSelectorPageConstants.pagePadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +258,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                       ),
               ),
             ],
+          ),
           ),
         ),
       ),

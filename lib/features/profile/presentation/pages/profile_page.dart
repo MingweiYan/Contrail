@@ -57,25 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
       curve: Curves.easeOut,
       width: double.infinity,
       padding: EdgeInsets.all(24.w),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.all(Radius.circular(24.w)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 5,
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      decoration: ThemeHelper.heroDecoration(context, radius: 24.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -89,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 context,
                 fontSize: 28.sp,
                 fontWeight: FontWeight.bold,
-                color: ThemeHelper.onPrimary(context),
+                color: ThemeHelper.visualTheme(context).heroForeground,
               ),
             ),
           ),
@@ -99,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage> {
             style: ThemeHelper.textStyleWithTheme(
               context,
               fontSize: 16.sp,
-              color: ThemeHelper.onPrimary(context).withOpacity(0.9),
+              color: ThemeHelper.visualTheme(context).heroSecondaryForeground,
             ),
           ),
         ],
@@ -124,16 +106,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       margin: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: ThemeHelper.visualTheme(context).panelColor,
         borderRadius: BorderRadius.circular(20.w),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: ThemeHelper.visualTheme(context).panelBorderColor),
+        boxShadow: ThemeHelper.visualTheme(context).panelShadow,
       ),
       padding: EdgeInsets.all(24.w),
       child: Column(
@@ -250,16 +226,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: ThemeHelper.visualTheme(context).panelSecondaryColor,
         borderRadius: BorderRadius.circular(20.w),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: ThemeHelper.visualTheme(context).panelBorderColor),
+        boxShadow: ThemeHelper.visualTheme(context).panelShadow,
       ),
       child: Column(
         children: [
@@ -487,16 +457,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       margin: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: ThemeHelper.visualTheme(context).panelSecondaryColor,
         borderRadius: BorderRadius.circular(20.w),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: ThemeHelper.visualTheme(context).panelBorderColor),
+        boxShadow: ThemeHelper.visualTheme(context).panelShadow,
       ),
       child: ListTile(
         title: Text(

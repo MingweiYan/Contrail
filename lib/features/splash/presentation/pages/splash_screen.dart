@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart' show ScreenUtil;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:contrail/core/routing/app_router.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,9 +23,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final splashColors = ThemeHelper.splashColors(context);
+    final visualTheme = ThemeHelper.visualTheme(context);
     return Scaffold(
       body: Container(
-        color: Colors.white, // 使用白色背景，与原配置保持一致
+        decoration: BoxDecoration(
+          gradient: ThemeHelper.generateBackgroundDecoration(context)?.gradient,
+          color: splashColors.first,
+        ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -46,7 +52,16 @@ class _SplashScreenState extends State<SplashScreen> {
                 style: TextStyle(
                   fontSize: ScreenUtil().setSp(36),
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: splashColors.last,
+                ),
+              ),
+              SizedBox(height: ScreenUtil().setHeight(16)),
+              Text(
+                'Every step leaves a trace',
+                style: TextStyle(
+                  fontSize: ScreenUtil().setSp(18),
+                  color: visualTheme.heroSecondaryForeground,
+                  letterSpacing: 0.4,
                 ),
               ),
             ],
