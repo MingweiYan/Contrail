@@ -176,7 +176,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
               onColorChanged: (color) {
                 tempColor = color;
               },
-              showLabel: true,
+              labelTypes: const [],
               pickerAreaHeightPercent: 0.8,
               enableAlpha: false, // 不启用透明度选择
             ),
@@ -258,7 +258,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
       await _loadAllColors();
 
       // 如果删除的是当前选中的颜色，选择第一个颜色
-      if (_selectedColor.value == color.value && _colorOptions.isNotEmpty) {
+      if (_selectedColor.toARGB32() == color.toARGB32() &&
+          _colorOptions.isNotEmpty) {
         setState(() {
           _selectedColor = _colorOptions[0];
         });
@@ -434,7 +435,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
           cycleType: _isSetGoal ? _cycleType : null,
           goalType: _goalType,
           trackTime: _trackTime,
-          colorValue: _selectedColor.value,
+          colorValue: _selectedColor.toARGB32(),
           targetTimeMinutes: _trackTime ? _targetTimeMinutes : null,
         );
 
@@ -484,6 +485,10 @@ class _AddHabitPageState extends State<AddHabitPage> {
   @override
   Widget build(BuildContext context) {
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
+    final isEditing = widget.habitToEdit != null;
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final heroSecondary =
+        ThemeHelper.visualTheme(context).heroSecondaryForeground;
 
     return Scaffold(
       body: Container(
@@ -491,798 +496,493 @@ class _AddHabitPageState extends State<AddHabitPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // 渐变背景的头部
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOut,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(ScreenUtil().setWidth(30)),
-                    bottomRight: Radius.circular(ScreenUtil().setWidth(30)),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 5,
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                padding: AddHabitPageConstants.headerPadding,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: ThemeHelper.onPrimary(context),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                  padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _buildHeaderButton(
+                            context,
+                            icon: Icons.arrow_back_rounded,
+                            label: '返回',
+                            onTap: () => Navigator.pop(context),
                           ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        Text(
-                          widget.habitToEdit != null ? '编辑习惯' : '添加习惯',
-                          style: TextStyle(
-                            fontSize: AddHabitPageConstants.titleFontSize,
-                            fontWeight: FontWeight.bold,
-                            color: ThemeHelper.onPrimary(context),
+                          const Spacer(),
+                          _buildHeaderButton(
+                            context,
+                            icon: isEditing
+                                ? Icons.save_rounded
+                                : Icons.add_rounded,
+                            label: isEditing ? '保存' : '创建',
+                            onTap: _saveHabit,
                           ),
-                        ),
-                        TextButton(
-                          onPressed: _saveHabit,
-                          child: Text(
-                            widget.habitToEdit != null ? '保存' : '添加',
-                            style: TextStyle(
-                              fontSize: AddHabitPageConstants.titleFontSize,
-                              fontWeight: FontWeight.bold,
+                        ],
+                      ),
+                      SizedBox(height: 20.h),
+                      Row(
+                        children: [
+                          Container(
+                            width: 68.w,
+                            height: 68.w,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  _selectedColor,
+                                  _selectedColor.withValues(alpha: 0.76),
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _selectedColor.withValues(alpha: 0.28),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              _getIconData(_selectedIcon),
+                              size: 28.sp,
                               color: ThemeHelper.onPrimary(context),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          SizedBox(width: 16.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isEditing ? '编辑习惯' : '新增习惯',
+                                  style: TextStyle(
+                                    fontSize: 28.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: heroForeground,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  '统一管理图标、颜色、目标与周期设置',
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    height: 1.5,
+                                    color: heroSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-
-              // 表单内容
               Expanded(
                 child: SingleChildScrollView(
-                  padding: AddHabitPageConstants.formPadding,
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 28.h),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 图标选择
-                        Center(
-                          child: Card(
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AddHabitPageConstants.iconContainerRadius,
-                              ),
-                            ),
-                            child: GestureDetector(
-                              onTap: _openIconSelector,
-                              child: Container(
-                                width: AddHabitPageConstants.iconContainerSize,
-                                height: AddHabitPageConstants.iconContainerSize,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      _selectedColor,
-                                      _selectedColor.withOpacity(0.8),
-                                    ],
+                        _buildSectionPanel(
+                          context,
+                          child: Column(
+                            children: [
+                              GestureDetector(
+                                onTap: _openIconSelector,
+                                child: Container(
+                                  width:
+                                      AddHabitPageConstants.iconContainerSize,
+                                  height:
+                                      AddHabitPageConstants.iconContainerSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        _selectedColor,
+                                        _selectedColor.withValues(alpha: 0.78),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      _getIconData(_selectedIcon),
+                                      size: AddHabitPageConstants.iconSize,
+                                      color: ThemeHelper.onPrimary(context),
+                                    ),
                                   ),
                                 ),
-                                child: Center(
-                                  child: Icon(
-                                    _getIconData(_selectedIcon),
-                                    size: AddHabitPageConstants.iconSize,
-                                    color: ThemeHelper.onPrimary(context),
-                                  ),
+                              ),
+                              SizedBox(height: 14.h),
+                              Text(
+                                '图标与视觉标识',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: ThemeHelper.onBackground(context),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: AddHabitPageConstants.smallSpacing),
-                        Center(
-                          child: TextButton(
-                            onPressed: _openIconSelector,
-                            child: Text(
-                              '选择图标',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: ScreenUtil().setSp(20),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: AddHabitPageConstants.xLargeSpacing),
-
-                        // 习惯名称
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AddHabitPageConstants.cardBorderRadius,
-                            ),
-                          ),
-                          child: Container(
-                            padding: EdgeInsets.all(
-                              AddHabitPageConstants.cardPadding,
-                            ),
-                            child: TextFormField(
-                              controller: _nameController,
-                              decoration: InputDecoration(
-                                hintText: '习惯名称',
-                                border: InputBorder.none,
-                                hintStyle: TextStyle(
-                                  fontSize:
-                                      AddHabitPageConstants.subtitleFontSize,
-                                  fontWeight: FontWeight.normal,
-                                  color: Theme.of(
+                              SizedBox(height: 6.h),
+                              Text(
+                                '点击图标可快速更换当前习惯的视觉符号',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: ThemeHelper.onBackground(
                                     context,
-                                  ).colorScheme.onSurface.withOpacity(0.5),
+                                  ).withValues(alpha: 0.68),
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                              style: TextStyle(
-                                fontSize: AddHabitPageConstants.inputFontSize,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
+                              SizedBox(height: 14.h),
+                              TextButton.icon(
+                                onPressed: _openIconSelector,
+                                icon: const Icon(Icons.edit_rounded),
+                                label: const Text('更换图标'),
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return '请输入习惯名称';
-                                }
-                                return null;
-                              },
-                            ),
+                            ],
                           ),
                         ),
-                        SizedBox(height: AddHabitPageConstants.mediumSpacing),
-
-                        // 习惯描述（富文本显示 + 完整编辑按钮）
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AddHabitPageConstants.cardBorderRadius,
+                        SizedBox(height: 16.h),
+                        _buildSectionLabel(context, '习惯名称'),
+                        SizedBox(height: 10.h),
+                        _buildSectionPanel(
+                          context,
+                          child: TextFormField(
+                            controller: _nameController,
+                            decoration: InputDecoration(
+                              hintText: '习惯名称',
+                              border: InputBorder.none,
+                              hintStyle: TextStyle(
+                                fontSize: AddHabitPageConstants.subtitleFontSize,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
                             ),
+                            style: TextStyle(
+                              fontSize: AddHabitPageConstants.inputFontSize,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入习惯名称';
+                              }
+                              return null;
+                            },
                           ),
-                          child: Container(
-                            padding: EdgeInsets.all(
-                              AddHabitPageConstants.cardPadding,
-                            ),
-                            child: Column(
-                              children: [
-                                // 富文本显示区域
-                                if (_descriptionJson != null &&
-                                    _descriptionJson!.isNotEmpty) ...[
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: AddHabitPageConstants
-                                          .richTextMinHeight,
-                                      maxHeight: AddHabitPageConstants
-                                          .richTextMaxHeight,
-                                    ), // 设置最小高度和最大高度
-                                    child: QuillEditor.basic(
-                                      controller: QuillController(
-                                        document: Document.fromJson(
-                                          jsonDecode(_descriptionJson!),
-                                        ),
-                                        selection:
-                                            const TextSelection.collapsed(
-                                              offset: 0,
-                                            ),
-                                      )..readOnly = true,
-                                      config: const QuillEditorConfig(
-                                        padding: EdgeInsets.zero,
-                                        autoFocus: false,
-                                        expands: false,
-                                        scrollable: true,
-                                        showCursor: false,
-                                        placeholder: '',
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildSectionLabel(context, '习惯描述'),
+                        SizedBox(height: 10.h),
+                        _buildSectionPanel(
+                          context,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_descriptionJson != null &&
+                                  _descriptionJson!.isNotEmpty) ...[
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight:
+                                        AddHabitPageConstants.richTextMinHeight,
+                                    maxHeight:
+                                        AddHabitPageConstants.richTextMaxHeight,
+                                  ),
+                                  child: QuillEditor.basic(
+                                    controller: QuillController(
+                                      document: Document.fromJson(
+                                        jsonDecode(_descriptionJson!),
                                       ),
+                                      selection:
+                                          const TextSelection.collapsed(
+                                            offset: 0,
+                                          ),
+                                    )..readOnly = true,
+                                    config: const QuillEditorConfig(
+                                      padding: EdgeInsets.zero,
+                                      autoFocus: false,
+                                      expands: false,
+                                      scrollable: true,
+                                      showCursor: false,
+                                      placeholder: '',
                                     ),
                                   ),
-                                ] else ...[
-                                  // 没有富文本时显示提示
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: ScreenUtil().setHeight(120),
-                                      maxHeight: ScreenUtil().setHeight(240),
-                                    ), // 设置最小高度为120，最大高度为240
-                                    child: Center(
-                                      child: Text(
-                                        '暂无描述内容',
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.5),
-                                        ),
-                                      ),
-                                    ),
+                                ),
+                              ] else ...[
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: ScreenUtil().setHeight(120),
+                                    maxHeight: ScreenUtil().setHeight(240),
                                   ),
-                                ],
-                                // 编辑按钮
-                                Padding(
-                                  padding: EdgeInsets.only(
-                                    top:
-                                        AddHabitPageConstants.extraSmallSpacing,
-                                  ),
-                                  child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton(
-                                      onPressed: _openFullEditor,
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.edit,
-                                            size: AddHabitPageConstants
-                                                .editIconSize,
-                                          ),
-                                          SizedBox(
-                                            width: AddHabitPageConstants
-                                                .editIconSpacing,
-                                          ),
-                                          Text('编辑描述'),
-                                        ],
+                                  child: Center(
+                                    child: Text(
+                                      '暂无描述内容',
+                                      style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ),
                                 ),
                               ],
-                            ),
+                              SizedBox(height: 12.h),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: _openFullEditor,
+                                  icon: Icon(
+                                    Icons.edit_rounded,
+                                    size: AddHabitPageConstants.editIconSize,
+                                  ),
+                                  label: const Text('编辑描述'),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        SizedBox(height: AddHabitPageConstants.largeSpacing),
-                        SizedBox(height: AddHabitPageConstants.mediumSpacing),
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AddHabitPageConstants.buttonBorderRadius,
-                            ),
-                          ),
-                          child: Container(
-                            padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
-                            child: GridView.builder(
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 6,
-                                    crossAxisSpacing:
-                                        AddHabitPageConstants.colorGridSpacing,
-                                    mainAxisSpacing:
-                                        AddHabitPageConstants.colorGridSpacing,
-                                  ),
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: _colorOptions.length + 1, // 增加一个加号按钮
-                              itemBuilder: (context, index) {
-                                // 如果是最后一个元素，显示加号按钮
-                                if (index == _colorOptions.length) {
-                                  return GestureDetector(
-                                    onTap: _openCustomColorPicker,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surface,
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.3),
-                                          width: AddHabitPageConstants
-                                              .colorBorderWidth,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.add,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                          size: ScreenUtil().setSp(18),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                // 普通颜色选项
-                                final color = _colorOptions[index];
-                                final isSelected =
-                                    color.value == _selectedColor.value;
+                        SizedBox(height: 16.h),
+                        _buildSectionLabel(context, '主题颜色'),
+                        SizedBox(height: 10.h),
+                        _buildSectionPanel(
+                          context,
+                          child: GridView.builder(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 6,
+                                  crossAxisSpacing:
+                                      AddHabitPageConstants.colorGridSpacing,
+                                  mainAxisSpacing:
+                                      AddHabitPageConstants.colorGridSpacing,
+                                ),
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _colorOptions.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index == _colorOptions.length) {
                                 return GestureDetector(
-                                  onTap: () => _selectColor(color),
-                                  onLongPress: () => _deleteCustomColor(color),
+                                  onTap: _openCustomColorPicker,
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: color,
-                                      border: isSelected
-                                          ? Border.all(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                              width: AddHabitPageConstants
-                                                  .colorSelectedBorderWidth,
-                                            )
-                                          : null,
+                                      color: Theme.of(context).colorScheme.surface,
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.24),
+                                        width:
+                                            AddHabitPageConstants.colorBorderWidth,
+                                      ),
                                     ),
-                                    child: isSelected
-                                        ? Center(
-                                            child: Icon(
-                                              Icons.check,
-                                              color: ThemeHelper.onPrimary(
-                                                context,
-                                              ),
-                                              size: AddHabitPageConstants
-                                                  .colorCheckIconSize,
-                                            ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.add,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                        size: ScreenUtil().setSp(18),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final color = _colorOptions[index];
+                              final isSelected =
+                                  color.toARGB32() ==
+                                  _selectedColor.toARGB32();
+                              return GestureDetector(
+                                onTap: () => _selectColor(color),
+                                onLongPress: () => _deleteCustomColor(color),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: color,
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                            width: AddHabitPageConstants
+                                                .colorSelectedBorderWidth,
                                           )
                                         : null,
                                   ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: AddHabitPageConstants.largeSpacing),
-
-                        // 目标类型
-                        Text(
-                          '目标类型',
-                          style: TextStyle(
-                            fontSize: AddHabitPageConstants.subtitleFontSize,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        SizedBox(height: AddHabitPageConstants.mediumSpacing),
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              ScreenUtil().setWidth(16),
-                            ),
-                          ),
-                          child: Container(
-                            padding: EdgeInsets.all(
-                              AddHabitPageConstants.cardPadding * 0.5,
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: RadioListTile<GoalType>(
-                                    title: Text(
-                                      '培养好习惯',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                                    value: GoalType.positive,
-                                    groupValue: _goalType,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _goalType = value!;
-                                      });
-                                    },
-                                    activeColor: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: RadioListTile<GoalType>(
-                                    title: Text(
-                                      '戒掉坏习惯',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                                    value: GoalType.negative,
-                                    groupValue: _goalType,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _goalType = value!;
-                                      });
-                                    },
-                                    activeColor: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: AddHabitPageConstants.largeSpacing),
-
-                        // 是否追踪时间
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '是否追踪时间',
-                              style: TextStyle(
-                                fontSize:
-                                    AddHabitPageConstants.subtitleFontSize,
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            Switch(
-                              value: _trackTime,
-                              onChanged: (value) {
-                                setState(() {
-                                  _trackTime = value;
-                                });
-                              },
-                              activeColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: ScreenUtil().setHeight(16)),
-
-                        // 是否设置目标
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '是否设置目标',
-                              style: TextStyle(
-                                fontSize: ScreenUtil().setSp(20),
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            Switch(
-                              value: _isSetGoal,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isSetGoal = value;
-                                  // 如果关闭目标设置，清除周期类型
-                                  if (!value) {
-                                    _cycleType = null;
-                                  }
-                                  // 如果开启目标设置且周期类型为null，设置默认周期类型为月度
-                                  else if (_cycleType == null) {
-                                    _cycleType = CycleType.monthly;
-                                  }
-                                });
-                              },
-                              activeColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: ScreenUtil().setHeight(16)),
-
-                        // 如果选择了设置目标，显示目标选项
-                        if (_isSetGoal) ...[
-                          Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                ScreenUtil().setWidth(16),
-                              ),
-                            ),
-                            child: Container(
-                              padding: EdgeInsets.all(
-                                ScreenUtil().setWidth(16),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '周期类型',
-                                    style: TextStyle(
-                                      fontSize: AddHabitPageConstants
-                                          .sectionTitleFontSize,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: AddHabitPageConstants.smallSpacing,
-                                  ),
-                                  // 周期类型选择
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      Expanded(
-                                        child: RadioListTile<CycleType>(
-                                          title: Text(
-                                            '每日',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color:
-                                                  _cycleType == CycleType.daily
-                                                      ? Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary
-                                                      : Theme.of(
-                                                          context,
-                                                        ).colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                                          value: CycleType.daily,
-                                          groupValue: _cycleType,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _cycleType = value;
-                                              // 当选择周期类型时，重置目标天数和目标时间
-                                              _targetDays = 1;
-                                              _updateTargetTimeMinutes();
-                                            });
-                                          },
-                                          activeColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: RadioListTile<CycleType>(
-                                          title: Text(
-                                            '每周',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color:
-                                                  _cycleType == CycleType.weekly
-                                                      ? Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary
-                                                      : Theme.of(
-                                                          context,
-                                                        ).colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                                          value: CycleType.weekly,
-                                          groupValue: _cycleType,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _cycleType = value;
-                                              // 当选择周期类型时，重置目标天数和目标时间
-                                              _targetDays = 1;
-                                              _updateTargetTimeMinutes();
-                                            });
-                                          },
-                                          activeColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: RadioListTile<CycleType>(
-                                          title: Text(
-                                            '每月',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color:
-                                                  _cycleType ==
-                                                      CycleType.monthly
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary
-                                                  : Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          contentPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                                          value: CycleType.monthly,
-                                          groupValue: _cycleType,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _cycleType = value;
-                                              // 当选择周期类型时，重置目标天数和目标时间
-                                              _targetDays = 1;
-                                              _updateTargetTimeMinutes();
-                                            });
-                                          },
-                                          activeColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: AddHabitPageConstants.mediumSpacing),
-
-                          // 目标天数滑动条 - 当循环类型不是每天时才显示
-                          if (_cycleType != CycleType.daily) ...[
-                            Card(
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  ScreenUtil().setWidth(16),
-                                ),
-                              ),
-                              child: Container(
-                                padding: EdgeInsets.all(
-                                  ScreenUtil().setWidth(16),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '目标天数',
-                                      style: TextStyle(
-                                        fontSize: AddHabitPageConstants
-                                            .sectionTitleFontSize,
-                                        fontWeight: FontWeight.w500,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height:
-                                          AddHabitPageConstants.smallSpacing,
-                                    ),
-                                    Slider(
-                                      value: _targetDays.toDouble(),
-                                      min: 1.0,
-                                      max: _getMaxDaysForCycleType().toDouble(),
-                                      divisions: _getMaxDaysForCycleType() - 1,
-                                      label: '$_targetDays 天',
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _targetDays = value.toInt();
-                                          // 当目标天数改变时，更新目标时间
-                                          _updateTargetTimeMinutes();
-                                        });
-                                      },
-                                      activeColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      inactiveColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary.withOpacity(0.3),
-                                    ),
-                                    SizedBox(
-                                      height: AddHabitPageConstants
-                                          .extraSmallSpacing,
-                                    ),
-                                    Center(
-                                      child: GestureDetector(
-                                        onTap: _showTargetDaysInputDialog,
-                                        child: Text(
-                                          '$_targetDays 天',
-                                          style: TextStyle(
-                                            fontSize: AddHabitPageConstants
-                                                .subtitleFontSize,
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(
+                                  child: isSelected
+                                      ? Center(
+                                          child: Icon(
+                                            Icons.check,
+                                            color: ThemeHelper.onPrimary(
                                               context,
-                                            ).colorScheme.primary,
-                                            decoration: TextDecoration.underline,
+                                            ),
+                                            size: AddHabitPageConstants
+                                                .colorCheckIconSize,
                                           ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                        )
+                                      : null,
                                 ),
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildSectionLabel(context, '目标类型'),
+                        SizedBox(height: 10.h),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildChoiceTile(
+                                context,
+                                label: '培养好习惯',
+                                selected: _goalType == GoalType.positive,
+                                onTap: () {
+                                  setState(() {
+                                    _goalType = GoalType.positive;
+                                  });
+                                },
                               ),
                             ),
-                            SizedBox(
-                              height: AddHabitPageConstants.largeSpacing,
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: _buildChoiceTile(
+                                context,
+                                label: '戒掉坏习惯',
+                                selected: _goalType == GoalType.negative,
+                                onTap: () {
+                                  setState(() {
+                                    _goalType = GoalType.negative;
+                                  });
+                                },
+                              ),
                             ),
                           ],
-                        ],
-
-                        // 如果选择了设置目标和追踪时间，显示目标时间值
-                        if (_isSetGoal && _trackTime) ...[
-                          Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                ScreenUtil().setWidth(16),
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildToggleTile(
+                          context,
+                          title: '追踪时间',
+                          subtitle: '记录每次专注的持续时长',
+                          value: _trackTime,
+                          onChanged: (value) {
+                            setState(() {
+                              _trackTime = value;
+                            });
+                          },
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildToggleTile(
+                          context,
+                          title: '设置目标',
+                          subtitle: '开启后可按周期管理完成次数与时长',
+                          value: _isSetGoal,
+                          onChanged: (value) {
+                            setState(() {
+                              _isSetGoal = value;
+                              if (!value) {
+                                _cycleType = null;
+                              } else if (_cycleType == null) {
+                                _cycleType = CycleType.monthly;
+                              }
+                            });
+                          },
+                        ),
+                        if (_isSetGoal) ...[
+                          SizedBox(height: 16.h),
+                          _buildSectionLabel(context, '周期类型'),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildChoiceTile(
+                                  context,
+                                  label: '每日',
+                                  selected: _cycleType == CycleType.daily,
+                                  onTap: () {
+                                    setState(() {
+                                      _cycleType = CycleType.daily;
+                                      _targetDays = 1;
+                                      _updateTargetTimeMinutes();
+                                    });
+                                  },
+                                ),
                               ),
-                            ),
-                            child: Container(
-                              padding: EdgeInsets.all(
-                                ScreenUtil().setWidth(16),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: _buildChoiceTile(
+                                  context,
+                                  label: '每周',
+                                  selected: _cycleType == CycleType.weekly,
+                                  onTap: () {
+                                    setState(() {
+                                      _cycleType = CycleType.weekly;
+                                      _targetDays = 1;
+                                      _updateTargetTimeMinutes();
+                                    });
+                                  },
+                                ),
                               ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: _buildChoiceTile(
+                                  context,
+                                  label: '每月',
+                                  selected: _cycleType == CycleType.monthly,
+                                  onTap: () {
+                                    setState(() {
+                                      _cycleType = CycleType.monthly;
+                                      _targetDays = 1;
+                                      _updateTargetTimeMinutes();
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_cycleType != CycleType.daily) ...[
+                            SizedBox(height: 16.h),
+                            _buildSectionPanel(
+                              context,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    '目标时长 (分钟)',
-                                    style: TextStyle(
-                                      fontSize: AddHabitPageConstants
-                                          .sectionTitleFontSize,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  SizedBox(height: ScreenUtil().setHeight(12)),
+                                  _buildSectionLabel(context, '目标天数'),
+                                  SizedBox(height: 8.h),
                                   Slider(
-                                    value: _targetTimeMinutes.toDouble(),
-                                    min: 5.0,
-                                    max: _getMaxTimeMinutes().toDouble(),
-                                    divisions:
-                                        (_getMaxTimeMinutes() ~/ 5), // 每5分钟一个刻度
-                                    label: '$_targetTimeMinutes 分钟',
+                                    value: _targetDays.toDouble(),
+                                    min: 1.0,
+                                    max: _getMaxDaysForCycleType().toDouble(),
+                                    divisions: _getMaxDaysForCycleType() - 1,
+                                    label: '$_targetDays 天',
                                     onChanged: (value) {
                                       setState(() {
-                                        _targetTimeMinutes = value.toInt();
+                                        _targetDays = value.toInt();
+                                        _updateTargetTimeMinutes();
                                       });
                                     },
-                                    activeColor: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    inactiveColor: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withOpacity(0.3),
-                                  ),
-                                  SizedBox(
-                                    height:
-                                        AddHabitPageConstants.extraSmallSpacing,
                                   ),
                                   Center(
                                     child: GestureDetector(
-                                      onTap: _showTargetTimeInputDialog,
+                                      onTap: _showTargetDaysInputDialog,
                                       child: Text(
-                                        '$_targetTimeMinutes 分钟',
+                                        '$_targetDays 天',
                                         style: TextStyle(
                                           fontSize: AddHabitPageConstants
                                               .subtitleFontSize,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w700,
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.primary,
@@ -1291,63 +991,89 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                       ),
                                     ),
                                   ),
-                                  SizedBox(
-                                    height:
-                                        AddHabitPageConstants.extraSmallSpacing,
-                                  ),
-                                  Center(
-                                    child: Text(
-                                      '最大时长: ${_getMaxTimeMinutes() ~/ 60}小时${_getMaxTimeMinutes() % 60}分钟',
-                                      style: TextStyle(
-                                        fontSize: AddHabitPageConstants
-                                            .sectionTitleFontSize,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                          SizedBox(height: AddHabitPageConstants.largeSpacing),
+                          ],
                         ],
-                        SizedBox(height: AddHabitPageConstants.largeSpacing),
-
-                        // 保存按钮
+                        if (_isSetGoal && _trackTime) ...[
+                          SizedBox(height: 16.h),
+                          _buildSectionPanel(
+                            context,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionLabel(context, '目标时长（分钟）'),
+                                SizedBox(height: 8.h),
+                                Slider(
+                                  value: _targetTimeMinutes.toDouble(),
+                                  min: 5.0,
+                                  max: _getMaxTimeMinutes().toDouble(),
+                                  divisions: _getMaxTimeMinutes() ~/ 5,
+                                  label: '$_targetTimeMinutes 分钟',
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _targetTimeMinutes = value.toInt();
+                                    });
+                                  },
+                                ),
+                                Center(
+                                  child: GestureDetector(
+                                    onTap: _showTargetTimeInputDialog,
+                                    child: Text(
+                                      '$_targetTimeMinutes 分钟',
+                                      style: TextStyle(
+                                        fontSize: AddHabitPageConstants
+                                            .subtitleFontSize,
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 10.h),
+                                Center(
+                                  child: Text(
+                                    '最大时长: ${_getMaxTimeMinutes() ~/ 60}小时${_getMaxTimeMinutes() % 60}分钟',
+                                    style: TextStyle(
+                                      fontSize: AddHabitPageConstants
+                                          .sectionTitleFontSize,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: 20.h),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: _saveHabit,
-                            style: ElevatedButton.styleFrom(
+                            style: ThemeHelper.elevatedButtonStyle(
+                              context,
                               padding:
                                   AddHabitPageConstants.buttonVerticalPadding,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AddHabitPageConstants.cardBorderRadius,
-                                ),
-                              ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              elevation: 4,
-                              shadowColor: Theme.of(
-                                context,
-                              ).colorScheme.primary.withOpacity(0.3),
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
                             ),
                             child: Text(
-                              widget.habitToEdit != null ? '更新习惯' : '添加习惯',
+                              isEditing ? '更新习惯' : '添加习惯',
                               style: TextStyle(
                                 fontSize: ScreenUtil().setSp(20),
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                                 color: ThemeHelper.onPrimary(context),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(height: AddHabitPageConstants.xLargeSpacing),
                       ],
                     ),
                   ),
@@ -1356,6 +1082,151 @@ class _AddHabitPageState extends State<AddHabitPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18.sp, color: heroForeground),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(BuildContext context, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w700,
+        color: ThemeHelper.onBackground(context),
+      ),
+    );
+  }
+
+  Widget _buildSectionPanel(BuildContext context, {required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: ThemeHelper.panelDecoration(context, radius: 24),
+      child: child,
+    );
+  }
+
+  Widget _buildChoiceTile(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 15.h),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.14)
+                : ThemeHelper.visualTheme(context).panelSecondaryColor,
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.5)
+                  : ThemeHelper.visualTheme(context).panelBorderColor,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected ? scheme.primary : ThemeHelper.onBackground(context),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return _buildSectionPanel(
+      context,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: ThemeHelper.onBackground(context),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    height: 1.5,
+                    color: ThemeHelper.onBackground(
+                      context,
+                    ).withValues(alpha: 0.68),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Switch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }
