@@ -34,6 +34,7 @@ class AddHabitPage extends StatefulWidget {
 class _AddHabitPageState extends State<AddHabitPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _shortDescriptionController;
   late String? _descriptionJson =
       AppConstants.defaultHabitRichTextContent; // 存储富文本JSON
   late GoalType _goalType;
@@ -60,6 +61,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
     if (widget.habitToEdit != null) {
       // 编辑模式
       _nameController = TextEditingController(text: widget.habitToEdit!.name);
+      _shortDescriptionController = TextEditingController(
+        text: widget.habitToEdit!.effectiveShortDescription,
+      );
 
       // 存储富文本JSON
       _descriptionJson =
@@ -85,6 +89,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
     } else {
       // 添加模式
       _nameController = TextEditingController();
+      _shortDescriptionController = TextEditingController(
+        text: Habit.defaultShortDescription,
+      );
       // 使用预定义的常量初始化富文本JSON，避免每次都重新构建
       _descriptionJson = AppConstants.defaultHabitRichTextContent;
       _goalType = GoalType.positive;
@@ -104,6 +111,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _shortDescriptionController.dispose();
     super.dispose();
   }
 
@@ -423,6 +431,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
 
         // 使用已有的富文本JSON数据
         final descriptionJson = _descriptionJson;
+        final shortDescription = _shortDescriptionController.text.trim().isEmpty
+            ? Habit.defaultShortDescription
+            : _shortDescriptionController.text.trim();
         logger.debug('保存习惯描述JSON: $descriptionJson');
 
         // 使用服务创建习惯对象
@@ -431,9 +442,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
           name: _nameController.text.trim(),
           icon: _selectedIcon,
           descriptionJson: descriptionJson,
-          shortDescription:
-              widget.habitToEdit?.shortDescription ??
-              Habit.defaultShortDescription,
+          shortDescription: shortDescription,
           targetDays: _targetDays,
           cycleType: _isSetGoal ? _cycleType : null,
           goalType: _goalType,
@@ -628,26 +637,6 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 ),
                               ),
                               SizedBox(height: 14.h),
-                              Text(
-                                '图标与视觉标识',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: ThemeHelper.onBackground(context),
-                                ),
-                              ),
-                              SizedBox(height: 6.h),
-                              Text(
-                                '点击图标可快速更换当前习惯的视觉符号',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: ThemeHelper.onBackground(
-                                    context,
-                                  ).withValues(alpha: 0.68),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 14.h),
                               TextButton.icon(
                                 onPressed: _openIconSelector,
                                 icon: const Icon(Icons.edit_rounded),
@@ -684,6 +673,60 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               }
                               return null;
                             },
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildSectionLabel(context, '卡片简短描述'),
+                        SizedBox(height: 10.h),
+                        _buildSectionPanel(
+                          context,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextFormField(
+                                controller: _shortDescriptionController,
+                                maxLines: 2,
+                                minLines: 2,
+                                decoration: InputDecoration(
+                                  hintText: Habit.defaultShortDescription,
+                                  border: InputBorder.none,
+                                  hintStyle: TextStyle(
+                                    fontSize:
+                                        AddHabitPageConstants.subtitleFontSize,
+                                    height: 1.5,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  height: 1.45,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                                validator: (value) {
+                                  if (value != null &&
+                                      value.trim().isNotEmpty &&
+                                      value.trim().length > 40) {
+                                    return '简短描述请控制在40字以内';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(height: 10.h),
+                              Text(
+                                '展示在习惯卡片名称下方；旧习惯未设置时会自动回退到默认提示文案。',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  height: 1.45,
+                                  color: ThemeHelper.onBackground(
+                                    context,
+                                  ).withValues(alpha: 0.64),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         SizedBox(height: 16.h),

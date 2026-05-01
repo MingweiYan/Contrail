@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
 
@@ -126,11 +127,18 @@ class HabitManagementService {
       // 没有设置目标，根据当天是否打卡判断
       return isTodayCompleted(habit) ? 1.0 : 0.0;
     } else {
-      // 有设置目标，取次数和时间完成度的最大值
+      // 积极习惯取更高完成度，消极习惯取更低完成度。
       double countProgress = getCompletionRateInCurrentCycle(habit);
       double timeProgress = habit.trackTime
           ? getTimeCompletionRateInCurrentCycle(habit)
           : 0.0;
+
+      if (habit.goalType == GoalType.negative) {
+        return habit.trackTime
+            ? (countProgress < timeProgress ? countProgress : timeProgress)
+            : countProgress;
+      }
+
       return countProgress > timeProgress ? countProgress : timeProgress;
     }
   }
@@ -219,7 +227,11 @@ class HabitManagementService {
   double getCompletionRateInCurrentCycle(Habit habit) {
     int completed = getCompletedDaysInCurrentCycle(habit);
     int total = habit.targetDays ?? 1;
-    return completed / total;
+    final progress = completed / total;
+    if (habit.goalType == GoalType.negative) {
+      return (1 - progress).clamp(0.0, 1.0);
+    }
+    return progress.clamp(0.0, 1.0);
   }
 
   /// 计算默认目标时间（天数 * 30分钟）
@@ -234,6 +246,10 @@ class HabitManagementService {
     int completedMinutes = getTotalMinutesInCurrentCycle(habit);
     int targetMinutes = habit.targetTimeMinutes ?? 
         _calculateDefaultTargetTimeMinutes(habit.targetDays!);
-    return completedMinutes / targetMinutes;
+    final progress = completedMinutes / targetMinutes;
+    if (habit.goalType == GoalType.negative) {
+      return (1 - progress).clamp(0.0, 1.0);
+    }
+    return progress.clamp(0.0, 1.0);
   }
 }

@@ -288,6 +288,13 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
+          _buildHeaderButton(
+            context,
+            icon: Icons.arrow_back_rounded,
+            label: '返回',
+            onTap: () => Navigator.pop(context),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

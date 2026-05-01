@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/features/habit/domain/services/habit_management_service.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/features/habit/presentation/pages/add_habit_page.dart';
@@ -73,8 +74,12 @@ class HabitItemWidget extends StatelessWidget {
         : 0;
     final displayProgress = habit.trackTime ? timeProgress : countProgress;
     const statusLabel = '已完成';
-    final actionLabel = habit.trackTime ? '继续' : '记录';
+    final actionLabel = habit.trackTime ? '追踪' : '记录';
     final shortDescription = habit.effectiveShortDescription;
+    final goalTypeText = habit.goalType == GoalType.negative ? '负向目标' : '正向目标';
+    final goalTypeIcon = habit.goalType == GoalType.negative
+        ? Icons.trending_down_rounded
+        : Icons.trending_up_rounded;
     final countMetricText = '$completedInCycle/$targetInCycle';
     final timeMetricText = '$completedMinutes/$targetMinutes';
     final habitIcon = IconHelper.getIconData(habit.icon, logError: false);
@@ -324,45 +329,33 @@ class HabitItemWidget extends StatelessWidget {
                             left: 0,
                             right: 120.w,
                             top: 82.h,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final gap = 6.w;
-                                final itemWidth =
-                                    (constraints.maxWidth - gap * 2) / 3;
-
-                                return Row(
-                                  children: [
-                                    SizedBox(
-                                      width: itemWidth,
-                                      child: _buildModeChip(
-                                        context,
-                                        text: habit.trackTime ? '统计时间' : '统计次数',
-                                        accentColor: timelineColor,
-                                      ),
-                                    ),
-                                    SizedBox(width: gap),
-                                    SizedBox(
-                                      width: itemWidth,
-                                      child: _buildMetricButton(
-                                        context,
-                                        label: '次数',
-                                        text: countMetricText,
-                                        accentColor: timelineColor,
-                                      ),
-                                    ),
-                                    SizedBox(width: gap),
-                                    SizedBox(
-                                      width: itemWidth,
-                                      child: _buildMetricButton(
-                                        context,
-                                        label: '时间',
-                                        text: timeMetricText,
-                                        accentColor: timelineColor,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                            child: Row(
+                              children: [
+                                _buildModeChip(
+                                  context,
+                                  text: goalTypeText,
+                                  icon: goalTypeIcon,
+                                  accentColor: timelineColor,
+                                ),
+                                SizedBox(width: 6.w),
+                                _buildMetricButton(
+                                  context,
+                                  label: '次数',
+                                  text: countMetricText,
+                                  icon: Icons.exposure_plus_1_rounded,
+                                  accentColor: timelineColor,
+                                ),
+                                if (habit.trackTime) ...[
+                                  SizedBox(width: 6.w),
+                                  _buildMetricButton(
+                                    context,
+                                    label: '时间',
+                                    text: timeMetricText,
+                                    icon: Icons.schedule_rounded,
+                                    accentColor: timelineColor,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                           Positioned(
@@ -400,11 +393,12 @@ class HabitItemWidget extends StatelessWidget {
   Widget _buildModeChip(
     BuildContext context, {
     required String text,
+    required IconData icon,
     required Color accentColor,
   }) {
     return Container(
       height: 28.h,
-      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 8.w),
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10.r),
@@ -412,14 +406,25 @@ class HabitItemWidget extends StatelessWidget {
           color: accentColor.withValues(alpha: 0.36),
         ),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 8.5.sp,
-          fontWeight: FontWeight.w700,
-          height: 1,
-          color: accentColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 8.5.sp,
+              fontWeight: FontWeight.w700,
+              height: 1,
+              color: accentColor,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Icon(
+            icon,
+            size: 10.sp,
+            color: accentColor.withValues(alpha: 0.92),
+          ),
+        ],
       ),
     );
   }
@@ -428,6 +433,7 @@ class HabitItemWidget extends StatelessWidget {
     BuildContext context, {
     required String label,
     required String text,
+    required IconData icon,
     required Color accentColor,
   }) {
     return Container(
@@ -441,44 +447,36 @@ class HabitItemWidget extends StatelessWidget {
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 8.sp,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.66),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 8.5.sp,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                    color: accentColor,
-                  ),
-                ),
-              ],
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 8.sp,
+              fontWeight: FontWeight.w700,
+              height: 1,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.66),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 8.5.sp,
+              fontWeight: FontWeight.w800,
+              height: 1,
+              color: accentColor,
             ),
           ),
           SizedBox(width: 8.w),
           Icon(
-            Icons.trending_up_rounded,
+            icon,
             size: 9.sp,
             color: accentColor.withValues(alpha: 0.92),
           ),
