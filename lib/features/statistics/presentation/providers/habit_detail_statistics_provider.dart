@@ -16,6 +16,11 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   // 0表示当前周期，-1表示上一个周期，1表示下一个周期
   int _periodOffset = 0;
 
+  // 当前周期为「最近 N」滚动窗口模式（例如"最近一年"/"最近一月"/"最近一周"）。
+  // 由用户在 _periodOffset == 0 时按下一次「下一周期」触发。
+  // 滚动窗口模式下不允许再往未来推，但允许按「上一周期」回到自然周期。
+  bool _isCompletionRollingWindow = false;
+
   // 独立的日历月份状态（不影响统计时间范围）
   int _calendarSelectedYear = DateTime.now().year;
   int _calendarSelectedMonth = DateTime.now().month;
@@ -33,6 +38,17 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   Habit get habit => _habit;
   int get calendarSelectedYear => _calendarSelectedYear;
   int get calendarSelectedMonth => _calendarSelectedMonth;
+  bool get isCompletionRollingWindow => _isCompletionRollingWindow;
+
+  /// 是否允许「下一周期」。
+  /// 约束：不能推到比「最近 N 滚动窗口」更靠未来的状态。
+  /// - 自然周期且 _periodOffset == 0 时：可按一次进入滚动窗口模式
+  /// - 滚动窗口模式：不能再按
+  /// - _periodOffset < 0：可按（回到更近的周期）
+  bool get canGoNextPeriod {
+    if (_isCompletionRollingWindow) return false;
+    return _periodOffset <= 0 ? true : false;
+  }
 
   /// 获取当前选中的周期时间范围
   /// 根据习惯的cycleType和_periodOffset计算开始和结束日期
@@ -40,6 +56,24 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     DateTime startDate, endDate;
     final now = DateTime.now();
     final cycleType = _habit.cycleType ?? CycleType.daily; // 默认使用每日类型
+
+    // 「最近 N」滚动窗口模式优先：end = 今天，start 按 cycleType 向前推。
+    if (_isCompletionRollingWindow) {
+      endDate = DateTime(now.year, now.month, now.day);
+      switch (cycleType) {
+        case CycleType.weekly:
+          startDate = endDate.subtract(const Duration(days: 6));
+          break;
+        case CycleType.monthly:
+        case CycleType.daily:
+          startDate = endDate.subtract(const Duration(days: 29));
+          break;
+        case CycleType.annual:
+          startDate = endDate.subtract(const Duration(days: 364));
+          break;
+      }
+      return DateTimeRange(start: startDate, end: endDate);
+    }
 
     switch (cycleType) {
       case CycleType.weekly:
@@ -56,7 +90,7 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
         break;
 
       case CycleType.monthly:
-        // 每月习惯：显示最近一个月
+        // 每月习惯：显示最近一月
         startDate = DateTime(now.year, now.month, 1);
         endDate = DateTime(now.year, now.month + 1, 0);
 
@@ -91,7 +125,7 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
         break;
 
       case CycleType.daily:
-        // 每日习惯：默认显示最近一个月
+        // 每日习惯：默认显示最近一月
         startDate = DateTime(now.year, now.month, 1);
         endDate = DateTime(now.year, now.month + 1, 0);
 
@@ -124,6 +158,18 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     final range = getCurrentPeriodRange();
     final cycleType = _habit.cycleType ?? CycleType.daily;
 
+    if (_isCompletionRollingWindow) {
+      switch (cycleType) {
+        case CycleType.weekly:
+          return '最近一周';
+        case CycleType.monthly:
+        case CycleType.daily:
+          return '最近一月';
+        case CycleType.annual:
+          return '最近一年';
+      }
+    }
+
     switch (cycleType) {
       case CycleType.weekly:
         // 计算是今年的第几周
@@ -144,14 +190,29 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
   }
 
   /// 切换到上一个周期
+  /// - 滚动窗口模式：回到当前自然周期（_periodOffset=0）
+  /// - 其他：_periodOffset 减 1
   void previousPeriod() {
-    _periodOffset--;
+    if (_isCompletionRollingWindow) {
+      _isCompletionRollingWindow = false;
+      _periodOffset = 0;
+    } else {
+      _periodOffset--;
+    }
     notifyListeners();
   }
 
   /// 切换到下一个周期
+  /// - 滚动窗口模式：禁止前进（上限），无反应
+  /// - _periodOffset == 0：进入滚动窗口模式（最近 N）
+  /// - _periodOffset < 0：向未来靠拢（_periodOffset 加 1）
   void nextPeriod() {
-    _periodOffset++;
+    if (!canGoNextPeriod) return;
+    if (_periodOffset == 0) {
+      _isCompletionRollingWindow = true;
+    } else {
+      _periodOffset++;
+    }
     notifyListeners();
   }
 

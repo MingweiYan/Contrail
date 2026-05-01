@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,7 @@ class DebugLogsViewerPage extends StatefulWidget {
 }
 
 class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
+  static const int _defaultReadBytes = 200 * 1024;
   String? _logsDir;
   String? _currentFilePath;
   String _content = '';
@@ -42,7 +44,7 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
     try {
       final file = File(filePath);
       if (await file.exists()) {
-        content = await file.readAsString();
+        content = await _readLogTail(file);
       } else {
         content = '日志文件不存在: $filePath';
       }
@@ -57,6 +59,77 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
     });
   }
 
+  Future<String> _readLogTail(File file) async {
+    final length = await file.length();
+    if (length == 0) {
+      return '';
+    }
+
+    final start = length > _defaultReadBytes ? length - _defaultReadBytes : 0;
+    final raf = await file.open(mode: FileMode.read);
+    try {
+      await raf.setPosition(start);
+      final bytes = await raf.read(length - start);
+      var content = utf8.decode(bytes, allowMalformed: true);
+
+      // 从中间截断时，丢弃第一行残缺内容，避免开头出现乱码/半行。
+      if (start > 0) {
+        final firstLineBreak = content.indexOf('\n');
+        if (firstLineBreak != -1 && firstLineBreak + 1 < content.length) {
+          content = content.substring(firstLineBreak + 1);
+        }
+        return '[仅显示末尾 200KB 内容，完整日志请使用“系统打开当前日志”]\n\n$content';
+      }
+      return content;
+    } finally {
+      await raf.close();
+    }
+  }
+
+  Future<void> _clearCurrentLogFile() async {
+    final filePath = _currentFilePath;
+    if (filePath == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('清空日志'),
+        content: Text('确定要清空当前日志文件吗？\n$filePath'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('清空'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.writeAsString('', mode: FileMode.write);
+      } else {
+        await file.create(recursive: true);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('日志已清空')));
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('清空日志失败: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,6 +137,13 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
         title: const Text('Debug日志查看'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: '清空当前日志',
+            onPressed: _loading || _currentFilePath == null
+                ? null
+                : _clearCurrentLogFile,
+          ),
         ],
       ),
       body: _loading

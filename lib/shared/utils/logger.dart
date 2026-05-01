@@ -12,7 +12,7 @@ abstract class LoggerPort {
   void fatal(String message, [dynamic error, StackTrace? stackTrace]);
   void enableFileLogging(
     String directoryPath, {
-    int maxBytes = 16 * 1024 * 1024,
+    int maxBytes = 4 * 1024 * 1024,
   });
 }
 
@@ -123,7 +123,7 @@ class AppLogger implements LoggerPort {
   @override
   void enableFileLogging(
     String directoryPath, {
-    int maxBytes = 16 * 1024 * 1024,
+    int maxBytes = 4 * 1024 * 1024,
   }) {
     final errorOutput = _LevelFileOutput(
       directoryPath,
@@ -186,6 +186,11 @@ class _LevelFileOutput extends LogOutput {
   late final String filePath;
   late final String rotatedPath;
   bool _inited = false;
+  // 文件输出使用 SimplePrinter，保证单行、无框线
+  final LogPrinter _filePrinter = SimplePrinter(
+    printTime: true,
+    colors: false,
+  );
 
   _LevelFileOutput(this.dirPath, this.maxBytes, this.fileName, this.minLevel);
 
@@ -239,7 +244,9 @@ class _LevelFileOutput extends LogOutput {
         return;
       }
     }
-    final content = event.lines.join('\n') + '\n';
+    // 使用 SimplePrinter 基于原始 LogEvent 重新渲染为单行，避免文件里出现 PrettyPrinter 的横线框
+    final rendered = _filePrinter.log(event.origin);
+    final content = rendered.join('\n') + '\n';
     final bytesLen = utf8.encode(content).length;
     final file = File(filePath);
     final currentSize = file.existsSync() ? file.lengthSync() : 0;

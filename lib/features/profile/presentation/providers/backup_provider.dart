@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
@@ -23,6 +24,9 @@ class BackupProvider extends ChangeNotifier {
   bool _autoBackupEnabled = false;
   int _backupFrequency = 1; // 默认每天备份
   DateTime? _lastBackupTime;
+  DateTime? _autoBackupLastRun;
+  String? _autoBackupLastError;
+  DateTime? _autoBackupLastErrorAt;
   int _retentionCount = 10;
 
   // 错误信息
@@ -43,6 +47,9 @@ class BackupProvider extends ChangeNotifier {
   bool get autoBackupEnabled => _autoBackupEnabled;
   int get backupFrequency => _backupFrequency;
   DateTime? get lastBackupTime => _lastBackupTime;
+  DateTime? get autoBackupLastRun => _autoBackupLastRun;
+  String? get autoBackupLastError => _autoBackupLastError;
+  DateTime? get autoBackupLastErrorAt => _autoBackupLastErrorAt;
   int get retentionCount => _retentionCount;
   String? get errorMessage => _errorMessage;
 
@@ -84,6 +91,18 @@ class BackupProvider extends ChangeNotifier {
       _autoBackupEnabled = settings['autoBackupEnabled'] as bool;
       _backupFrequency = settings['backupFrequency'] as int;
       _lastBackupTime = settings['lastBackupTime'] as DateTime?;
+
+      // 读取自动备份的最近检查时间 / 最近错误（可见化）
+      final prefs = await SharedPreferences.getInstance();
+      final lastRunMs = prefs.getInt('autoBackup_lastRun');
+      _autoBackupLastRun = lastRunMs != null
+          ? DateTime.fromMillisecondsSinceEpoch(lastRunMs)
+          : null;
+      _autoBackupLastError = prefs.getString('autoBackup_lastError');
+      final errAtMs = prefs.getInt('autoBackup_lastErrorAt');
+      _autoBackupLastErrorAt = errAtMs != null
+          ? DateTime.fromMillisecondsSinceEpoch(errAtMs)
+          : null;
 
       // 加载备份路径
       _localBackupPath = await _backupService.loadOrCreateBackupPath();
@@ -309,9 +328,6 @@ class BackupProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  /// 检查并执行自动备份
-  Future<void> _checkAndPerformAutoBackup() async {}
 
   /// 设置加载状态
   void _setLoading(bool loading) {

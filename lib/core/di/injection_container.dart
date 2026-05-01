@@ -27,6 +27,7 @@ import '../../shared/services/notification_service.dart';
 import '../../shared/services/habit_color_registry.dart';
 
 final sl = GetIt.instance;
+bool _dataLayerInitialized = false;
 
 Future<void> init() async {
   // 核心服务
@@ -72,22 +73,44 @@ Future<void> init() async {
   }
 }
 
+Future<void> initBackgroundBackupDependencies() async {
+  _registerSingletonIfAbsent<LoggerPort>(AppLogger());
+  _registerSingletonIfAbsent<HabitService>(HabitService());
+  await _initDataLayer();
+}
+
 Future<void> _initDataLayer() async {
+  if (_dataLayerInitialized) return;
   // 初始化Hive
   await Hive.initFlutter();
 
   // 注册适配器
-  Hive.registerAdapter(HabitAdapter());
-  Hive.registerAdapter(GoalTypeAdapter());
-  Hive.registerAdapter(CycleTypeAdapter());
-  Hive.registerAdapter(DurationAdapter());
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(HabitAdapter());
+  }
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(GoalTypeAdapter());
+  }
+  if (!Hive.isAdapterRegistered(2)) {
+    Hive.registerAdapter(CycleTypeAdapter());
+  }
+  if (!Hive.isAdapterRegistered(3)) {
+    Hive.registerAdapter(DurationAdapter());
+  }
 
   // 打开数据库
-  final habitBox = await Hive.openBox<Habit>('habits');
-  sl.registerLazySingleton(() => habitBox);
+  final habitBox = Hive.isBoxOpen('habits')
+      ? Hive.box<Habit>('habits')
+      : await Hive.openBox<Habit>('habits');
+  if (!sl.isRegistered<Box<Habit>>()) {
+    sl.registerLazySingleton<Box<Habit>>(() => habitBox);
+  }
 
   // 注册Repository
-  sl.registerLazySingleton<HabitRepository>(() => HiveHabitRepository(sl()));
+  if (!sl.isRegistered<HabitRepository>()) {
+    sl.registerLazySingleton<HabitRepository>(() => HiveHabitRepository(sl()));
+  }
+  _dataLayerInitialized = true;
 }
 
 void _initHabitDomainLayer() {
@@ -116,8 +139,14 @@ void _initHabitDomainLayer() {
 // 初始化Profile模块领域层
 void _initProfileDomainLayer() {
   // 注册存储服务
-  sl.registerSingleton<StorageServiceInterface>(LocalStorageService());
+  _registerSingletonIfAbsent<StorageServiceInterface>(LocalStorageService());
 
   // 注册用户设置服务
-  sl.registerSingleton<IUserSettingsService>(UserSettingsService());
+  _registerSingletonIfAbsent<IUserSettingsService>(UserSettingsService());
+}
+
+void _registerSingletonIfAbsent<T extends Object>(T instance) {
+  if (!sl.isRegistered<T>()) {
+    sl.registerSingleton<T>(instance);
+  }
 }

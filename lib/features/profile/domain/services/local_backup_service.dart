@@ -7,6 +7,7 @@ import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
+import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 
 /// 本地备份服务，负责本地通道的备份/恢复/列表/保留策略与路径权限
@@ -143,11 +144,10 @@ class LocalBackupService implements BackupChannelService {
       // 恢复用户设置
       if (backupData.containsKey('settings')) {
         final settings = backupData['settings'] as Map<String, dynamic>;
-        final skip = {
-          'autoBackupEnabled',
-          'backupFrequency',
-          'lastBackupTime',
+        final skip = <String>{
+          ...AutoBackupService.restoreSkipKeys,
           _localBackupPathKey,
+          'localBackupTreeUri',
         };
         await UserSettingsService().restoreSettings(settings, skip);
       }

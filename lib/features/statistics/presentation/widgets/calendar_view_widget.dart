@@ -47,8 +47,11 @@ class CalendarViewWidget extends StatelessWidget {
       if (firstDayOfMonthWeekday < 0) firstDayOfMonthWeekday += 7;
     }
 
-    // 计算需要显示的行数
-    final weeksInMonth = (daysInMonth + firstDayOfMonthWeekday - 1) ~/ 7 + 1;
+    // 计算需要显示的行数：
+    // firstDayOfMonthWeekday 是本月第一天前需要补的空格数（0-6），
+    // 加上本月天数后向上取整得到实际周数。
+    final weeksInMonth =
+        ((daysInMonth + firstDayOfMonthWeekday) / 7).ceil();
     final daysToDisplay = weeksInMonth * 7;
 
     // 动态调整单元格宽高比，增加高度以便显示更多习惯

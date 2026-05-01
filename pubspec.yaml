@@ -37,6 +37,7 @@ dependencies:
   flutter_svg: ^2.0.9
   saf: ^1.0.0
   open_filex: ^4.3.2
+  workmanager: ^0.9.0+3
 
 
 dev_dependencies:

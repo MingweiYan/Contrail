@@ -272,6 +272,32 @@ class _DataBackupPageState extends State<DataBackupPage>
                               fontSize: ScreenUtil().setSp(16),
                             ),
                           ),
+                          if (backupProvider.autoBackupLastRun != null)
+                            Text(
+                              '最近检查: ' +
+                                  backupProvider.autoBackupLastRun!
+                                      .toIso8601String()
+                                      .replaceAll('T', ' ')
+                                      .substring(0, 19),
+                              style: TextStyle(
+                                color: ThemeHelper.onBackground(
+                                  context,
+                                ).withValues(alpha: 0.6),
+                                fontSize: ScreenUtil().setSp(16),
+                              ),
+                            ),
+                          if (backupProvider.autoBackupLastError != null)
+                            Text(
+                              '最近错误: ${backupProvider.autoBackupLastError}'
+                                      .length >
+                                  80
+                                  ? '最近错误: ${backupProvider.autoBackupLastError!.substring(0, 80)}…'
+                                  : '最近错误: ${backupProvider.autoBackupLastError}',
+                              style: TextStyle(
+                                color: Colors.redAccent.withValues(alpha: 0.8),
+                                fontSize: ScreenUtil().setSp(16),
+                              ),
+                            ),
                           // 结束：备份设置卡片
                         ],
                       ],
