@@ -11,6 +11,7 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/features/profile/presentation/providers/profile_view_model.dart';
+import 'package:contrail/shared/widgets/app_hero_header.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -60,115 +61,36 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildHeader(ProfileViewModel viewModel) {
-    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-      width: double.infinity,
-      padding: EdgeInsets.all(24.w),
-      decoration: ThemeHelper.heroDecoration(context, radius: 24.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    viewModel.recordDebugTap(context);
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '我的',
-                        style: ThemeHelper.textStyleWithTheme(
-                          context,
-                          fontSize: 30.sp,
-                          fontWeight: FontWeight.w800,
-                          color: heroForeground,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        '把握当前的状态才能更好的前进',
-                        style: ThemeHelper.textStyleWithTheme(
-                          context,
-                          fontSize: 15.sp,
-                          color: ThemeHelper.visualTheme(
-                            context,
-                          ).heroSecondaryForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999.r),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.tune_rounded,
-                      size: 14.sp,
-                      color: heroForeground.withValues(alpha: 0.92),
-                    ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      '控制中心',
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w700,
-                        color: heroForeground.withValues(alpha: 0.92),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: _buildHeaderShortcut(
-                  icon: Icons.palette_outlined,
-                  title: '主题',
-                  subtitle: '切换风格',
-                  onTap: _openThemeSelection,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _buildHeaderShortcut(
-                  icon: Icons.tune_outlined,
-                  title: '个性化',
-                  subtitle: '偏好设置',
-                  onTap: _openPersonalizationSettings,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _buildHeaderShortcut(
-                  icon: Icons.cloud_outlined,
-                  title: '备份',
-                  subtitle: '数据管理',
-                  onTap: _openBackupSettings,
-                ),
-              ),
-            ],
-          ),
-        ],
+    return AppHeroHeader(
+      title: '我的',
+      subtitle: '把握当前的状态才能更好的前进',
+      badge: const AppHeroHeaderBadgeData(
+        icon: Icons.tune_rounded,
+        label: '控制中心',
       ),
+      onTitleTap: () {
+        viewModel.recordDebugTap(context);
+      },
+      actions: [
+        AppHeroHeaderActionData(
+          icon: Icons.palette_outlined,
+          title: '主题',
+          subtitle: 'Theme',
+          onTap: _openThemeSelection,
+        ),
+        AppHeroHeaderActionData(
+          icon: Icons.tune_outlined,
+          title: '个性化',
+          subtitle: 'Personal',
+          onTap: _openPersonalizationSettings,
+        ),
+        AppHeroHeaderActionData(
+          icon: Icons.cloud_outlined,
+          title: '备份',
+          subtitle: 'Backup',
+          onTap: _openBackupSettings,
+        ),
+      ],
     );
   }
 
@@ -685,52 +607,4 @@ class _ProfilePageState extends State<ProfilePage> {
     return '$month-$day $hour:$minute';
   }
 
-  Widget _buildHeaderShortcut({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18.r),
-        child: Ink(
-          padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 20.sp, color: heroForeground),
-              SizedBox(height: 8.h),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: heroForeground,
-                ),
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w500,
-                  color: heroForeground.withValues(alpha: 0.72),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

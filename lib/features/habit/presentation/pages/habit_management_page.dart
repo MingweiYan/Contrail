@@ -16,6 +16,7 @@ import 'package:contrail/features/habit/presentation/widgets/habit_item_widget.d
 import 'package:contrail/features/habit/presentation/widgets/supplement_check_in_dialog.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/widgets/app_hero_header.dart';
 
 class HabitManagementPage extends StatefulWidget {
   const HabitManagementPage({super.key});
@@ -239,114 +240,33 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AnimatedContainer(
-          duration: Duration(milliseconds: 500),
-          curve: Curves.easeOut,
-          padding: HabitManagementPageConstants.headerPadding,
-          decoration: ThemeHelper.heroDecoration(
-            context,
-            radius: HabitManagementPageConstants.headerBorderRadius,
+        AppHeroHeader(
+          title: '我的习惯',
+          subtitle: '从新增一个习惯出发吧',
+          badge: const AppHeroHeaderBadgeData(
+            icon: Icons.dashboard_customize_outlined,
+            label: '控制台',
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '我的习惯',
-                          style: ThemeHelper.textStyleWithTheme(
-                            context,
-                            fontSize:
-                                HabitManagementPageConstants.titleFontSize + 2,
-                            fontWeight: FontWeight.w800,
-                            color: ThemeHelper.visualTheme(context).heroForeground,
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        Text(
-                          '从新增一个习惯出发吧',
-                          style: ThemeHelper.textStyleWithTheme(
-                            context,
-                            fontSize:
-                                HabitManagementPageConstants.subtitleFontSize,
-                            color: ThemeHelper.visualTheme(
-                              context,
-                            ).heroSecondaryForeground,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(999.r),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.dashboard_customize_outlined,
-                          size: 14.sp,
-                          color: ThemeHelper.visualTheme(
-                            context,
-                          ).heroForeground.withValues(alpha: 0.92),
-                        ),
-                        SizedBox(width: 6.w),
-                        Text(
-                          '控制台',
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w700,
-                            color: ThemeHelper.visualTheme(
-                              context,
-                            ).heroForeground.withValues(alpha: 0.92),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 18.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildHeaderAction(
-                      icon: Icons.edit_outlined,
-                      title: '补充记录',
-                      onTap: () => _showSupplementCheckInDialog(context),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: _buildHeaderAction(
-                      icon: Icons.timer_outlined,
-                      title: '查看专注',
-                      onTap: _openCurrentFocus,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: _buildHeaderAction(
-                      icon: Icons.add_rounded,
-                      title: '新增习惯',
-                      onTap: _openAddHabit,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          actions: [
+            AppHeroHeaderActionData(
+              icon: Icons.edit_outlined,
+              title: '补充记录',
+              subtitle: 'Record',
+              onTap: () => _showSupplementCheckInDialog(context),
+            ),
+            AppHeroHeaderActionData(
+              icon: Icons.timer_outlined,
+              title: '查看专注',
+              subtitle: 'Focus',
+              onTap: _openCurrentFocus,
+            ),
+            AppHeroHeaderActionData(
+              icon: Icons.add_rounded,
+              title: '新增习惯',
+              subtitle: 'Create',
+              onTap: _openAddHabit,
+            ),
+          ],
         ),
 
         // 习惯列表或空状态
@@ -474,46 +394,6 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('没有正在进行中的专注')));
     }
-  }
-
-  Widget _buildHeaderAction({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18.r),
-        child: Ink(
-          padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.14),
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 20.sp, color: heroForeground),
-              SizedBox(height: 8.h),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: heroForeground,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _resortWithAnimation() {
