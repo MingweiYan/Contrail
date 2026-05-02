@@ -129,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '系统状态',
             style: TextStyle(
-              fontSize: 20.sp,
+              fontSize: AppTypographyConstants.sectionTitleFontSize,
               fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
@@ -138,7 +138,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '知彼知己百战不殆',
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: AppTypographyConstants.sectionSubtitleFontSize,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
             ),
           ),
@@ -224,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: AppTypographyConstants.cardTitleFontSize,
                     fontWeight: FontWeight.w700,
                     color: ThemeHelper.onBackground(context),
                   ),
@@ -233,7 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: AppTypographyConstants.cardSubtitleFontSize,
                     height: 1.35,
                     color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
                   ),
@@ -251,7 +251,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Text(
               badge,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: AppTypographyConstants.cardBadgeFontSize,
                 fontWeight: FontWeight.w700,
                 color: ThemeHelper.primary(context),
               ),
@@ -333,7 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '本周总览',
             style: TextStyle(
-              fontSize: 20.sp,
+              fontSize: AppTypographyConstants.sectionTitleFontSize,
               fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
@@ -342,7 +342,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '快速查看这周的活跃情况与专注表现',
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: AppTypographyConstants.sectionSubtitleFontSize,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
             ),
           ),
@@ -393,7 +393,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(
                     '今天已完成 $completedToday / ${habits.length} 个习惯',
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: AppTypographyConstants.sectionSubtitleFontSize,
                       fontWeight: FontWeight.w700,
                       color: ThemeHelper.onBackground(context),
                     ),
@@ -426,7 +426,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: AppTypographyConstants.cardBadgeFontSize,
               fontWeight: FontWeight.w600,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.6),
             ),
@@ -435,7 +435,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 18.sp,
+              fontSize: AppTypographyConstants.cardMetricValueFontSize,
               fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
@@ -457,7 +457,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text(
           '清空数据',
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.w500,
             color: Colors.red,
           ),
@@ -465,7 +465,7 @@ class _ProfilePageState extends State<ProfilePage> {
         subtitle: Text(
           '删除所有习惯和统计数据',
           style: TextStyle(
-            fontSize: 16.sp,
+            fontSize: AppTypographyConstants.dialogBodyFontSize,
             color: Colors.red.withValues(alpha: 0.7),
           ),
         ),
@@ -484,7 +484,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text(
           '警告',
           style: TextStyle(
-            fontSize: 16.sp,
+            fontSize: AppTypographyConstants.dialogTitleFontSize,
             fontWeight: FontWeight.bold,
             color: Colors.red,
           ),
@@ -492,7 +492,7 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Text(
           '确定要删除所有习惯和统计数据吗？此操作不可撤销！',
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: AppTypographyConstants.dialogBodyFontSize,
             color: ThemeHelper.onBackground(context),
           ),
         ),
@@ -501,7 +501,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Text(
               '取消',
               style: TextStyle(
-                fontSize: 20.sp,
+                fontSize: AppTypographyConstants.dialogActionFontSize,
                 color: ThemeHelper.onPrimary(context),
               ),
             ),
@@ -518,7 +518,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ElevatedButton(
             child: Text(
               '确认',
-              style: TextStyle(fontSize: 20.sp, color: Colors.white),
+              style: TextStyle(
+                fontSize: AppTypographyConstants.dialogActionFontSize,
+                color: Colors.white,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -540,7 +543,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   SnackBar(
                     content: Text(
                       '所有数据已清空',
-                      style: TextStyle(fontSize: 20.sp, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.snackbarFontSize,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 );
@@ -549,7 +555,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   SnackBar(
                     content: Text(
                       '清空数据失败: $e',
-                      style: TextStyle(fontSize: 20.sp, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.snackbarFontSize,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 );

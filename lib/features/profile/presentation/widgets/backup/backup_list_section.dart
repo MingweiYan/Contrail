@@ -59,7 +59,7 @@ class BackupListSection extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(20),
+                        fontSize: AppTypographyConstants.sectionTitleFontSize,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -68,7 +68,7 @@ class BackupListSection extends StatelessWidget {
                       Text(
                         caption!,
                         style: TextStyle(
-                          fontSize: ScreenUtil().setSp(12),
+                          fontSize: AppTypographyConstants.panelSubtitleFontSize,
                           height: 1.4,
                           color: ThemeHelper.onBackground(
                             context,
@@ -93,7 +93,7 @@ class BackupListSection extends StatelessWidget {
                 child: Text(
                   '${files.length} 份',
                   style: TextStyle(
-                    fontSize: ScreenUtil().setSp(12),
+                    fontSize: AppTypographyConstants.cardSubtitleFontSize,
                     fontWeight: FontWeight.w700,
                     color: ThemeHelper.onBackground(context),
                   ),
@@ -101,7 +101,7 @@ class BackupListSection extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: BaseLayoutConstants.spacingMedium),
+          SizedBox(height: ScreenUtil().setHeight(12)),
           Wrap(
             spacing: ScreenUtil().setWidth(10),
             runSpacing: ScreenUtil().setHeight(10),
@@ -112,7 +112,10 @@ class BackupListSection extends StatelessWidget {
                   icon: Icon(primaryActionIcon ?? Icons.play_arrow_rounded),
                   label: Text(
                     primaryActionLabel!,
-                    style: TextStyle(fontSize: ScreenUtil().setSp(13)),
+                    style: TextStyle(
+                      fontSize:
+                          AppTypographyConstants.buttonSecondaryLabelFontSize,
+                    ),
                   ),
                   style: ThemeHelper.elevatedButtonStyle(
                     context,
@@ -128,7 +131,10 @@ class BackupListSection extends StatelessWidget {
                 icon: Icon(secondaryActionIcon ?? Icons.refresh),
                 label: Text(
                   secondaryActionLabel ?? '刷新文件列表',
-                  style: TextStyle(fontSize: ScreenUtil().setSp(13)),
+                  style: TextStyle(
+                    fontSize:
+                        AppTypographyConstants.buttonSecondaryLabelFontSize,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ThemeHelper.onBackground(context),
@@ -148,7 +154,7 @@ class BackupListSection extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: BaseLayoutConstants.spacingMedium),
+          SizedBox(height: ScreenUtil().setHeight(10)),
           if (isLoading)
             const Center(child: CircularProgressIndicator())
           else if (files.isEmpty)
@@ -180,7 +186,7 @@ class BackupListSection extends StatelessWidget {
                   Text(
                     '没有找到备份文件',
                     style: TextStyle(
-                      fontSize: ScreenUtil().setSp(14),
+                      fontSize: AppTypographyConstants.buttonLabelFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -188,7 +194,7 @@ class BackupListSection extends StatelessWidget {
                   Text(
                     '执行一次备份后，这里会显示可恢复的文件。',
                     style: TextStyle(
-                      fontSize: ScreenUtil().setSp(12),
+                      fontSize: AppTypographyConstants.formHelperFontSize,
                       color: ThemeHelper.onBackground(
                         context,
                       ).withValues(alpha: 0.58),

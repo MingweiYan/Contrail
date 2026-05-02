@@ -422,7 +422,7 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                     Text(
                       '选择时长',
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(18),
+                        fontSize: AppTypographyConstants.panelTitleFontSize,
                         fontWeight: FontWeight.w500,
                         color: ThemeHelper.onPrimary(context),
                       ),
@@ -434,7 +434,8 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                         valueIndicatorColor: ThemeHelper.onPrimary(context),
                         valueIndicatorTextStyle: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
-                          fontSize: ScreenUtil().setSp(20),
+                          fontSize:
+                              AppTypographyConstants.buttonPrimaryLargeFontSize,
                           fontWeight: FontWeight.w700,
                         ),
                         thumbShape: RoundSliderThumbShape(
@@ -466,7 +467,7 @@ class _SupplementCheckInDialogState extends State<SupplementCheckInDialog> {
                       child: Text(
                         '$durationMinutes 分钟',
                         style: TextStyle(
-                          fontSize: ScreenUtil().setSp(18),
+                          fontSize: AppTypographyConstants.panelTitleFontSize,
                           fontWeight: FontWeight.bold,
                           color: ThemeHelper.onPrimary(context),
                         ),

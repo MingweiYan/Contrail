@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/widgets/clock_widget.dart';
 import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:contrail/shared/models/habit.dart' show TrackingMode;
@@ -105,7 +106,8 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                           child: Text(
                             '${_duration.inHours}h',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize:
+                                  AppTypographyConstants.buttonLabelFontSize,
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -194,7 +196,7 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     valueIndicatorColor: Colors.white,
                     valueIndicatorTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
+                      fontSize: AppTypographyConstants.panelTitleFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                     thumbShape: const RoundSliderThumbShape(
@@ -226,7 +228,7 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     valueIndicatorColor: Colors.white,
                     valueIndicatorTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
+                      fontSize: AppTypographyConstants.panelTitleFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                     thumbShape: const RoundSliderThumbShape(
@@ -258,7 +260,7 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     valueIndicatorColor: Colors.white,
                     valueIndicatorTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
+                      fontSize: AppTypographyConstants.panelTitleFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                     thumbShape: const RoundSliderThumbShape(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 
 class AppHeroHeaderBadgeData {
@@ -60,7 +61,7 @@ class AppHeroHeader extends StatelessWidget {
           title,
           style: ThemeHelper.textStyleWithTheme(
             context,
-            fontSize: 34.sp,
+            fontSize: AppTypographyConstants.primaryHeroTitleFontSize,
             fontWeight: FontWeight.w800,
             color: heroForeground,
           ),
@@ -70,7 +71,7 @@ class AppHeroHeader extends StatelessWidget {
           subtitle,
           style: ThemeHelper.textStyleWithTheme(
             context,
-            fontSize: 20.sp,
+            fontSize: AppTypographyConstants.primaryHeroSubtitleFontSize,
             color: heroSecondaryForeground,
           ),
         ),
@@ -139,7 +140,7 @@ class _HeaderBadge extends StatelessWidget {
           Text(
             data.label,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: AppTypographyConstants.primaryHeroBadgeFontSize,
               fontWeight: FontWeight.w700,
               color: heroForeground.withValues(alpha: 0.92),
             ),
@@ -178,7 +179,7 @@ class _HeaderAction extends StatelessWidget {
                 data.title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: AppTypographyConstants.primaryHeroActionTitleFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),
@@ -188,7 +189,8 @@ class _HeaderAction extends StatelessWidget {
                 data.subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize:
+                      AppTypographyConstants.primaryHeroActionSubtitleFontSize,
                   fontWeight: FontWeight.w500,
                   color: heroForeground.withValues(alpha: 0.72),
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:contrail/shared/models/theme_model.dart' as app_theme;
 import 'package:contrail/shared/theme/custom_theme_palette.dart';
 import 'package:contrail/shared/theme/visual_theme_tokens.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 
 List<app_theme.AppTheme> buildVisualThemes() {
   return [
@@ -784,7 +785,7 @@ ThemeData _buildThemeData({
       centerTitle: false,
       foregroundColor: scheme.onSurface,
       titleTextStyle: TextStyle(
-        fontSize: 22,
+        fontSize: AppTypographyConstants.appBarTitleFontSize,
         fontWeight: FontWeight.w700,
         color: scheme.onSurface,
       ),

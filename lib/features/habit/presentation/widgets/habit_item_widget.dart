@@ -73,7 +73,13 @@ class HabitItemWidget extends StatelessWidget {
         ? (habit.targetTimeMinutes ?? habit.targetDays! * 30)
         : 0;
     final displayProgress = habit.trackTime ? timeProgress : countProgress;
-    const statusLabel = '已完成';
+    final statusLabel = isCompletedToday ? '已完成' : '未完成';
+    final statusForeground = isCompletedToday
+        ? timelineColor
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+    final statusBackground = isCompletedToday
+        ? timelineColor.withValues(alpha: 0.12)
+        : ThemeHelper.visualTheme(context).panelSecondaryColor;
     final actionLabel = habit.trackTime ? '追踪' : '记录';
     final shortDescription = habit.effectiveShortDescription;
     final goalTypeText = habit.goalType == GoalType.negative ? '负向目标' : '正向目标';
@@ -248,7 +254,7 @@ class HabitItemWidget extends StatelessWidget {
                       ),
                     ),
                     child: SizedBox(
-                      height: 136.h,
+                      height: habit.trackTime ? 160.h : 144.h,
                       child: Stack(
                         children: [
                           Positioned(
@@ -266,7 +272,8 @@ class HabitItemWidget extends StatelessWidget {
                                             .textTheme
                                             .titleMedium
                                             ?.copyWith(
-                                              fontSize: 27.sp,
+                                              fontSize: AppTypographyConstants
+                                                  .cardPrimaryTitleFontSize,
                                               fontWeight: FontWeight.w900,
                                               height: 0.95,
                                               color: Theme.of(
@@ -275,7 +282,8 @@ class HabitItemWidget extends StatelessWidget {
                                             ) ??
                                         ThemeHelper.textStyleWithTheme(
                                           context,
-                                          fontSize: 27.sp,
+                                          fontSize: AppTypographyConstants
+                                              .cardPrimaryTitleFontSize,
                                           fontWeight: FontWeight.w900,
                                           color: Theme.of(
                                             context,
@@ -293,8 +301,8 @@ class HabitItemWidget extends StatelessWidget {
                                 _buildStatusChip(
                                   context,
                                   label: statusLabel,
-                                  foreground: timelineColor,
-                                  background: timelineColor.withValues(alpha: 0.12),
+                                  foreground: statusForeground,
+                                  background: statusBackground,
                                 ),
                               ],
                             ),
@@ -310,14 +318,15 @@ class HabitItemWidget extends StatelessWidget {
                           ),
                           Positioned(
                             left: 0,
-                            top: 52.h,
+                            top: 56.h,
                             right: 108.w,
                             child: Text(
                               shortDescription,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 14.sp,
+                                fontSize: AppTypographyConstants
+                                    .cardDescriptionFontSize,
                                 fontWeight: FontWeight.w700,
                                 color: Theme.of(
                                   context,
@@ -327,9 +336,11 @@ class HabitItemWidget extends StatelessWidget {
                           ),
                           Positioned(
                             left: 0,
-                            right: 120.w,
-                            top: 82.h,
-                            child: Row(
+                            right: 0,
+                            top: 94.h,
+                            child: Wrap(
+                              spacing: 6.w,
+                              runSpacing: 6.h,
                               children: [
                                 _buildModeChip(
                                   context,
@@ -337,7 +348,6 @@ class HabitItemWidget extends StatelessWidget {
                                   icon: goalTypeIcon,
                                   accentColor: timelineColor,
                                 ),
-                                SizedBox(width: 6.w),
                                 _buildMetricButton(
                                   context,
                                   label: '次数',
@@ -346,7 +356,6 @@ class HabitItemWidget extends StatelessWidget {
                                   accentColor: timelineColor,
                                 ),
                                 if (habit.trackTime) ...[
-                                  SizedBox(width: 6.w),
                                   _buildMetricButton(
                                     context,
                                     label: '时间',
@@ -361,7 +370,7 @@ class HabitItemWidget extends StatelessWidget {
                           Positioned(
                             left: 0,
                             right: 94.w,
-                            bottom: 0,
+                            bottom: 6.h,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(999.r),
                               child: LinearProgressIndicator(
@@ -397,8 +406,8 @@ class HabitItemWidget extends StatelessWidget {
     required Color accentColor,
   }) {
     return Container(
-      height: 28.h,
-      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      height: 32.h,
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10.r),
@@ -412,7 +421,7 @@ class HabitItemWidget extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontSize: 8.5.sp,
+              fontSize: AppTypographyConstants.cardChipStrongFontSize,
               fontWeight: FontWeight.w700,
               height: 1,
               color: accentColor,
@@ -421,7 +430,7 @@ class HabitItemWidget extends StatelessWidget {
           SizedBox(width: 6.w),
           Icon(
             icon,
-            size: 10.sp,
+            size: 12.sp,
             color: accentColor.withValues(alpha: 0.92),
           ),
         ],
@@ -437,8 +446,8 @@ class HabitItemWidget extends StatelessWidget {
     required Color accentColor,
   }) {
     return Container(
-      height: 28.h,
-      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      height: 32.h,
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
       decoration: BoxDecoration(
         color: ThemeHelper.visualTheme(context).panelSecondaryColor,
         borderRadius: BorderRadius.circular(10.r),
@@ -455,7 +464,7 @@ class HabitItemWidget extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 8.sp,
+              fontSize: AppTypographyConstants.cardChipFontSize,
               fontWeight: FontWeight.w700,
               height: 1,
               color: Theme.of(context)
@@ -468,7 +477,7 @@ class HabitItemWidget extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontSize: 8.5.sp,
+              fontSize: AppTypographyConstants.cardChipStrongFontSize,
               fontWeight: FontWeight.w800,
               height: 1,
               color: accentColor,
@@ -477,7 +486,7 @@ class HabitItemWidget extends StatelessWidget {
           SizedBox(width: 8.w),
           Icon(
             icon,
-            size: 9.sp,
+            size: 11.sp,
             color: accentColor.withValues(alpha: 0.92),
           ),
         ],
@@ -491,18 +500,18 @@ class HabitItemWidget extends StatelessWidget {
     required IconData icon,
   }) {
     return Container(
-      width: 26.w,
-      height: 26.w,
+      width: 30.w,
+      height: 30.w,
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(9.r),
         border: Border.all(
           color: accentColor.withValues(alpha: 0.34),
         ),
       ),
       child: Icon(
         icon,
-        size: 14.sp,
+        size: 16.sp,
         color: accentColor,
       ),
     );
@@ -537,7 +546,7 @@ class HabitItemWidget extends StatelessWidget {
             children: [
               Icon(
                 Icons.play_arrow_rounded,
-                size: 19.sp,
+                size: 21.sp,
                 color: Colors.white,
               ),
               SizedBox(height: 2.h),
@@ -545,7 +554,7 @@ class HabitItemWidget extends StatelessWidget {
                 label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: AppTypographyConstants.cardChipActionFontSize,
                   fontWeight: FontWeight.w700,
                   height: 1,
                   color: Colors.white,
@@ -565,7 +574,7 @@ class HabitItemWidget extends StatelessWidget {
     required Color background,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999.r),
@@ -576,7 +585,7 @@ class HabitItemWidget extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10.5.sp,
+          fontSize: AppTypographyConstants.cardChipStrongFontSize,
           fontWeight: FontWeight.w700,
           height: 1,
           color: foreground,

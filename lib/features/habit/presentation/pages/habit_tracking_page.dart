@@ -549,9 +549,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
             child: Container(
               width: double.infinity,
               padding: HabitTrackingPageConstants.bottomPadding,
-              child: Container(
+              child: Padding(
                 padding: HabitTrackingPageConstants.containerPadding,
-                decoration: ThemeHelper.panelDecoration(context, radius: 28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -767,7 +766,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                           child: Text(
                             '${_elapsedTime.inHours}h',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize:
+                                  AppTypographyConstants.formSectionTitleFontSize,
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -840,9 +840,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 padding: EdgeInsets.symmetric(
                   vertical: HabitTrackingPageConstants.maxLargeSpacing,
                 ),
-                child: Container(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
-                  decoration: ThemeHelper.panelDecoration(context, radius: 28),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -926,7 +925,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 24.sp,
+                                fontSize: AppTypographyConstants
+                                    .secondaryHeroTitleFontSize,
                                 fontWeight: FontWeight.w800,
                                 color: heroForeground,
                               ),
@@ -935,7 +935,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                             Text(
                               _showSettings ? '专注模式设置' : '正在进行专注追踪',
                               style: TextStyle(
-                                fontSize: 13.sp,
+                                fontSize: AppTypographyConstants
+                                    .secondaryHeroSubtitleFontSize,
                                 color: heroSecondary,
                               ),
                             ),
@@ -985,7 +986,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),

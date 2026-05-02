@@ -486,7 +486,8 @@ class _PomodoroSettingsDialogContentState
                     '确定',
                     style: TextStyle(
                       color: ThemeHelper.onPrimary(context),
-                      fontSize: ScreenUtil().setSp(20),
+                      fontSize:
+                          AppTypographyConstants.buttonPrimaryLargeFontSize,
                     ),
                   ),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
@@ -302,16 +303,18 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                 Text(
                   '选择图标',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroTitleFontSize,
                     fontWeight: FontWeight.w800,
                     color: heroForeground,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   '挑一个更贴近当前习惯气质的图标',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroSubtitleFontSize,
                     color: ThemeHelper.visualTheme(
                       context,
                     ).heroSecondaryForeground,
@@ -361,7 +364,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),

@@ -10,6 +10,8 @@ import 'package:contrail/shared/services/habit_statistics_service.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/widgets/app_hero_header.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/models/habit.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -90,7 +92,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
         child: Consumer2<HabitProvider, StatisticsProvider>(
           builder: (context, habitProvider, statisticsProvider, child) {
             final habits = habitProvider.habits;
-            final visibleHabits = habits;
+            final providerVisibility = statisticsProvider.isHabitVisible;
+            final needsInitialize =
+                providerVisibility == null ||
+                providerVisibility.length != habits.length;
+            if (needsInitialize) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) {
+                  return;
+                }
+                context.read<StatisticsProvider>().initializeHabitVisibility(habits);
+              });
+            }
+            final habitVisibility =
+                !needsInitialize
+                ? providerVisibility
+                : List<bool>.filled(habits.length, true);
+            final visibleHabits = [
+              for (int i = 0; i < habits.length; i++)
+                if (habitVisibility[i]) habits[i],
+            ];
 
             // 使用习惯的颜色属性，不再需要固定的颜色列表
             final Map<String, Color> habitColors = {};
@@ -146,6 +167,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       ),
                     ],
                   ),
+                  if (habits.isNotEmpty)
+                    _buildLegendFilterPanel(
+                      context,
+                      habits: habits,
+                      habitVisibility: habitVisibility,
+                      onToggle: statisticsProvider.toggleHabitVisibility,
+                    ),
                   AnimatedBuilder(
                     animation: _fadeAnimation,
                     builder: (context, child) {
@@ -160,7 +188,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                 habitColors: habitColors,
                               )
                             : StatisticsTrendView(
-                                visibleHabits: visibleHabits,
+                                habits: habits,
+                                isHabitVisible: habitVisibility,
                                 statisticsProvider: statisticsProvider,
                               ),
                       );
@@ -203,6 +232,103 @@ class _StatisticsPageState extends State<StatisticsPage> {
       return Icons.date_range_outlined;
     }
     return Icons.calendar_view_week_outlined;
+  }
+
+  Widget _buildLegendFilterPanel(
+    BuildContext context, {
+    required List<Habit> habits,
+    required List<bool> habitVisibility,
+    required void Function(int) onToggle,
+  }) {
+    final visualTheme = ThemeHelper.visualTheme(context);
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 12.h, bottom: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      decoration: ThemeHelper.panelDecoration(
+        context,
+        secondary: true,
+        radius: 18.r,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '图例筛选',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.panelTitleFontSize,
+              fontWeight: FontWeight.w800,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '点击某个习惯可临时隐藏或恢复它在统计中的展示',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.panelSubtitleFontSize,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Wrap(
+            spacing: 10.w,
+            runSpacing: 10.h,
+            children: [
+              for (int i = 0; i < habits.length; i++)
+                GestureDetector(
+                  onTap: () => onToggle(i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                    decoration: BoxDecoration(
+                      color: habitVisibility[i]
+                          ? habits[i].color.withValues(alpha: 0.12)
+                          : visualTheme.panelColor,
+                      borderRadius: BorderRadius.circular(999.r),
+                      border: Border.all(
+                        color: habitVisibility[i]
+                            ? habits[i].color.withValues(alpha: 0.55)
+                            : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10.w,
+                          height: 10.w,
+                          decoration: BoxDecoration(
+                            color: habits[i].color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          habits[i].name,
+                          style: TextStyle(
+                            fontSize: AppTypographyConstants.chartLegendFontSize,
+                            fontWeight: habitVisibility[i]
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: habitVisibility[i]
+                                ? Theme.of(context).colorScheme.onSurface
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withValues(alpha: 0.42),
+                            decoration: habitVisibility[i]
+                                ? TextDecoration.none
+                                : TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
 }

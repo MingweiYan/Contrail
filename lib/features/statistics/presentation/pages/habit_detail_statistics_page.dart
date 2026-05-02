@@ -277,7 +277,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
               provider.getDisplayTimeLabel(),
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: ScreenUtil().setSp(20),
+                fontSize: AppTypographyConstants.sectionTitleFontSize,
                 fontWeight: FontWeight.w800,
                 color: ThemeHelper.onBackground(context),
               ),
@@ -372,7 +372,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: ScreenUtil().setSp(18),
+                  fontSize: AppTypographyConstants.panelTitleFontSize,
                   color: isSelected
                       ? scheme.primary
                       : ThemeHelper.onBackground(context),
@@ -434,7 +434,8 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 24.sp,
+                                  fontSize: AppTypographyConstants
+                                      .secondaryHeroTitleFontSize,
                                   fontWeight: FontWeight.w800,
                                   color: heroForeground,
                                 ),
@@ -443,7 +444,8 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                               Text(
                                 '习惯详情统计面板',
                                 style: TextStyle(
-                                  fontSize: 13.sp,
+                                  fontSize: AppTypographyConstants
+                                      .secondaryHeroSubtitleFontSize,
                                   color: heroSecondary,
                                 ),
                               ),
@@ -571,7 +573,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         Text(
           '$label: $value',
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize: AppTypographyConstants.chartLegendFontSize,
             fontWeight: FontWeight.w600,
             color: ThemeHelper.onBackground(context),
           ),
@@ -607,7 +609,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),
@@ -639,7 +641,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: AppTypographyConstants.chartStatLabelFontSize,
               fontWeight: FontWeight.w600,
               color: heroSecondary,
             ),
@@ -648,7 +650,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 15.sp,
+              fontSize: AppTypographyConstants.chartStatValueFontSize,
               fontWeight: FontWeight.w800,
               color: heroForeground,
             ),

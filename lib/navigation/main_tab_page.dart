@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:contrail/features/habit/presentation/pages/habit_management_page.dart';
 import 'package:contrail/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:contrail/features/profile/presentation/pages/profile_page.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -67,7 +68,10 @@ class _MainTabPageState extends State<MainTabPage> {
         child: Padding(
           padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            padding: EdgeInsets.symmetric(
+              horizontal: 10.w,
+              vertical: AppTypographyConstants.bottomNavBarVerticalPadding,
+            ),
             decoration: ThemeHelper.navigationDecoration(context),
             child: Row(
               children: List.generate(items.length, (index) {
@@ -80,7 +84,7 @@ class _MainTabPageState extends State<MainTabPage> {
                       duration: const Duration(milliseconds: 220),
                       padding: EdgeInsets.symmetric(
                         horizontal: 8.w,
-                        vertical: 10.h,
+                        vertical: AppTypographyConstants.bottomNavItemVerticalPadding,
                       ),
                       decoration: isSelected
                           ? ThemeHelper.selectedNavigationItemDecoration(context)
@@ -101,7 +105,8 @@ class _MainTabPageState extends State<MainTabPage> {
                           Text(
                             item.label,
                             style: TextStyle(
-                              fontSize: ScreenUtil().setSp(13),
+                              fontSize:
+                                  AppTypographyConstants.bottomNavLabelFontSize,
                               fontWeight: isSelected
                                   ? FontWeight.w800
                                   : FontWeight.w600,

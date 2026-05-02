@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
@@ -67,16 +68,18 @@ class _FullEditorPageState extends State<FullEditorPage> {
                             Text(
                               '完整文本编辑',
                               style: TextStyle(
-                                fontSize: 26,
+                                fontSize: AppTypographyConstants
+                                    .secondaryHeroTitleFontSize,
                                 fontWeight: FontWeight.w800,
                                 color: heroForeground,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8.h),
                             Text(
                               widget.placeholder,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: AppTypographyConstants
+                                    .secondaryHeroSubtitleFontSize,
                                 color: ThemeHelper.visualTheme(
                                   context,
                                 ).heroSecondaryForeground,
@@ -180,7 +183,7 @@ class _FullEditorPageState extends State<FullEditorPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),

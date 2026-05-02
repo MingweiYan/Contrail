@@ -257,7 +257,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                           '$name\n$pct%',
                           TextStyle(
                             color: ThemeHelper.onBackground(context),
-                            fontSize: ScreenUtil().setSp(14),
+                            fontSize: AppTypographyConstants.chartLegendFontSize,
                             fontWeight: FontWeight.bold,
                           ),
                         );
@@ -640,7 +640,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 SizedBox(width: ScreenUtil().setWidth(6)),
                 Text(
                   '${entry.key}: $timeDisplay',
-                  style: TextStyle(fontSize: ScreenUtil().setSp(16)),
+                  style: TextStyle(
+                    fontSize: AppTypographyConstants.formSectionTitleFontSize,
+                  ),
                 ),
               ],
             ),
@@ -741,7 +743,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
               '本月习惯完成时间分布',
               style: ThemeHelper.textStyleWithTheme(
                 context,
-                fontSize: ScreenUtil().setSp(20),
+                fontSize: AppTypographyConstants.sectionTitleFontSize,
                 fontWeight: FontWeight.bold,
                 color: ThemeHelper.onSurface(context),
               ),
@@ -826,7 +828,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
                           Text(
                             '统计结果',
                             style: TextStyle(
-                              fontSize: ScreenUtil().setSp(24),
+                              fontSize:
+                                  AppTypographyConstants.previewTitleFontSize,
                               fontWeight: FontWeight.w800,
                               color: heroForeground,
                             ),
@@ -835,7 +838,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
                           Text(
                             '聚合查看当前时间范围内的次数、时长与目标完成情况',
                             style: TextStyle(
-                              fontSize: ScreenUtil().setSp(13),
+                              fontSize:
+                                  AppTypographyConstants.sectionSubtitleFontSize,
                               color: heroSecondary,
                             ),
                           ),
@@ -894,7 +898,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                   '结果统计',
                   style: ThemeHelper.textStyleWithTheme(
                     context,
-                    fontSize: ScreenUtil().setSp(22),
+                    fontSize: AppTypographyConstants.appBarTitleFontSize,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -922,7 +926,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     '目标追踪',
                     style: ThemeHelper.textStyleWithTheme(
                       context,
-                      fontSize: ScreenUtil().setSp(22),
+                      fontSize: AppTypographyConstants.appBarTitleFontSize,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -966,7 +970,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: ScreenUtil().setSp(12),
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),
@@ -1000,7 +1004,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
           Text(
             label,
             style: TextStyle(
-              fontSize: ScreenUtil().setSp(11),
+              fontSize: AppTypographyConstants.chartStatLabelFontSize,
               fontWeight: FontWeight.w600,
               color: heroSecondary,
             ),
@@ -1009,7 +1013,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
           Text(
             value,
             style: TextStyle(
-              fontSize: ScreenUtil().setSp(15),
+              fontSize: AppTypographyConstants.chartStatValueFontSize,
               fontWeight: FontWeight.w800,
               color: heroForeground,
             ),
@@ -1050,7 +1054,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: ScreenUtil().setSp(15),
+                fontSize: AppTypographyConstants.cardTitleFontSize,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: selected ? scheme.primary : ThemeHelper.onBackground(context),
               ),

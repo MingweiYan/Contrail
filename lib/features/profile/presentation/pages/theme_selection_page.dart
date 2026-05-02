@@ -61,7 +61,7 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
                         child: Text(
                           '长按拖动手柄调整顺序；自定义主题也可以参与排序。',
                           style: TextStyle(
-                            fontSize: 12.sp,
+                            fontSize: AppTypographyConstants.formHelperFontSize,
                             height: 1.55,
                             color: ThemeHelper.onBackground(
                               context,
@@ -131,7 +131,7 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
                 Text(
                   '主题设置',
                   style: TextStyle(
-                    fontSize: 28.sp,
+                    fontSize: AppTypographyConstants.secondaryHeroTitleFontSize,
                     fontWeight: FontWeight.w800,
                     color: visualTheme.heroForeground,
                   ),
@@ -140,7 +140,8 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
                 Text(
                   '现在支持更多浅色与深色主题，也支持把常用主题拖到更顺手的位置。',
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroSubtitleFontSize,
                     height: 1.6,
                     color: visualTheme.heroSecondaryForeground,
                   ),
@@ -297,7 +298,7 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
                               child: Text(
                                 '已修改',
                                 style: TextStyle(
-                                  fontSize: 11.sp,
+                                  fontSize: AppTypographyConstants.cardBadgeFontSize,
                                   fontWeight: FontWeight.w700,
                                   color: ThemeHelper.primary(context),
                                 ),
@@ -392,7 +393,7 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: visualTheme.heroForeground,
                 ),

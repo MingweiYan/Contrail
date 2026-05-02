@@ -70,7 +70,7 @@ class WebDavSettingsCard extends StatelessWidget {
                     Text(
                       'WebDAV 配置',
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(18),
+                        fontSize: AppTypographyConstants.panelTitleFontSize,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -80,7 +80,7 @@ class WebDavSettingsCard extends StatelessWidget {
                           ? '配置已就绪，可以执行网络备份与恢复。'
                           : '先补齐地址、账号与路径，再保存配置。',
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(12),
+                        fontSize: AppTypographyConstants.panelSubtitleFontSize,
                         color: ThemeHelper.onBackground(
                           context,
                         ).withValues(alpha: 0.62),
@@ -206,7 +206,7 @@ class WebDavSettingsCard extends StatelessWidget {
                   child: Text(
                     '远端保留数量',
                     style: TextStyle(
-                      fontSize: ScreenUtil().setSp(14),
+                      fontSize: AppTypographyConstants.formLabelFontSize,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -238,7 +238,9 @@ class WebDavSettingsCard extends StatelessWidget {
                 icon: const Icon(Icons.save_outlined),
                 label: Text(
                   '保存配置',
-                  style: TextStyle(fontSize: ScreenUtil().setSp(14)),
+                  style: TextStyle(
+                    fontSize: AppTypographyConstants.buttonLabelFontSize,
+                  ),
                 ),
                 style: ThemeHelper.elevatedButtonStyle(
                   context,
@@ -254,7 +256,10 @@ class WebDavSettingsCard extends StatelessWidget {
                 icon: const Icon(Icons.cloud_upload_outlined),
                 label: Text(
                   '执行网络备份',
-                  style: TextStyle(fontSize: ScreenUtil().setSp(13)),
+                  style: TextStyle(
+                    fontSize:
+                        AppTypographyConstants.buttonSecondaryLabelFontSize,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ThemeHelper.primary(context),
@@ -308,7 +313,7 @@ class WebDavSettingsCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: ScreenUtil().setSp(13),
+                    fontSize: AppTypographyConstants.formFieldTitleFontSize,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -342,7 +347,7 @@ class WebDavSettingsCard extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           style: TextStyle(
-            fontSize: ScreenUtil().setSp(12),
+            fontSize: AppTypographyConstants.cardSubtitleFontSize,
             color: ThemeHelper.onBackground(context),
           ),
           children: [

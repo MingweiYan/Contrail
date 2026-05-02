@@ -114,7 +114,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                 Text(
                   '编辑主题',
                   style: TextStyle(
-                    fontSize: 28.sp,
+                    fontSize: AppTypographyConstants.secondaryHeroTitleFontSize,
                     fontWeight: FontWeight.w800,
                     color: onHero,
                   ),
@@ -123,7 +123,8 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                 Text(
                   '当前正在编辑「${widget.sourceThemeName}」；保存后会直接覆盖这张主题，随时也可以恢复默认值。',
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroSubtitleFontSize,
                     height: 1.6,
                     color: onHero.withValues(alpha: 0.78),
                   ),
@@ -194,7 +195,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                             ? '我的主题'
                             : _nameController.text.trim(),
                         style: TextStyle(
-                          fontSize: 24.sp,
+                          fontSize: AppTypographyConstants.previewTitleFontSize,
                           fontWeight: FontWeight.w800,
                           color: _foregroundFor(
                             Color.lerp(_palette.heroStart, _palette.heroEnd, 0.5) ??
@@ -208,7 +209,8 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                             ? '浅色系主题预览'
                             : '深色系主题预览',
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize:
+                              AppTypographyConstants.previewSubtitleFontSize,
                           color: _foregroundFor(
                             Color.lerp(_palette.heroStart, _palette.heroEnd, 0.5) ??
                                 _palette.heroStart,
@@ -276,7 +278,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
           Text(
             title,
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: AppTypographyConstants.previewSubtitleFontSize,
               fontWeight: FontWeight.w700,
               color: foreground.withValues(alpha: 0.76),
             ),
@@ -370,7 +372,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
             title: Text(
               '保留玻璃质感',
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: AppTypographyConstants.formLabelFontSize,
                 fontWeight: FontWeight.w700,
                 color: ThemeHelper.onBackground(context),
               ),
@@ -378,7 +380,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
             subtitle: Text(
               '关闭后会更偏实体面板，打开后会更轻一点。',
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: AppTypographyConstants.formHelperFontSize,
                 height: 1.5,
                 color: ThemeHelper.onBackground(context).withValues(alpha: 0.66),
               ),
@@ -447,7 +449,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                       Text(
                         template.name,
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: AppTypographyConstants.cardSubtitleFontSize,
                           fontWeight: FontWeight.w700,
                           color: ThemeHelper.onBackground(context),
                         ),
@@ -676,7 +678,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: AppTypographyConstants.formLabelFontSize,
                     fontWeight: FontWeight.w700,
                     color: ThemeHelper.onBackground(context),
                   ),
@@ -685,7 +687,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
               Text(
                 _toHex(color),
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: AppTypographyConstants.formHelperFontSize,
                   color: ThemeHelper.onBackground(context).withValues(alpha: 0.66),
                 ),
               ),
@@ -772,7 +774,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: AppTypographyConstants.buttonLabelFontSize,
               fontWeight: FontWeight.w700,
               color: ThemeHelper.onBackground(context),
             ),
@@ -793,7 +795,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         Text(
           title,
           style: TextStyle(
-            fontSize: 18.sp,
+            fontSize: AppTypographyConstants.panelTitleFontSize,
             fontWeight: FontWeight.w800,
             color: ThemeHelper.onBackground(context),
           ),
@@ -802,7 +804,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: AppTypographyConstants.panelSubtitleFontSize,
             height: 1.6,
             color: ThemeHelper.onBackground(context).withValues(alpha: 0.66),
           ),
@@ -838,7 +840,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: visualTheme.heroForeground,
                 ),
@@ -879,7 +881,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                       child: Text(
                         _toHex(draftColor),
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: AppTypographyConstants.formLabelFontSize,
                           fontWeight: FontWeight.w700,
                           color: _foregroundFor(draftColor),
                         ),
@@ -901,7 +903,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                     Text(
                       '当前颜色：${_toHex(draftColor)}',
                       style: TextStyle(
-                        fontSize: 12.sp,
+                        fontSize: AppTypographyConstants.dialogMetaFontSize,
                         color: ThemeHelper.onBackground(
                           context,
                         ).withValues(alpha: 0.68),

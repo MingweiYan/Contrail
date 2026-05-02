@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
@@ -102,7 +103,7 @@ class CalendarViewWidget extends StatelessWidget {
                 color: isWeekend
                     ? ThemeHelper.error(context)
                     : ThemeHelper.onSurface(context),
-                fontSize: ScreenUtil().setSp(18),
+                fontSize: AppTypographyConstants.panelTitleFontSize,
               ),
             ),
           );
@@ -189,7 +190,7 @@ class CalendarViewWidget extends StatelessWidget {
                     child: Text(
                       '$day',
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(18),
+                        fontSize: AppTypographyConstants.panelTitleFontSize,
                         fontWeight: isToday
                             ? FontWeight.bold
                             : FontWeight.normal,
