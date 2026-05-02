@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>主题库预览</title>
+  <style>
+    :root {
+      --page-bg:
+        radial-gradient(circle at top left, rgba(171, 203, 255, 0.5), transparent 28%),
+        radial-gradient(circle at top right, rgba(180, 164, 255, 0.32), transparent 24%),
+        linear-gradient(180deg, #eff4fc 0%, #dce6f3 100%);
+      --panel: rgba(255, 255, 255, 0.72);
+      --panel-strong: rgba(255, 255, 255, 0.86);
+      --line: rgba(93, 118, 158, 0.12);
+      --text: #1d2a40;
+      --muted: rgba(29, 42, 64, 0.66);
+      --shadow: 0 18px 48px rgba(44, 67, 111, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+      background: var(--page-bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1480px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    .hero {
+      border-radius: 30px;
+      padding: 28px 30px;
+      background: linear-gradient(135deg, rgba(255,255,255,.72), rgba(233,240,250,.84));
+      border: 1px solid rgba(255,255,255,.72);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    h1, h2, h3, h4, p { margin: 0; }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .hero p {
+      margin-top: 12px;
+      max-width: 920px;
+      line-height: 1.72;
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .section {
+      margin-top: 26px;
+      border-radius: 28px;
+      background: rgba(255,255,255,.56);
+      border: 1px solid rgba(255,255,255,.66);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      backdrop-filter: blur(14px);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .section-head p,
+    .section-head span {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .theme-card {
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,.78);
+      box-shadow: 0 14px 36px rgba(46, 69, 113, 0.10);
+    }
+
+    .theme-preview {
+      position: relative;
+      min-height: 188px;
+      padding: 16px;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .theme-preview::after {
+      content: "";
+      position: absolute;
+      inset: auto -30px -38px auto;
+      width: 160px;
+      height: 160px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      filter: blur(10px);
+    }
+
+    .preview-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.18);
+      color: inherit;
+    }
+
+    .preview-title {
+      position: relative;
+      z-index: 1;
+      margin-top: 18px;
+    }
+
+    .preview-title h4 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+
+    .preview-title p {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: rgba(255,255,255,.78);
+      max-width: 86%;
+    }
+
+    .mini-ui {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mini-panel {
+      min-height: 58px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.14);
+      padding: 12px;
+    }
+
+    .mini-panel.right {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      overflow: hidden;
+    }
+
+    .mini-bar span {
+      display: block;
+      height: 100%;
+      width: 62%;
+      border-radius: inherit;
+      background: rgba(255,255,255,.86);
+    }
+
+    .theme-body {
+      padding: 16px;
+    }
+
+    .theme-name {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .theme-desc {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.64;
+      color: var(--muted);
+      min-height: 42px;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .swatch {
+      border-radius: 14px;
+      height: 34px;
+      border: 1px solid rgba(255,255,255,.82);
+      box-shadow: inset 0 0 0 1px rgba(26,39,59,.06);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .tag {
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: rgba(75, 104, 153, 0.08);
+      color: rgba(29,42,64,.74);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .editor {
+      display: grid;
+      grid-template-columns: 1.06fr .94fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .editor-card {
+      border-radius: 24px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,.82);
+      padding: 18px;
+      box-shadow: 0 12px 32px rgba(43, 63, 103, .08);
+    }
+
+    .editor-preview {
+      border-radius: 24px;
+      overflow: hidden;
+      min-height: 520px;
+      box-shadow: var(--shadow);
+    }
+
+    .editor-preview .screen {
+      min-height: 520px;
+      padding: 18px;
+      color: #fff;
+      background: linear-gradient(180deg, #0f1522 0%, #191f31 100%);
+    }
+
+    .screen-header {
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #4fb3ff, #a97fff);
+      border: 1px solid rgba(255,255,255,.16);
+    }
+
+    .screen-header h3 {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .screen-header p {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.64;
+      color: rgba(255,255,255,.82);
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .control {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .control label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(29,42,64,.70);
+      margin-bottom: 10px;
+    }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-chip {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      border: 1px solid rgba(29,42,64,.08);
+      flex: 0 0 auto;
+    }
+
+    .input {
+      flex: 1;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(84, 110, 151, 0.12);
+      background: rgba(243,247,252,.94);
+      color: #21314b;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid rgba(83,110,150,.14);
+      background: rgba(242,246,252,.9);
+      color: #24334d;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #56b9ff, #b27dff);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .screen-panel {
+      border-radius: 20px;
+      padding: 14px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .screen-panel h4 {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .screen-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+      color: rgba(255,255,255,.86);
+    }
+
+    .screen-row:last-child { border-bottom: none; }
+    .mini-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .mini-strip span {
+      display: block;
+      height: 28px;
+      border-radius: 10px;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(78, 107, 154, 0.06);
+      border: 1px solid rgba(81, 107, 148, 0.1);
+      color: rgba(29,42,64,.72);
+      line-height: 1.7;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .editor { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+      .page { width: min(100vw - 24px, 820px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>主题库与自定义主题预览</h1>
+      <p>这次只做预览，不改真实 Flutter 逻辑。目标是先把“方案 1/2/3”换成正式主题名，再扩成一个主题库，并增加“用户自定义一组主题色”的入口形态，方便后续真实落地。</p>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>预设主题库</h2>
+          <p>建议后续不再显示“方案 1 / 2 / 3”，而是直接显示主题名。现有 3 套可并入这个主题库里，再新增更多风格保持可选丰富度。</p>
+        </div>
+        <span>建议首版先做 6 到 8 套预设 + 1 个自定义主题槽位</span>
+      </div>
+
+      <div class="grid">
+        <article class="theme-card">
+          <div class="theme-preview" style="background:linear-gradient(135deg,#95a9c8,#6d86a7 58%,#5a708d);">
+            <div class="preview-top">
+              <span class="pill">Light</span>
+              <span class="pill">Glass</span>
+            </div>
+            <div class="preview-title">
+              <h4>银雾</h4>
+              <p>替代当前“方案 3”，浅色、柔和、克制，适合默认主题。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel">
+                <div class="mini-bar"><span></span></div>
+              </div>
+              <div class="mini-panel right">
+                <div class="mini-bar"><span style="width:78%"></span></div>
+                <div class="mini-bar"><span style="width:58%"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-body">
+            <div class="theme-name">银雾</div>
+            <div class="theme-desc">白雾质感、低对比玻璃感，适合长期使用和信息密度高的页面。</div>
+            <div class="swatches">
+              <span class="swatch" style="background:#f3f7fc"></span>
+              <span class="swatch" style="background:#e1ebf7"></span>
+              <span class="swatch" style="background:#8ea5c4"></span>
+              <span class="swatch" style="background:#6e87a9"></span>
+              <span class="swatch" style="background:#35537a"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">默认推荐</span>
+              <span class="tag">浅色</span>
+              <span class="tag">克制科技感</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="theme-card">
+          <div class="theme-preview" style="background:linear-gradient(135deg,#0a1627,#163554 55%,#0b111c);">
+            <div class="preview-top">
+              <span class="pill">Dark</span>
+              <span class="pill">Panel</span>
+            </div>
+            <div class="preview-title">
+              <h4>深海蓝</h4>
+              <p>替代当前“方案 1”，冷静专业，面板感强，适合数据与统计场景。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="background:#8ed0ff;"></span></div>
+              </div>
+              <div class="mini-panel right">
+                <div class="mini-bar"><span style="width:74%;background:#5c8bff;"></span></div>
+                <div class="mini-bar"><span style="width:52%;background:#7acbff;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-body">
+            <div class="theme-name">深海蓝</div>
+            <div class="theme-desc">冷色调、控制台感、数据面板风格稳定，适合统计页和备份页这类信息型页面。</div>
+            <div class="swatches">
+              <span class="swatch" style="background:#0a1627"></span>
+              <span class="swatch" style="background:#163554"></span>
+              <span class="swatch" style="background:#5c8bff"></span>
+              <span class="swatch" style="background:#8ed0ff"></span>
+              <span class="swatch" style="background:#eaf3ff"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">深色</span>
+              <span class="tag">统计页友好</span>
+              <span class="tag">科技蓝</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="theme-card">
+          <div class="theme-preview" style="background:linear-gradient(135deg,#080a14,#171c34 55%,#241e3d);">
+            <div class="preview-top">
+              <span class="pill">Dark</span>
+              <span class="pill">Immersive</span>
+            </div>
+            <div class="preview-title">
+              <h4>极夜紫舱</h4>
+              <p>替代当前“方案 2”，深色沉浸感更强，适合专注和夜间使用。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="background:#b497ff;"></span></div>
+              </div>
+              <div class="mini-panel right">
+                <div class="mini-bar"><span style="width:76%;background:#9685ff;"></span></div>
+                <div class="mini-bar"><span style="width:48%;background:#e9dcff;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-body">
+            <div class="theme-name">极夜紫舱</div>
+            <div class="theme-desc">夜幕感更强，紫色点缀更有记忆点，适合专注、计时、全屏场景。</div>
+            <div class="swatches">
+              <span class="swatch" style="background:#080a14"></span>
+              <span class="swatch" style="background:#171c34"></span>
+              <span class="swatch" style="background:#241e3d"></span>
+              <span class="swatch" style="background:#9685ff"></span>
+              <span class="swatch" style="background:#f4f1ff"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">沉浸感</span>
+              <span class="tag">深色夜间</span>
+              <span class="tag">紫色记忆点</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="theme-card">
+          <div class="theme-preview" style="background:linear-gradient(135deg,#081922,#10313d 58%,#0f5f72);">
+            <div class="preview-top">
+              <span class="pill">Dark</span>
+              <span class="pill">Fresh</span>
+            </div>
+            <div class="preview-title">
+              <h4>松石潮汐</h4>
+              <p>偏青绿系，科技感更清透，适合偏清爽、耐看的深色路线。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel"><div class="mini-bar"><span style="background:#77f4e0;"></span></div></div>
+              <div class="mini-panel right">
+                <div class="mini-bar"><span style="width:72%;background:#2ed9c3;"></span></div>
+                <div class="mini-bar"><span style="width:50%;background:#98fff4;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-body">
+            <div class="theme-name">松石潮汐</div>
+            <div class="theme-desc">用青绿替代蓝紫，科技感还在，但整体更轻盈、更有“呼吸感”。</div>
+            <div class="swatches">
+              <span class="swatch" style="background:#081922"></span>
+              <span class="swatch" style="background:#10313d"></span>
+              <span class="swatch" style="background:#0f5f72"></span>
+              <span class="swatch" style="background:#2ed9c3"></span>
+              <span class="swatch" style="background:#e9fffc"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">青绿科技感</span>
+              <span class="tag">清爽深色</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="theme-card">
+          <div class="theme-preview" style="background:linear-gradient(135deg,#1e1210,#4a241f 50%,#7e3e33);">
+            <div class="preview-top">
+              <span class="pill">Warm</span>
+              <span class="pill">Power</span>
+            </div>
+            <div class="preview-title">
+              <h4>熔岩余烬</h4>
+              <p>偏暖色高能路线，适合想要更强情绪张力和辨识度的用户。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel"><div class="mini-bar"><span style="background:#ffb07d;"></span></div></div>
+              <div class="mini-panel right">
+                <div class="mini-bar"><span style="width:70%;background:#ff7853;"></span></div>
+                <div class="mini-bar"><span style="width:46%;background:#ffd9c7;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-body">
+            <div class="theme-name">熔岩余烬</div>
+            <div class="theme-desc">暖色深背景配高亮橙红，适合专注类和激励类场景，个性更强。</div>
+            <div class="swatches">
+              <span class="swatch" style="background:#1e1210"></span>
+              <span class="swatch" style="background:#4a241f"></span>
+              <span class="swatch" style="background:#7e3e33"></span>
+              <span class="swatch" style="background:#ff7853"></span>
+              <span class="swatch" style="background:#fff1ea"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">高识别度</span>
+              <span class="tag">暖色深色</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="theme-card">
+          <div class="theme-preview" style="background:linear-gradient(135deg,#edf5e8,#d7e7d0 56%,#a1c58b); color:#18301f;">
+            <div class="preview-top">
+              <span class="pill" style="background:rgba(24,48,31,.08); border-color:rgba(24,48,31,.08); color:#18301f;">Light</span>
+              <span class="pill" style="background:rgba(24,48,31,.08); border-color:rgba(24,48,31,.08); color:#18301f;">Nature</span>
+            </div>
+            <div class="preview-title">
+              <h4>森林晨光</h4>
+              <p style="color:rgba(24,48,31,.76);">柔和自然系浅色主题，适合偏放松、日历和习惯管理场景。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel" style="background:rgba(255,255,255,.42); border-color:rgba(24,48,31,.08);">
+                <div class="mini-bar" style="background:rgba(24,48,31,.08);"><span style="background:#4c8b57;"></span></div>
+              </div>
+              <div class="mini-panel right" style="background:rgba(255,255,255,.42); border-color:rgba(24,48,31,.08);">
+                <div class="mini-bar" style="background:rgba(24,48,31,.08);"><span style="width:74%;background:#82ab6f;"></span></div>
+                <div class="mini-bar" style="background:rgba(24,48,31,.08);"><span style="width:52%;background:#bfd7b1;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="theme-body">
+            <div class="theme-name">森林晨光</div>
+            <div class="theme-desc">自然系浅色替代方案，弱化科技冷感，增加日常陪伴型产品的舒适度。</div>
+            <div class="swatches">
+              <span class="swatch" style="background:#edf5e8"></span>
+              <span class="swatch" style="background:#d7e7d0"></span>
+              <span class="swatch" style="background:#a1c58b"></span>
+              <span class="swatch" style="background:#4c8b57"></span>
+              <span class="swatch" style="background:#18301f"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">自然系</span>
+              <span class="tag">轻松陪伴感</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>自定义主题槽位</h2>
+          <p>建议首版只开放一个“自定义主题”，用户维护一整组核心颜色，而不是只改一个主色。这样视觉结果更稳定，也更容易和现有 `VisualThemeTokens` 对齐。</p>
+        </div>
+        <span>推荐字段：背景渐变、Hero 渐变、主强调色、面板色、边框色、导航选中色、危险色</span>
+      </div>
+
+      <div class="editor">
+        <div class="editor-card">
+          <h3 style="font-size:22px;font-weight:800;">自定义主题编辑页</h3>
+          <p style="margin-top:10px;color:var(--muted);line-height:1.68;font-size:14px;">用户先输入主题名称，再设置一组颜色。右侧实时预览整套页面效果，而不是只看色块。</p>
+
+          <div class="control-grid" style="margin-top:18px;">
+            <div class="control">
+              <label>主题名称</label>
+              <div class="input">我的海盐薄暮</div>
+            </div>
+            <div class="control">
+              <label>主题模式</label>
+              <div class="input">深色主题</div>
+            </div>
+
+            <div class="control">
+              <label>背景渐变 A</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#0c1627;"></span>
+                <div class="input">#0C1627</div>
+              </div>
+            </div>
+            <div class="control">
+              <label>背景渐变 B</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#122a46;"></span>
+                <div class="input">#122A46</div>
+              </div>
+            </div>
+
+            <div class="control">
+              <label>Hero 主色</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#50b9ff;"></span>
+                <div class="input">#50B9FF</div>
+              </div>
+            </div>
+            <div class="control">
+              <label>Hero 辅色</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#9f7cff;"></span>
+                <div class="input">#9F7CFF</div>
+              </div>
+            </div>
+
+            <div class="control">
+              <label>面板底色</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#15223a;"></span>
+                <div class="input">#15223A</div>
+              </div>
+            </div>
+            <div class="control">
+              <label>边框色</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#5e93ff;"></span>
+                <div class="input">#5E93FF</div>
+              </div>
+            </div>
+
+            <div class="control">
+              <label>导航选中色</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#274a7c;"></span>
+                <div class="input">#274A7C</div>
+              </div>
+            </div>
+            <div class="control">
+              <label>危险色</label>
+              <div class="color-row">
+                <span class="color-chip" style="background:#de6f78;"></span>
+                <div class="input">#DE6F78</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button class="btn primary">保存为我的主题</button>
+            <button class="btn">从深海蓝复制</button>
+            <button class="btn">恢复默认</button>
+          </div>
+
+          <div class="note">建议真实落地时支持“从预设主题复制一份再编辑”，这样用户不需要从零开始配色，成功率会更高。</div>
+        </div>
+
+        <div class="editor-preview">
+          <div class="screen" style="background:linear-gradient(180deg,#0c1627 0%,#12233b 100%);">
+            <div class="screen-header" style="background:linear-gradient(135deg,#50b9ff,#9f7cff);">
+              <h3>我的海盐薄暮</h3>
+              <p>右侧是“自定义主题”实时预览效果。真正落地后，这里可以复用当前主题选择页和关键页面组件做真实预览。</p>
+            </div>
+
+            <div class="list">
+              <div class="screen-panel">
+                <h4>主题色带</h4>
+                <div class="mini-strip">
+                  <span style="background:#0c1627;"></span>
+                  <span style="background:#122a46;"></span>
+                  <span style="background:#50b9ff;"></span>
+                  <span style="background:#9f7cff;"></span>
+                  <span style="background:#de6f78;"></span>
+                </div>
+              </div>
+
+              <div class="screen-panel">
+                <h4>应用预览</h4>
+                <div class="screen-row"><span>习惯管理</span><span>深蓝渐变 + 亮青主强调</span></div>
+                <div class="screen-row"><span>统计页</span><span>折线图高亮更清晰</span></div>
+                <div class="screen-row"><span>我的页</span><span>Hero 更统一</span></div>
+              </div>
+
+              <div class="screen-panel">
+                <h4>推荐交互</h4>
+                <div class="screen-row"><span>设为当前主题</span><span>立即生效</span></div>
+                <div class="screen-row"><span>另存为副本</span><span>便于迭代不同配色</span></div>
+                <div class="screen-row"><span>分享配色</span><span>后续可扩展</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

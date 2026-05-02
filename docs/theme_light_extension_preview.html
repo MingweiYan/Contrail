@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>浅色主题扩展预览</title>
+  <style>
+    :root {
+      --page-bg:
+        radial-gradient(circle at top left, rgba(255, 214, 214, 0.24), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 231, 192, 0.28), transparent 26%),
+        linear-gradient(180deg, #f6f1eb 0%, #ece5dc 100%);
+      --panel: rgba(255, 255, 255, 0.78);
+      --panel-strong: rgba(255, 255, 255, 0.88);
+      --text: #2b3445;
+      --muted: rgba(43, 52, 69, 0.68);
+      --line: rgba(82, 101, 132, 0.12);
+      --shadow: 0 18px 48px rgba(80, 90, 110, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--page-bg);
+    }
+
+    .page {
+      width: min(1380px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 26px 0 52px;
+    }
+
+    .hero,
+    .section {
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,.75);
+      background: rgba(255,255,255,.58);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero {
+      padding: 28px 30px;
+    }
+
+    .hero h1,
+    .section h2,
+    .card h3,
+    .screen h4,
+    p { margin: 0; }
+
+    .hero h1 {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .hero p {
+      margin-top: 12px;
+      max-width: 920px;
+      font-size: 15px;
+      line-height: 1.72;
+      color: var(--muted);
+    }
+
+    .section {
+      margin-top: 22px;
+      padding: 22px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .section-head p,
+    .section-head span {
+      font-size: 13px;
+      line-height: 1.64;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.82);
+      background: var(--panel-strong);
+      box-shadow: 0 14px 32px rgba(68, 79, 99, 0.09);
+    }
+
+    .preview {
+      position: relative;
+      padding: 18px;
+      min-height: 204px;
+      overflow: hidden;
+    }
+
+    .preview::after {
+      content: "";
+      position: absolute;
+      right: -28px;
+      bottom: -42px;
+      width: 170px;
+      height: 170px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      filter: blur(10px);
+    }
+
+    .badge-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.34);
+      border: 1px solid rgba(255,255,255,.48);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .title {
+      position: relative;
+      z-index: 1;
+      margin-top: 18px;
+    }
+
+    .title h3 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+
+    .title p {
+      margin-top: 8px;
+      max-width: 86%;
+      font-size: 13px;
+      line-height: 1.62;
+      color: rgba(34, 42, 58, 0.72);
+    }
+
+    .mini-ui {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mini-panel {
+      padding: 12px;
+      min-height: 58px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.28);
+      border: 1px solid rgba(255,255,255,.42);
+    }
+
+    .mini-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(34, 42, 58, 0.10);
+      overflow: hidden;
+    }
+
+    .mini-bar span {
+      display: block;
+      height: 100%;
+      width: 64%;
+      border-radius: inherit;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .desc {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.66;
+      color: var(--muted);
+      min-height: 44px;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .swatches span {
+      display: block;
+      height: 36px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.82);
+      box-shadow: inset 0 0 0 1px rgba(34,42,58,.04);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .tag {
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: rgba(82, 101, 132, 0.08);
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(43, 52, 69, 0.76);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: .98fr 1.02fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .list-card,
+    .screen {
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.82);
+      background: var(--panel-strong);
+      box-shadow: 0 12px 30px rgba(71, 83, 104, 0.08);
+    }
+
+    .list-card {
+      padding: 18px;
+    }
+
+    .list-card h3 {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .list-card p {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.66;
+      color: var(--muted);
+    }
+
+    .reorder-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(247, 249, 253, 0.9);
+      border: 1px solid rgba(84, 105, 137, 0.10);
+    }
+
+    .item.active {
+      background: rgba(255, 246, 236, 0.96);
+      border-color: rgba(219, 152, 103, 0.24);
+      box-shadow: 0 10px 24px rgba(219, 152, 103, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .handle {
+      width: 30px;
+      height: 30px;
+      border-radius: 12px;
+      background: rgba(84, 105, 137, 0.08);
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      color: rgba(43,52,69,.62);
+      font-weight: 800;
+    }
+
+    .meta h4 {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .meta p {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .strip {
+      display: flex;
+      gap: 6px;
+    }
+
+    .strip span {
+      width: 18px;
+      height: 18px;
+      border-radius: 7px;
+      display: block;
+      border: 1px solid rgba(255,255,255,.86);
+    }
+
+    .screen {
+      overflow: hidden;
+    }
+
+    .screen-head {
+      padding: 18px;
+      background: linear-gradient(135deg, #f0d2c7, #f6e3c4);
+      border-bottom: 1px solid rgba(112, 124, 145, 0.10);
+    }
+
+    .screen-head h4 {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .screen-head p {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.64;
+      color: rgba(43,52,69,.72);
+    }
+
+    .screen-body {
+      padding: 18px;
+      background: linear-gradient(180deg, #fcf8f4 0%, #f1ebe3 100%);
+    }
+
+    .screen-panel {
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(111, 124, 147, 0.10);
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(112, 124, 145, 0.08);
+      font-size: 13px;
+      color: rgba(43,52,69,.76);
+    }
+
+    .row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .row:first-child {
+      padding-top: 0;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(101, 118, 146, 0.06);
+      border: 1px solid rgba(101, 118, 146, 0.10);
+      font-size: 13px;
+      line-height: 1.72;
+      color: rgba(43,52,69,.74);
+    }
+
+    @media (max-width: 1040px) {
+      .grid,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>新增浅色主题与拖动排序预览</h1>
+      <p>当前预设主题里深色主题偏多，所以这次先补两套浅色方向，只做静态预览不改真实 Flutter 逻辑。同时把“主题列表支持长按拖动重新排序”的交互状态一起模拟出来，方便你确认是否按这个方向落地。</p>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>新增浅色主题</h2>
+          <p>我刻意避开了现有的 `银雾` 和 `森林晨光`，让新主题分别走柔和暖粉、沙色金调和清新高级绿这三条线，这样白色系主题的性格会拉得更开。</p>
+        </div>
+        <span>建议加入后浅色主题会变成 5 套，深浅比例会更均衡</span>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <div class="preview" style="background:linear-gradient(135deg,#f8ebe9,#f3d7d0 56%,#dfb6aa); color:#2a3344;">
+            <div class="badge-row">
+              <span class="badge">Light</span>
+              <span class="badge">Soft Warm</span>
+            </div>
+            <div class="title">
+              <h3>桃雾晨曦</h3>
+              <p>粉杏和奶白之间的轻暖色主题，适合“柔和、治愈、陪伴感”路线，又不会太甜。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="background:#d98d76;"></span></div>
+              </div>
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="width:76%; background:#b97a6c;"></span></div>
+                <div class="mini-bar" style="margin-top:10px;"><span style="width:54%; background:#f3d7d0;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3>桃雾晨曦</h3>
+            <p class="desc">适合作为“白色系默认”的温暖替代项。相比银雾更有情绪温度，也比森林晨光更中性、百搭。</p>
+            <div class="swatches">
+              <span style="background:#fbf4f2;"></span>
+              <span style="background:#f3d7d0;"></span>
+              <span style="background:#dfb6aa;"></span>
+              <span style="background:#d98d76;"></span>
+              <span style="background:#8a5a50;"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">温暖柔和</span>
+              <span class="tag">白色系</span>
+              <span class="tag">陪伴感更强</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="preview" style="background:linear-gradient(135deg,#f8f0e1,#eddcc0 54%,#d3b07d); color:#2a3344;">
+            <div class="badge-row">
+              <span class="badge">Light</span>
+              <span class="badge">Sand Gold</span>
+            </div>
+            <div class="title">
+              <h3>沙丘晨金</h3>
+              <p>更克制的米金和沙色路线，带一点“精致纸张感”，比纯白更有质感。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="background:#c58b3f;"></span></div>
+              </div>
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="width:72%; background:#a8712f;"></span></div>
+                <div class="mini-bar" style="margin-top:10px;"><span style="width:50%; background:#eddcc0;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3>沙丘晨金</h3>
+            <p class="desc">适合做偏“高级、克制、低饱和”的浅色主题。和现有浅色主题相比，更像温暖版的商务风。</p>
+            <div class="swatches">
+              <span style="background:#fcf7ef;"></span>
+              <span style="background:#eddcc0;"></span>
+              <span style="background:#d3b07d;"></span>
+              <span style="background:#c58b3f;"></span>
+              <span style="background:#705230;"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">高级米金</span>
+              <span class="tag">白色系</span>
+              <span class="tag">克制商务感</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="preview" style="background:linear-gradient(135deg,#eef6ef,#dcebdd 54%,#9fbea2); color:#263542;">
+            <div class="badge-row">
+              <span class="badge">Light</span>
+              <span class="badge">Fresh Green</span>
+            </div>
+            <div class="title">
+              <h3>青苔晨露</h3>
+              <p>以清新绿色为核心，但整体做低饱和雾感处理，更偏高级植物感，而不是鲜艳的活力绿。</p>
+            </div>
+            <div class="mini-ui">
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="background:#6d9370;"></span></div>
+              </div>
+              <div class="mini-panel">
+                <div class="mini-bar"><span style="width:74%; background:#56785b;"></span></div>
+                <div class="mini-bar" style="margin-top:10px;"><span style="width:52%; background:#dcebdd;"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3>青苔晨露</h3>
+            <p class="desc">比森林晨光更有雾感和层次，更接近“高级清新绿”。适合想要绿色，但又不想太自然、太田园的用户。</p>
+            <div class="swatches">
+              <span style="background:#f3f8f3;"></span>
+              <span style="background:#dcebdd;"></span>
+              <span style="background:#9fbea2;"></span>
+              <span style="background:#6d9370;"></span>
+              <span style="background:#445c49;"></span>
+            </div>
+            <div class="tags">
+              <span class="tag">清新绿色</span>
+              <span class="tag">低饱和高级感</span>
+              <span class="tag">轻雾质感</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>拖动排序预览</h2>
+          <p>这里模拟的是主题列表支持“长按拖动排序”的效果。预设主题和自定义主题都在同一个列表里，拖动后按用户自己的顺序保存。</p>
+        </div>
+        <span>真实落地建议使用长按拖动手柄 + 本地持久化主题顺序</span>
+      </div>
+
+      <div class="layout">
+        <div class="list-card">
+          <h3>主题列表排序态</h3>
+          <p>左侧是手柄，长按后进入排序模式。中间卡片是被拖起的状态，右侧仍然保留主题色带，方便在排序时快速识别。</p>
+
+          <div class="reorder-list">
+            <div class="item">
+              <div class="handle">⋮⋮</div>
+              <div class="meta">
+                <h4>银雾</h4>
+                <p>当前默认浅色主题</p>
+              </div>
+              <div class="strip">
+                <span style="background:#f3f7fc;"></span>
+                <span style="background:#e1ebf7;"></span>
+                <span style="background:#7d9ecf;"></span>
+              </div>
+            </div>
+
+            <div class="item active">
+              <div class="handle">⋮⋮</div>
+              <div class="meta">
+                <h4>桃雾晨曦</h4>
+                <p>拖动中，准备放到第二位</p>
+              </div>
+              <div class="strip">
+                <span style="background:#fbf4f2;"></span>
+                <span style="background:#f3d7d0;"></span>
+                <span style="background:#d98d76;"></span>
+              </div>
+            </div>
+
+            <div class="item">
+              <div class="handle">⋮⋮</div>
+              <div class="meta">
+                <h4>森林晨光</h4>
+                <p>自然系浅色</p>
+              </div>
+              <div class="strip">
+                <span style="background:#edf5e8;"></span>
+                <span style="background:#d7e7d0;"></span>
+                <span style="background:#4c8b57;"></span>
+              </div>
+            </div>
+
+            <div class="item">
+              <div class="handle">⋮⋮</div>
+              <div class="meta">
+                <h4>沙丘晨金</h4>
+                <p>温暖米金浅色</p>
+              </div>
+              <div class="strip">
+                <span style="background:#fcf7ef;"></span>
+                <span style="background:#eddcc0;"></span>
+                <span style="background:#c58b3f;"></span>
+              </div>
+            </div>
+
+            <div class="item">
+              <div class="handle">⋮⋮</div>
+              <div class="meta">
+                <h4>自定义主题</h4>
+                <p>用户自己的主题槽位</p>
+              </div>
+              <div class="strip">
+                <span style="background:#0c1627;"></span>
+                <span style="background:#9f7cff;"></span>
+                <span style="background:#63bcff;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="note">
+            我建议真实实现时把“排序”和“应用主题”合并在同一列表里，平时点击切换，长按进入拖动态；拖完后把顺序保存到本地，下次打开仍然保持用户自己的排列。
+          </div>
+        </div>
+
+        <div class="screen">
+          <div class="screen-head">
+            <h4>主题页视觉建议</h4>
+            <p>主题页里新增一个“拖动排序”提示，让用户知道列表支持长按重排。浅色主题可以优先放在前面，减少暗色主题过多带来的默认感受偏差。</p>
+          </div>
+          <div class="screen-body">
+            <div class="screen-panel">
+              <div class="row"><span>推荐排序</span><span>银雾 → 桃雾晨曦 → 青苔晨露 → 森林晨光 → 沙丘晨金</span></div>
+              <div class="row"><span>后续深色</span><span>深海蓝 → 极夜紫舱 → 松石潮汐 → 熔岩余烬</span></div>
+            </div>
+
+            <div class="screen-panel">
+              <div class="row"><span>长按交互</span><span>长按主题卡或拖拽手柄进入排序</span></div>
+              <div class="row"><span>排序持久化</span><span>保存到本地，下次继续沿用</span></div>
+              <div class="row"><span>自定义主题</span><span>也参与排序，不固定在底部</span></div>
+            </div>
+
+            <div class="screen-panel">
+              <div class="row"><span>桃雾晨曦</span><span>更柔和、偏陪伴感</span></div>
+              <div class="row"><span>青苔晨露</span><span>更清新、偏高级雾绿</span></div>
+              <div class="row"><span>沙丘晨金</span><span>更克制、偏高级感</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
