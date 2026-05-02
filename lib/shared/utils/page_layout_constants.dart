@@ -106,6 +106,34 @@ class AppTypographyConstants extends BaseLayoutConstants {
   static double get appBarTitleFontSize => _sp(22);
 }
 
+/// 应用级尺寸常量 helper
+/// 用于在 ScreenUtil 尚未初始化时安全回退到设计值
+class AppDimensionConstants extends BaseLayoutConstants {
+  static double w(double size) {
+    try {
+      return ScreenUtil().setWidth(size);
+    } catch (_) {
+      return size;
+    }
+  }
+
+  static double h(double size) {
+    try {
+      return ScreenUtil().setHeight(size);
+    } catch (_) {
+      return size;
+    }
+  }
+
+  static double r(double size) {
+    try {
+      return ScreenUtil().radius(size);
+    } catch (_) {
+      return size;
+    }
+  }
+}
+
 /// 数据备份页面专用常量
 class DataBackupPageConstants extends BaseLayoutConstants {
   // Container内边距

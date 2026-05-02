@@ -41,18 +41,18 @@ app_theme.AppTheme buildEditedVisualTheme({
     alpha: isDark ? 0.72 : 0.68,
   );
   final panelShadow = isDark
-      ? const [
+      ? [
           BoxShadow(
             color: Color(0x33000000),
-            blurRadius: 28,
-            offset: Offset(0, 16),
+            blurRadius: AppDimensionConstants.r(28),
+            offset: Offset(0, AppDimensionConstants.h(16)),
           ),
         ]
-      : const [
+      : [
           BoxShadow(
             color: Color(0x180A1C35),
-            blurRadius: 34,
-            offset: Offset(0, 18),
+            blurRadius: AppDimensionConstants.r(34),
+            offset: Offset(0, AppDimensionConstants.h(18)),
           ),
         ];
 
@@ -170,11 +170,11 @@ app_theme.AppTheme _buildSilverMistTheme() {
     splashTitleColor: const Color(0xFF18263D),
     destructiveColor: const Color(0xFFD65C66),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x180A1C35),
-        blurRadius: 34,
-        offset: Offset(0, 18),
+        blurRadius: AppDimensionConstants.r(34),
+        offset: Offset(0, AppDimensionConstants.h(18)),
       ),
     ],
     useGlass: true,
@@ -239,11 +239,11 @@ app_theme.AppTheme _buildCalmTechTheme() {
     splashTitleColor: const Color(0xFFEAF3FF),
     destructiveColor: const Color(0xFFD86A74),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x33000000),
-        blurRadius: 28,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(28),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: true,
@@ -308,11 +308,11 @@ app_theme.AppTheme _buildNightCapsuleTheme() {
     splashTitleColor: const Color(0xFFF4F1FF),
     destructiveColor: const Color(0xFFEC7584),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x40000000),
-        blurRadius: 32,
-        offset: Offset(0, 18),
+        blurRadius: AppDimensionConstants.r(32),
+        offset: Offset(0, AppDimensionConstants.h(18)),
       ),
     ],
     useGlass: false,
@@ -377,11 +377,11 @@ app_theme.AppTheme _buildTidalTealTheme() {
     splashTitleColor: const Color(0xFFE9FFFC),
     destructiveColor: const Color(0xFFE47A86),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x33000000),
-        blurRadius: 30,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(30),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: true,
@@ -446,11 +446,11 @@ app_theme.AppTheme _buildEmberGlowTheme() {
     splashTitleColor: const Color(0xFFFFF3ED),
     destructiveColor: const Color(0xFFE87075),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x33000000),
-        blurRadius: 28,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(28),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: false,
@@ -515,11 +515,11 @@ app_theme.AppTheme _buildForestLightTheme() {
     splashTitleColor: const Color(0xFF1B3320),
     destructiveColor: const Color(0xFFD66B64),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x120A1C35),
-        blurRadius: 28,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(28),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: true,
@@ -584,11 +584,11 @@ app_theme.AppTheme _buildPeachDawnTheme() {
     splashTitleColor: const Color(0xFF2A3344),
     destructiveColor: const Color(0xFFD96C62),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x120A1C35),
-        blurRadius: 28,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(28),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: true,
@@ -653,11 +653,11 @@ app_theme.AppTheme _buildMossDewTheme() {
     splashTitleColor: const Color(0xFF263542),
     destructiveColor: const Color(0xFFD56D66),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x120A1C35),
-        blurRadius: 28,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(28),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: true,
@@ -722,11 +722,11 @@ app_theme.AppTheme _buildDuneGoldTheme() {
     splashTitleColor: const Color(0xFF2A3344),
     destructiveColor: const Color(0xFFD36C62),
     destructiveForeground: Colors.white,
-    panelShadow: const [
+    panelShadow: [
       BoxShadow(
         color: Color(0x120A1C35),
-        blurRadius: 28,
-        offset: Offset(0, 16),
+        blurRadius: AppDimensionConstants.r(28),
+        offset: Offset(0, AppDimensionConstants.h(16)),
       ),
     ],
     useGlass: false,
@@ -776,7 +776,9 @@ ThemeData _buildThemeData({
     cardColor: tokens.panelColor,
     dialogTheme: DialogThemeData(
       backgroundColor: tokens.dialogBackground,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensionConstants.r(24)),
+      ),
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
@@ -795,7 +797,7 @@ ThemeData _buildThemeData({
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppDimensionConstants.r(24)),
         side: BorderSide(color: tokens.panelBorderColor),
       ),
       surfaceTintColor: Colors.transparent,
@@ -811,23 +813,28 @@ ThemeData _buildThemeData({
       filled: true,
       fillColor: tokens.inputFillColor,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppDimensionConstants.r(18)),
         borderSide: BorderSide(color: tokens.panelBorderColor),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppDimensionConstants.r(18)),
         borderSide: BorderSide(color: tokens.panelBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: scheme.primary, width: 1.4),
+        borderRadius: BorderRadius.circular(AppDimensionConstants.r(18)),
+        borderSide: BorderSide(
+          color: scheme.primary,
+          width: AppDimensionConstants.w(1.4),
+        ),
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: tokens.dialogBackground,
       modalBackgroundColor: tokens.dialogBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensionConstants.r(28)),
+        ),
       ),
       surfaceTintColor: Colors.transparent,
     ),
@@ -835,29 +842,43 @@ ThemeData _buildThemeData({
       iconColor: scheme.primary,
       textColor: scheme.onSurface,
       tileColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensionConstants.r(18)),
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensionConstants.r(18)),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensionConstants.w(20),
+          vertical: AppDimensionConstants.h(14),
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: scheme.primary,
         side: BorderSide(color: tokens.panelBorderColor),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensionConstants.r(18)),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensionConstants.w(20),
+          vertical: AppDimensionConstants.h(14),
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: scheme.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensionConstants.r(16)),
+        ),
       ),
     ),
   );

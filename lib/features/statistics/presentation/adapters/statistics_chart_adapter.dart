@@ -926,7 +926,7 @@ class StatisticsChartAdapter {
           value: completedDays.toDouble(),
           color: habitColor,
           title: '$completedDays',
-          radius: 60,
+          radius: AppDimensionConstants.r(60),
           titleStyle: TextStyle(
             fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.bold,
@@ -941,7 +941,7 @@ class StatisticsChartAdapter {
         value: completedDays.toDouble(),
         color: habitColor,
         title: '$completedDays',
-        radius: 60,
+        radius: AppDimensionConstants.r(60),
         titleStyle: TextStyle(
           fontSize: AppTypographyConstants.sectionTitleFontSize,
           fontWeight: FontWeight.bold,
@@ -952,7 +952,7 @@ class StatisticsChartAdapter {
         value: remainingDays.toDouble(),
         color: Colors.grey.shade400,
         title: '$remainingDays',
-        radius: 60,
+        radius: AppDimensionConstants.r(60),
         titleStyle: TextStyle(
           fontSize: AppTypographyConstants.sectionTitleFontSize,
           fontWeight: FontWeight.bold,

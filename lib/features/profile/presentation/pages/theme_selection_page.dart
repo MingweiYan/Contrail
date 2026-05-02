@@ -47,7 +47,7 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
                   padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
                   decoration: ThemeHelper.settingCardDecoration(
                     context,
-                    radius: 18,
+                    radius: 18.r,
                   ),
                   child: Row(
                     children: [
@@ -113,7 +113,7 @@ class ThemeSelectionPageState extends State<ThemeSelectionPage> {
   Widget _buildHeader(BuildContext context) {
     final visualTheme = ThemeHelper.visualTheme(context);
     return Container(
-      decoration: ThemeHelper.heroDecoration(context, radius: 28),
+      decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
       padding: EdgeInsets.all(20.w),
       child: Row(
         children: [

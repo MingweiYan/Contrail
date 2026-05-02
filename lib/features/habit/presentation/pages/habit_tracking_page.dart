@@ -740,26 +740,26 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   ),
                   if (_elapsedTime.inHours > 0)
                     Positioned(
-                      right: 12,
-                      top: 12,
+                      right: 12.w,
+                      top: 12.h,
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         transitionBuilder: (child, animation) =>
                             ScaleTransition(scale: animation, child: child),
                         child: Container(
                           key: ValueKey(_elapsedTime.inHours),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.onPrimary,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16.r),
                             boxShadow: [
                               BoxShadow(
                                 color: Theme.of(context).colorScheme.shadow,
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
+                                blurRadius: 10.r,
+                                offset: Offset(0, 5.h),
                               ),
                             ],
                           ),
@@ -905,7 +905,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
                   padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
                   child: Row(
                     children: [
@@ -1013,7 +1013,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 12.sp,
+          fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
           fontWeight: FontWeight.w700,
           color: heroForeground,
         ),

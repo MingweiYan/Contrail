@@ -100,7 +100,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             decoration: ThemeHelper.panelDecoration(
               context,
               secondary: true,
-              radius: 24,
+              radius: 24.r,
             ),
             child: Row(
               children: [
@@ -117,7 +117,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                             remainingDays,
                             habit.color,
                           ),
-                          centerSpaceRadius: 40,
+                          centerSpaceRadius: 40.r,
                           sectionsSpace: 0,
                           pieTouchData: PieTouchData(enabled: true),
                         ),
@@ -234,7 +234,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             decoration: ThemeHelper.panelDecoration(
               context,
               secondary: true,
-              radius: 24,
+              radius: 24.r,
             ),
             child: CalendarViewWidget(
               habits: habits,
@@ -263,7 +263,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         vertical: ScreenUtil().setHeight(12),
       ),
       padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
-      decoration: ThemeHelper.panelDecoration(context, radius: 20),
+      decoration: ThemeHelper.panelDecoration(context, radius: 20.r),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -303,7 +303,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         vertical: ScreenUtil().setHeight(12),
       ),
       padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
-      decoration: ThemeHelper.panelDecoration(context, radius: 20),
+      decoration: ThemeHelper.panelDecoration(context, radius: 20.r),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -412,7 +412,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
                 padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
                 child: Column(
                   children: [

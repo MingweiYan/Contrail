@@ -621,8 +621,8 @@ Widget _buildHeader(
   final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
   return AnimatedContainer(
     duration: const Duration(milliseconds: 300),
-    decoration: ThemeHelper.heroDecoration(context, radius: 28),
-    padding: const EdgeInsets.all(20),
+    decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
+    padding: EdgeInsets.all(20.w),
     child: Row(
       children: [
         _buildHeaderButton(context),

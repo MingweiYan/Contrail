@@ -57,8 +57,8 @@ class _FullEditorPageState extends State<FullEditorPage> {
                 padding: FullEditorPageConstants.editorContainerPadding,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  decoration: ThemeHelper.heroDecoration(context, radius: 24),
-                  padding: EdgeInsets.all(20),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 24.r),
+                  padding: EdgeInsets.all(20.w),
                   child: Row(
                     children: [
                       Expanded(
@@ -97,7 +97,7 @@ class _FullEditorPageState extends State<FullEditorPage> {
                             label: '返回',
                             onTap: () => Navigator.pop(context),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10.w),
                           _buildHeaderAction(
                             context,
                             icon: Icons.save_rounded,
@@ -111,16 +111,16 @@ class _FullEditorPageState extends State<FullEditorPage> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
                 child: Container(
                   decoration: ThemeHelper.panelDecoration(
                     context,
                     secondary: true,
-                    radius: 22,
+                    radius: 22.r,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8.w,
+                    vertical: 6.h,
                   ),
                   child: QuillSimpleToolbar(
                     controller: _controller,
@@ -130,14 +130,14 @@ class _FullEditorPageState extends State<FullEditorPage> {
               ),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   child: Container(
                     decoration: ThemeHelper.panelDecoration(
                       context,
-                      radius: 24,
+                      radius: 24.r,
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(24.r),
                       child: QuillEditor.basic(
                         controller: _controller,
                         config: QuillEditorConfig(
@@ -167,19 +167,19 @@ class _FullEditorPageState extends State<FullEditorPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: heroForeground),
-              const SizedBox(width: 6),
+              Icon(icon, size: 18.sp, color: heroForeground),
+              SizedBox(width: 6.w),
               Text(
                 label,
                 style: TextStyle(

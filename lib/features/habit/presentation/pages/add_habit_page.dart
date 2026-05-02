@@ -512,7 +512,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                 padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
                   padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,8 +555,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               boxShadow: [
                                 BoxShadow(
                                   color: _selectedColor.withValues(alpha: 0.28),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 10),
+                                  blurRadius: 18.r,
+                                  offset: Offset(0, 10.h),
                                 ),
                               ],
                             ),

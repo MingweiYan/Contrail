@@ -238,8 +238,8 @@ class HabitItemWidget extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: timelineColor.withValues(alpha: 0.42),
-                            blurRadius: 16,
-                            spreadRadius: 5,
+                            blurRadius: 16.r,
+                            spreadRadius: 5.r,
                           ),
                         ],
                       ),
@@ -531,8 +531,8 @@ class HabitItemWidget extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: gradientColors[0].withValues(alpha: 0.24),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
+            blurRadius: 14.r,
+            offset: Offset(0, 8.h),
           ),
         ],
       ),

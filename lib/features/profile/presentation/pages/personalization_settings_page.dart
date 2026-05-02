@@ -43,13 +43,13 @@ class _PersonalizationSettingsPageState
                           duration: const Duration(milliseconds: 300),
                           decoration: ThemeHelper.heroDecoration(
                             context,
-                            radius: 28,
+                            radius: 28.r,
                           ),
-                          padding: const EdgeInsets.all(20),
+                          padding: EdgeInsets.all(20.w),
                           child: Row(
                             children: [
                               _buildHeaderButton(context),
-                              const SizedBox(width: 14),
+                              SizedBox(width: 14.w),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,19 +194,19 @@ class _PersonalizationSettingsPageState
       color: Colors.transparent,
       child: InkWell(
         onTap: () => Navigator.pop(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.arrow_back_rounded, size: 18, color: heroForeground),
-              const SizedBox(width: 6),
+              Icon(Icons.arrow_back_rounded, size: 18.sp, color: heroForeground),
+              SizedBox(width: 6.w),
               Text(
                 '返回',
                 style: TextStyle(
@@ -237,7 +237,7 @@ class _PersonalizationSettingsPageState
           PersonalizationSettingsPageConstants.radioBorderRadius,
         ),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
           decoration: BoxDecoration(
             color: selected
                 ? scheme.primary.withValues(alpha: 0.14)

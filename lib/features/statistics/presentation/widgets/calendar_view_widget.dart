@@ -156,7 +156,9 @@ class CalendarViewWidget extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: isToday
-                ? ThemeHelper.primary(context).withOpacity(0.1) // 今天的特殊背景色
+                ? ThemeHelper.primary(
+                    context,
+                  ).withValues(alpha: 0.1) // 今天的特殊背景色
                 : isCurrentMonthDate
                 ? ThemeHelper.surface(context)
                 : Colors.transparent, // 非当前月份不显示背景
@@ -172,7 +174,9 @@ class CalendarViewWidget extends StatelessWidget {
             boxShadow: isToday
                 ? [
                     BoxShadow(
-                      color: ThemeHelper.primary(context).withOpacity(0.2),
+                      color: ThemeHelper.primary(
+                        context,
+                      ).withValues(alpha: 0.2),
                       blurRadius: ScreenUtil().setWidth(4),
                       offset: Offset(0, ScreenUtil().setHeight(2)),
                     ),

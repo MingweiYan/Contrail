@@ -96,7 +96,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
 
   Widget _buildHeader(BuildContext context, Color onHero) {
     return Container(
-      decoration: ThemeHelper.heroDecoration(context, radius: 28),
+      decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
       padding: EdgeInsets.all(20.w),
       child: Row(
         children: [
@@ -142,7 +142,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
 
     return Container(
       width: double.infinity,
-      decoration: ThemeHelper.settingCardDecoration(context, radius: 24),
+      decoration: ThemeHelper.settingCardDecoration(context, radius: 24.r),
       padding: EdgeInsets.all(18.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
