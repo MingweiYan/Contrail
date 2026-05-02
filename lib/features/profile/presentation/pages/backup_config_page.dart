@@ -12,35 +12,37 @@ class AutoBackupPolicyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-        width: double.infinity,
-        height: double.infinity,
-        padding: PageLayoutConstants.getPageContainerPadding(),
-        child: Consumer<BackupProvider>(
-          builder: (context, provider, _) {
-            _showErrorIfNeeded(context, provider.errorMessage, provider.clearError);
-            return Padding(
-              padding: DataBackupPageConstants.containerPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(
-                    context,
-                    title: '自动备份策略',
-                    subtitle: '这是一套页面级公共配置，同时影响本地与 WebDAV 备份策略。',
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingLarge),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        bottom: BaseLayoutConstants.spacingLarge,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+        child: SafeArea(
+          child: Padding(
+            padding: PageLayoutConstants.getPageContainerPadding(),
+            child: Consumer<BackupProvider>(
+              builder: (context, provider, _) {
+                _showErrorIfNeeded(
+                  context,
+                  provider.errorMessage,
+                  provider.clearError,
+                );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(
+                      context,
+                      title: '自动备份策略',
+                      subtitle: '这是一套页面级公共配置，同时影响本地与 WebDAV 备份策略。',
+                    ),
+                    SizedBox(height: BaseLayoutConstants.spacingLarge),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          bottom: BaseLayoutConstants.spacingLarge,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           _buildSectionPanel(
                             context,
                             title: '当前状态',
@@ -112,7 +114,8 @@ class AutoBackupPolicyPage extends StatelessWidget {
                                       child: Text(
                                         '自动备份',
                                         style: TextStyle(
-                                          fontSize: 15.sp,
+                                          fontSize:
+                                              AppTypographyConstants.cardTitleFontSize,
                                           fontWeight: FontWeight.w700,
                                           color: ThemeHelper.onBackground(context),
                                         ),
@@ -168,7 +171,8 @@ class AutoBackupPolicyPage extends StatelessWidget {
                                     child: Text(
                                       '最近错误：${provider.autoBackupLastError!}',
                                       style: TextStyle(
-                                        fontSize: 12.sp,
+                                        fontSize:
+                                            AppTypographyConstants.formHelperFontSize,
                                         height: 1.45,
                                         color: Colors.red.withValues(alpha: 0.86),
                                       ),
@@ -178,14 +182,15 @@ class AutoBackupPolicyPage extends StatelessWidget {
                               ],
                             ),
                           ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -198,35 +203,37 @@ class LocalBackupConfigPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-        width: double.infinity,
-        height: double.infinity,
-        padding: PageLayoutConstants.getPageContainerPadding(),
-        child: Consumer<BackupProvider>(
-          builder: (context, provider, _) {
-            _showErrorIfNeeded(context, provider.errorMessage, provider.clearError);
-            return Padding(
-              padding: DataBackupPageConstants.containerPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(
-                    context,
-                    title: '本地备份配置',
-                    subtitle: '管理本地备份目录与本地保留策略。',
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingLarge),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        bottom: BaseLayoutConstants.spacingLarge,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+        child: SafeArea(
+          child: Padding(
+            padding: PageLayoutConstants.getPageContainerPadding(),
+            child: Consumer<BackupProvider>(
+              builder: (context, provider, _) {
+                _showErrorIfNeeded(
+                  context,
+                  provider.errorMessage,
+                  provider.clearError,
+                );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(
+                      context,
+                      title: '本地备份配置',
+                      subtitle: '管理本地备份目录与本地保留策略。',
+                    ),
+                    SizedBox(height: BaseLayoutConstants.spacingLarge),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          bottom: BaseLayoutConstants.spacingLarge,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           _buildSectionPanel(
                             context,
                             title: '配置状态',
@@ -334,14 +341,15 @@ class LocalBackupConfigPage extends StatelessWidget {
                               ],
                             ),
                           ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -400,39 +408,41 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-        width: double.infinity,
-        height: double.infinity,
-        padding: PageLayoutConstants.getPageContainerPadding(),
-        child: Consumer<WebDavBackupProvider>(
-          builder: (context, provider, _) {
-            _showErrorIfNeeded(context, provider.errorMessage, provider.clearError);
-            final configured =
-                provider.webdavUrl.trim().isNotEmpty &&
-                provider.webdavUsername.trim().isNotEmpty &&
-                provider.webdavPath.trim().isNotEmpty;
-            return Padding(
-              padding: DataBackupPageConstants.containerPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(
-                    context,
-                    title: 'WebDAV 配置',
-                    subtitle: '管理远端地址、账号、路径与保留策略。',
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingLarge),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        bottom: BaseLayoutConstants.spacingLarge,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+        child: SafeArea(
+          child: Padding(
+            padding: PageLayoutConstants.getPageContainerPadding(),
+            child: Consumer<WebDavBackupProvider>(
+              builder: (context, provider, _) {
+                _showErrorIfNeeded(
+                  context,
+                  provider.errorMessage,
+                  provider.clearError,
+                );
+                final configured =
+                    provider.webdavUrl.trim().isNotEmpty &&
+                    provider.webdavUsername.trim().isNotEmpty &&
+                    provider.webdavPath.trim().isNotEmpty;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(
+                      context,
+                      title: 'WebDAV 配置',
+                      subtitle: '管理远端地址、账号、路径与保留策略。',
+                    ),
+                    SizedBox(height: BaseLayoutConstants.spacingLarge),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          bottom: BaseLayoutConstants.spacingLarge,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           _buildSectionPanel(
                             context,
                             title: '配置状态',
@@ -570,7 +580,10 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                                   icon: const Icon(Icons.save_outlined),
                                   label: Text(
                                     '保存配置',
-                                    style: TextStyle(fontSize: 14.sp),
+                                    style: TextStyle(
+                                      fontSize:
+                                          AppTypographyConstants.buttonLabelFontSize,
+                                    ),
                                   ),
                                   style: ThemeHelper.elevatedButtonStyle(
                                     context,
@@ -584,14 +597,15 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                               ],
                             ),
                           ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -607,8 +621,8 @@ Widget _buildHeader(
   final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
   return AnimatedContainer(
     duration: const Duration(milliseconds: 300),
-    decoration: ThemeHelper.heroDecoration(context, radius: 28),
-    padding: const EdgeInsets.all(20),
+    decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
+    padding: EdgeInsets.all(20.w),
     child: Row(
       children: [
         _buildHeaderButton(context),
@@ -620,17 +634,18 @@ Widget _buildHeader(
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 24.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroTitleFontSize,
                   fontWeight: FontWeight.w800,
                   color: heroForeground,
                 ),
               ),
-              SizedBox(height: 6.h),
+              SizedBox(height: 8.h),
               Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 13.sp,
-                  height: 1.4,
+                  fontSize:
+                      AppTypographyConstants.secondaryHeroSubtitleFontSize,
+                  height: 1.5,
                   color: heroSecondary,
                 ),
               ),
@@ -668,7 +683,7 @@ Widget _buildHeaderButton(BuildContext context) {
             Text(
               '返回',
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                 fontWeight: FontWeight.w700,
                 color: heroForeground,
               ),
@@ -696,7 +711,7 @@ Widget _buildSectionPanel(
         Text(
           title,
           style: TextStyle(
-            fontSize: 18.sp,
+            fontSize: AppTypographyConstants.panelTitleFontSize,
             fontWeight: FontWeight.w800,
             color: ThemeHelper.onBackground(context),
           ),
@@ -705,7 +720,7 @@ Widget _buildSectionPanel(
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: AppTypographyConstants.panelSubtitleFontSize,
             height: 1.4,
             color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
           ),
@@ -734,7 +749,7 @@ Widget _buildStatusPill(
     child: RichText(
       text: TextSpan(
         style: TextStyle(
-          fontSize: 12.sp,
+          fontSize: AppTypographyConstants.cardSubtitleFontSize,
           color: ThemeHelper.onBackground(context),
         ),
         children: [
@@ -770,7 +785,7 @@ Widget _buildInfoRow(
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: AppTypographyConstants.cardSubtitleFontSize,
               fontWeight: FontWeight.w600,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.58),
             ),
@@ -780,11 +795,11 @@ Widget _buildInfoRow(
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 12.sp,
-              height: 1.4,
-              color: ThemeHelper.onBackground(context).withValues(alpha: 0.84),
-            ),
+          style: TextStyle(
+            fontSize: AppTypographyConstants.cardSubtitleFontSize,
+            height: 1.4,
+            color: ThemeHelper.onBackground(context).withValues(alpha: 0.84),
+          ),
           ),
         ),
       ],
@@ -817,7 +832,7 @@ Widget _buildDropdownRow<T>(
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: AppTypographyConstants.formLabelFontSize,
               fontWeight: FontWeight.w600,
               color: ThemeHelper.onBackground(context),
             ),
@@ -859,7 +874,7 @@ Widget _buildPathPanel(
         Text(
           title,
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize: AppTypographyConstants.formLabelFontSize,
             fontWeight: FontWeight.w700,
             color: ThemeHelper.onBackground(context),
           ),
@@ -868,7 +883,7 @@ Widget _buildPathPanel(
         Text(
           path,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: AppTypographyConstants.formHelperFontSize,
             height: 1.45,
             color: ThemeHelper.onBackground(context).withValues(alpha: 0.68),
           ),
@@ -927,7 +942,7 @@ Widget _buildFieldCard(
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: AppTypographyConstants.formFieldTitleFontSize,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -950,7 +965,12 @@ Widget _buildSecondaryAction(
   return OutlinedButton.icon(
     onPressed: onTap,
     icon: Icon(icon, size: 17.sp),
-    label: Text(label, style: TextStyle(fontSize: 13.sp)),
+    label: Text(
+      label,
+      style: TextStyle(
+        fontSize: AppTypographyConstants.buttonSecondaryLabelFontSize,
+      ),
+    ),
     style: OutlinedButton.styleFrom(
       foregroundColor: ThemeHelper.onBackground(context),
       side: BorderSide(

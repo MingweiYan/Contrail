@@ -11,6 +11,7 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/features/profile/presentation/providers/profile_view_model.dart';
+import 'package:contrail/shared/widgets/app_hero_header.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -60,115 +61,36 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildHeader(ProfileViewModel viewModel) {
-    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-      width: double.infinity,
-      padding: EdgeInsets.all(24.w),
-      decoration: ThemeHelper.heroDecoration(context, radius: 24.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    viewModel.recordDebugTap(context);
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '我的',
-                        style: ThemeHelper.textStyleWithTheme(
-                          context,
-                          fontSize: 30.sp,
-                          fontWeight: FontWeight.w800,
-                          color: heroForeground,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        '把握当前的状态才能更好的前进',
-                        style: ThemeHelper.textStyleWithTheme(
-                          context,
-                          fontSize: 15.sp,
-                          color: ThemeHelper.visualTheme(
-                            context,
-                          ).heroSecondaryForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999.r),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.tune_rounded,
-                      size: 14.sp,
-                      color: heroForeground.withValues(alpha: 0.92),
-                    ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      '控制中心',
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w700,
-                        color: heroForeground.withValues(alpha: 0.92),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: _buildHeaderShortcut(
-                  icon: Icons.palette_outlined,
-                  title: '主题',
-                  subtitle: '切换风格',
-                  onTap: _openThemeSelection,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _buildHeaderShortcut(
-                  icon: Icons.tune_outlined,
-                  title: '个性化',
-                  subtitle: '偏好设置',
-                  onTap: _openPersonalizationSettings,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _buildHeaderShortcut(
-                  icon: Icons.cloud_outlined,
-                  title: '备份',
-                  subtitle: '数据管理',
-                  onTap: _openBackupSettings,
-                ),
-              ),
-            ],
-          ),
-        ],
+    return AppHeroHeader(
+      title: '我的',
+      subtitle: '把握当前的状态才能更好的前进',
+      badge: const AppHeroHeaderBadgeData(
+        icon: Icons.tune_rounded,
+        label: '控制中心',
       ),
+      onTitleTap: () {
+        viewModel.recordDebugTap(context);
+      },
+      actions: [
+        AppHeroHeaderActionData(
+          icon: Icons.palette_outlined,
+          title: '主题',
+          subtitle: 'Theme',
+          onTap: _openThemeSelection,
+        ),
+        AppHeroHeaderActionData(
+          icon: Icons.tune_outlined,
+          title: '个性化',
+          subtitle: 'Personal',
+          onTap: _openPersonalizationSettings,
+        ),
+        AppHeroHeaderActionData(
+          icon: Icons.cloud_outlined,
+          title: '备份',
+          subtitle: 'Backup',
+          onTap: _openBackupSettings,
+        ),
+      ],
     );
   }
 
@@ -207,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '系统状态',
             style: TextStyle(
-              fontSize: 20.sp,
+              fontSize: AppTypographyConstants.sectionTitleFontSize,
               fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
@@ -216,7 +138,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '知彼知己百战不殆',
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: AppTypographyConstants.sectionSubtitleFontSize,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
             ),
           ),
@@ -302,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: AppTypographyConstants.cardTitleFontSize,
                     fontWeight: FontWeight.w700,
                     color: ThemeHelper.onBackground(context),
                   ),
@@ -311,7 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: AppTypographyConstants.cardSubtitleFontSize,
                     height: 1.35,
                     color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
                   ),
@@ -329,7 +251,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Text(
               badge,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: AppTypographyConstants.cardBadgeFontSize,
                 fontWeight: FontWeight.w700,
                 color: ThemeHelper.primary(context),
               ),
@@ -411,7 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '本周总览',
             style: TextStyle(
-              fontSize: 20.sp,
+              fontSize: AppTypographyConstants.sectionTitleFontSize,
               fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
@@ -420,7 +342,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             '快速查看这周的活跃情况与专注表现',
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: AppTypographyConstants.sectionSubtitleFontSize,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
             ),
           ),
@@ -471,7 +393,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Text(
                     '今天已完成 $completedToday / ${habits.length} 个习惯',
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: AppTypographyConstants.sectionSubtitleFontSize,
                       fontWeight: FontWeight.w700,
                       color: ThemeHelper.onBackground(context),
                     ),
@@ -504,7 +426,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: AppTypographyConstants.cardBadgeFontSize,
               fontWeight: FontWeight.w600,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.6),
             ),
@@ -513,7 +435,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 18.sp,
+              fontSize: AppTypographyConstants.cardMetricValueFontSize,
               fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
@@ -535,7 +457,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text(
           '清空数据',
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.w500,
             color: Colors.red,
           ),
@@ -543,7 +465,7 @@ class _ProfilePageState extends State<ProfilePage> {
         subtitle: Text(
           '删除所有习惯和统计数据',
           style: TextStyle(
-            fontSize: 16.sp,
+            fontSize: AppTypographyConstants.dialogBodyFontSize,
             color: Colors.red.withValues(alpha: 0.7),
           ),
         ),
@@ -562,7 +484,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text(
           '警告',
           style: TextStyle(
-            fontSize: 16.sp,
+            fontSize: AppTypographyConstants.dialogTitleFontSize,
             fontWeight: FontWeight.bold,
             color: Colors.red,
           ),
@@ -570,7 +492,7 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Text(
           '确定要删除所有习惯和统计数据吗？此操作不可撤销！',
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: AppTypographyConstants.dialogBodyFontSize,
             color: ThemeHelper.onBackground(context),
           ),
         ),
@@ -579,7 +501,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Text(
               '取消',
               style: TextStyle(
-                fontSize: 20.sp,
+                fontSize: AppTypographyConstants.dialogActionFontSize,
                 color: ThemeHelper.onPrimary(context),
               ),
             ),
@@ -596,7 +518,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ElevatedButton(
             child: Text(
               '确认',
-              style: TextStyle(fontSize: 20.sp, color: Colors.white),
+              style: TextStyle(
+                fontSize: AppTypographyConstants.dialogActionFontSize,
+                color: Colors.white,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -618,7 +543,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   SnackBar(
                     content: Text(
                       '所有数据已清空',
-                      style: TextStyle(fontSize: 20.sp, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.snackbarFontSize,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 );
@@ -627,7 +555,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   SnackBar(
                     content: Text(
                       '清空数据失败: $e',
-                      style: TextStyle(fontSize: 20.sp, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.snackbarFontSize,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 );
@@ -685,52 +616,4 @@ class _ProfilePageState extends State<ProfilePage> {
     return '$month-$day $hour:$minute';
   }
 
-  Widget _buildHeaderShortcut({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18.r),
-        child: Ink(
-          padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 20.sp, color: heroForeground),
-              SizedBox(height: 8.h),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: heroForeground,
-                ),
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w500,
-                  color: heroForeground.withValues(alpha: 0.72),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

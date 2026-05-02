@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
@@ -102,7 +103,7 @@ class CalendarViewWidget extends StatelessWidget {
                 color: isWeekend
                     ? ThemeHelper.error(context)
                     : ThemeHelper.onSurface(context),
-                fontSize: ScreenUtil().setSp(18),
+                fontSize: AppTypographyConstants.panelTitleFontSize,
               ),
             ),
           );
@@ -155,7 +156,9 @@ class CalendarViewWidget extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: isToday
-                ? ThemeHelper.primary(context).withOpacity(0.1) // 今天的特殊背景色
+                ? ThemeHelper.primary(
+                    context,
+                  ).withValues(alpha: 0.1) // 今天的特殊背景色
                 : isCurrentMonthDate
                 ? ThemeHelper.surface(context)
                 : Colors.transparent, // 非当前月份不显示背景
@@ -171,7 +174,9 @@ class CalendarViewWidget extends StatelessWidget {
             boxShadow: isToday
                 ? [
                     BoxShadow(
-                      color: ThemeHelper.primary(context).withOpacity(0.2),
+                      color: ThemeHelper.primary(
+                        context,
+                      ).withValues(alpha: 0.2),
                       blurRadius: ScreenUtil().setWidth(4),
                       offset: Offset(0, ScreenUtil().setHeight(2)),
                     ),
@@ -189,7 +194,7 @@ class CalendarViewWidget extends StatelessWidget {
                     child: Text(
                       '$day',
                       style: TextStyle(
-                        fontSize: ScreenUtil().setSp(18),
+                        fontSize: AppTypographyConstants.panelTitleFontSize,
                         fontWeight: isToday
                             ? FontWeight.bold
                             : FontWeight.normal,

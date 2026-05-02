@@ -6,6 +6,7 @@ import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/json_editor_page.dart';
 import 'package:contrail/shared/utils/debug_logs_viewer_page.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Debug菜单管理器 - 提供作为标签页的调试功能
@@ -191,7 +192,7 @@ class DebugMenuManager with WidgetsBindingObserver {
                     '🔧 Debug工具菜单',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: ScreenUtil().setSp(20),
+                      fontSize: AppTypographyConstants.sectionTitleFontSize,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -284,7 +285,7 @@ class DebugMenuManager with WidgetsBindingObserver {
                 child: Text(
                   '🛑 关闭Debug模式',
                   style: TextStyle(
-                    fontSize: ScreenUtil().setSp(16),
+                    fontSize: AppTypographyConstants.formSectionTitleFontSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -318,7 +319,7 @@ class DebugMenuManager with WidgetsBindingObserver {
       child: Text(
         text,
         style: TextStyle(
-          fontSize: ScreenUtil().setSp(18),
+          fontSize: AppTypographyConstants.panelTitleFontSize,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),

@@ -512,7 +512,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                 padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
                   padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,8 +555,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               boxShadow: [
                                 BoxShadow(
                                   color: _selectedColor.withValues(alpha: 0.28),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 10),
+                                  blurRadius: 18.r,
+                                  offset: Offset(0, 10.h),
                                 ),
                               ],
                             ),
@@ -574,7 +574,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 Text(
                                   isEditing ? '编辑习惯' : '新增习惯',
                                   style: TextStyle(
-                                    fontSize: 28.sp,
+                                    fontSize: AppTypographyConstants
+                                        .secondaryHeroTitleFontSize,
                                     fontWeight: FontWeight.w800,
                                     color: heroForeground,
                                   ),
@@ -583,7 +584,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                 Text(
                                   '统一管理图标、颜色、目标与周期设置',
                                   style: TextStyle(
-                                    fontSize: 13.sp,
+                                    fontSize: AppTypographyConstants
+                                        .secondaryHeroSubtitleFontSize,
                                     height: 1.5,
                                     color: heroSecondary,
                                   ),
@@ -701,7 +703,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                   ),
                                 ),
                                 style: TextStyle(
-                                  fontSize: 15.sp,
+                                  fontSize: AppTypographyConstants.formInputFontSize,
                                   height: 1.45,
                                   fontWeight: FontWeight.w600,
                                   color: Theme.of(context).colorScheme.onSurface,
@@ -719,7 +721,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               Text(
                                 '展示在习惯卡片名称下方；旧习惯未设置时会自动回退到默认提示文案。',
                                 style: TextStyle(
-                                  fontSize: 12.sp,
+                                  fontSize:
+                                      AppTypographyConstants.formHelperFontSize,
                                   height: 1.45,
                                   color: ThemeHelper.onBackground(
                                     context,
@@ -1113,7 +1116,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                             child: Text(
                               isEditing ? '更新习惯' : '添加习惯',
                               style: TextStyle(
-                                fontSize: ScreenUtil().setSp(20),
+                                fontSize:
+                                    AppTypographyConstants.buttonPrimaryLargeFontSize,
                                 fontWeight: FontWeight.w800,
                                 color: ThemeHelper.onPrimary(context),
                               ),
@@ -1159,7 +1163,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),
@@ -1175,7 +1179,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 16.sp,
+        fontSize: AppTypographyConstants.formSectionTitleFontSize,
         fontWeight: FontWeight.w700,
         color: ThemeHelper.onBackground(context),
       ),
@@ -1222,7 +1226,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: AppTypographyConstants.buttonLabelFontSize,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: selected ? scheme.primary : ThemeHelper.onBackground(context),
               ),
@@ -1251,7 +1255,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    fontSize: AppTypographyConstants.formSectionTitleFontSize,
                     fontWeight: FontWeight.w700,
                     color: ThemeHelper.onBackground(context),
                   ),
@@ -1260,7 +1264,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: AppTypographyConstants.formHelperFontSize,
                     height: 1.5,
                     color: ThemeHelper.onBackground(
                       context,

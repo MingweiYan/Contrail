@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
@@ -152,10 +153,15 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                               margin: EdgeInsets.only(
                                 bottom: IconSelectorPageConstants.largeSpacing,
                               ),
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                              padding: EdgeInsets.fromLTRB(
+                                16.w,
+                                14.h,
+                                16.w,
+                                12.h,
+                              ),
                               decoration: ThemeHelper.panelDecoration(
                                 context,
-                                radius: 24,
+                                radius: 24.r,
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,8 +290,8 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      decoration: ThemeHelper.heroDecoration(context, radius: 24),
-      padding: const EdgeInsets.all(20),
+      decoration: ThemeHelper.heroDecoration(context, radius: 24.r),
+      padding: EdgeInsets.all(20.w),
       child: Row(
         children: [
           _buildHeaderButton(
@@ -294,7 +300,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
             label: '返回',
             onTap: () => Navigator.pop(context),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,16 +308,18 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                 Text(
                   '选择图标',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroTitleFontSize,
                     fontWeight: FontWeight.w800,
                     color: heroForeground,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   '挑一个更贴近当前习惯气质的图标',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroSubtitleFontSize,
                     color: ThemeHelper.visualTheme(
                       context,
                     ).heroSecondaryForeground,
@@ -345,23 +353,23 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: heroForeground),
-              const SizedBox(width: 6),
+              Icon(icon, size: 18.sp, color: heroForeground),
+              SizedBox(width: 6.w),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),

@@ -91,107 +91,114 @@ class _DataBackupPageState extends State<DataBackupPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-        width: double.infinity,
-        height: double.infinity,
-        padding: PageLayoutConstants.getPageContainerPadding(),
-        child: Consumer<BackupProvider>(
-          builder: (context, backupProvider, _) {
-            _showErrorIfNeeded(
-              context,
-              backupProvider.errorMessage,
-              backupProvider.clearError,
-            );
+        child: SafeArea(
+          child: Padding(
+            padding: PageLayoutConstants.getPageContainerPadding(),
+            child: Consumer<BackupProvider>(
+              builder: (context, backupProvider, _) {
+                _showErrorIfNeeded(
+                  context,
+                  backupProvider.errorMessage,
+                  backupProvider.clearError,
+                );
 
-            return ChangeNotifierProvider<WebDavBackupProvider>(
-              create: (_) => WebDavBackupProvider(
-                WebDavBackupService(storageService: WebDavStorageService()),
-              )..initialize(),
-              child: Consumer<WebDavBackupProvider>(
-                builder: (context, webdavProvider, _) {
-                  _showErrorIfNeeded(
-                    context,
-                    webdavProvider.errorMessage,
-                    webdavProvider.clearError,
-                  );
+                return ChangeNotifierProvider<WebDavBackupProvider>(
+                  create: (_) => WebDavBackupProvider(
+                    WebDavBackupService(storageService: WebDavStorageService()),
+                  )..initialize(),
+                  child: Consumer<WebDavBackupProvider>(
+                    builder: (context, webdavProvider, _) {
+                      _showErrorIfNeeded(
+                        context,
+                        webdavProvider.errorMessage,
+                        webdavProvider.clearError,
+                      );
 
-                  return DefaultTabController(
-                    length: 2,
-                    child: Padding(
-                      padding: DataBackupPageConstants.containerPadding,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeroHeader(context),
-                          SizedBox(height: BaseLayoutConstants.spacingLarge),
-                          _buildConfigStatusCard(
-                            context,
-                            icon: Icons.schedule_rounded,
-                            title: '自动备份策略',
-                            subtitle: '页面级公共配置，统一影响本地与 WebDAV',
-                            statusItems: [
-                              _StatusItem(
-                                label: '自动备份',
-                                value: backupProvider.autoBackupEnabled
-                                    ? '已开启'
-                                    : '未开启',
-                              ),
-                              _StatusItem(
-                                label: '频率',
-                                value: _frequencyLabel(
-                                  backupProvider.backupFrequency,
+                      return DefaultTabController(
+                        length: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeroHeader(context),
+                            SizedBox(height: BaseLayoutConstants.spacingLarge),
+                            _buildConfigStatusCard(
+                              context,
+                              icon: Icons.schedule_rounded,
+                              title: '自动备份策略',
+                              subtitle: '页面级公共配置，统一影响本地与 WebDAV',
+                              statusItems: [
+                                _StatusItem(
+                                  label: '自动备份',
+                                  value: backupProvider.autoBackupEnabled
+                                      ? '已开启'
+                                      : '未开启',
                                 ),
-                              ),
-                            ],
-                            detailItems: [
-                              _DetailItem(
-                                label: '最近备份',
-                                value: _formatDateTime(
-                                  backupProvider.lastBackupTime,
-                                ),
-                              ),
-                              _DetailItem(
-                                label: '最近检查',
-                                value: _formatDateTime(
-                                  backupProvider.autoBackupLastRun,
-                                ),
-                              ),
-                            ],
-                            onTap: () =>
-                                _openAutoBackupPolicyPage(context, backupProvider),
-                          ),
-                          SizedBox(height: BaseLayoutConstants.spacingLarge),
-                          _buildTabShell(context),
-                          SizedBox(height: BaseLayoutConstants.spacingMedium),
-                          Expanded(
-                            child: TabBarView(
-                              children: [
-                                SingleChildScrollView(
-                                  padding: EdgeInsets.only(
-                                    bottom: BaseLayoutConstants.spacingLarge,
+                                _StatusItem(
+                                  label: '频率',
+                                  value: _frequencyLabel(
+                                    backupProvider.backupFrequency,
                                   ),
-                                  child: _buildLocalTab(context, backupProvider),
-                                ),
-                                SingleChildScrollView(
-                                  padding: EdgeInsets.only(
-                                    bottom: BaseLayoutConstants.spacingLarge,
-                                  ),
-                                  child: _buildWebDavTab(context, webdavProvider),
                                 ),
                               ],
+                              detailItems: [
+                                _DetailItem(
+                                  label: '最近备份',
+                                  value: _formatDateTime(
+                                    backupProvider.lastBackupTime,
+                                  ),
+                                ),
+                                _DetailItem(
+                                  label: '最近检查',
+                                  value: _formatDateTime(
+                                    backupProvider.autoBackupLastRun,
+                                  ),
+                                ),
+                              ],
+                              onTap: () => _openAutoBackupPolicyPage(
+                                context,
+                                backupProvider,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
+                            SizedBox(height: BaseLayoutConstants.spacingLarge),
+                            _buildTabShell(context),
+                            SizedBox(height: BaseLayoutConstants.spacingMedium),
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  SingleChildScrollView(
+                                    padding: EdgeInsets.only(
+                                      bottom: BaseLayoutConstants.spacingLarge,
+                                    ),
+                                    child: _buildLocalTab(
+                                      context,
+                                      backupProvider,
+                                    ),
+                                  ),
+                                  SingleChildScrollView(
+                                    padding: EdgeInsets.only(
+                                      bottom: BaseLayoutConstants.spacingLarge,
+                                    ),
+                                    child: _buildWebDavTab(
+                                      context,
+                                      webdavProvider,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -202,8 +209,8 @@ class _DataBackupPageState extends State<DataBackupPage>
     final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      decoration: ThemeHelper.heroDecoration(context, radius: 28),
-      padding: const EdgeInsets.all(20),
+      decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
+      padding: EdgeInsets.all(20.w),
       child: Row(
         children: [
           _buildHeaderButton(context),
@@ -215,18 +222,19 @@ class _DataBackupPageState extends State<DataBackupPage>
                 Text(
                   '数据备份与恢复',
                   style: TextStyle(
-                    fontSize: 24.sp,
+                    fontSize: AppTypographyConstants.secondaryHeroTitleFontSize,
                     fontWeight: FontWeight.w800,
                     color: heroForeground,
                   ),
                 ),
-                SizedBox(height: 6.h),
+                SizedBox(height: 8.h),
                 Text(
                   '分别在本地与 WebDAV 子页管理配置、查看状态，并处理备份文件。',
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize:
+                        AppTypographyConstants.secondaryHeroSubtitleFontSize,
                     color: heroSecondary,
-                    height: 1.4,
+                    height: 1.5,
                   ),
                 ),
               ],
@@ -263,7 +271,7 @@ class _DataBackupPageState extends State<DataBackupPage>
               Text(
                 '返回',
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: AppTypographyConstants.secondaryHeroButtonFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),
@@ -287,9 +295,12 @@ class _DataBackupPageState extends State<DataBackupPage>
         unselectedLabelColor: ThemeHelper.onBackground(
           context,
         ).withValues(alpha: 0.7),
-        labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+        labelStyle: TextStyle(
+          fontSize: AppTypographyConstants.buttonLabelFontSize,
+          fontWeight: FontWeight.w700,
+        ),
         unselectedLabelStyle: TextStyle(
-          fontSize: 14.sp,
+          fontSize: AppTypographyConstants.buttonLabelFontSize,
           fontWeight: FontWeight.w600,
         ),
         indicator: BoxDecoration(
@@ -475,7 +486,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                         Text(
                           title,
                           style: TextStyle(
-                            fontSize: 18.sp,
+                            fontSize: AppTypographyConstants.panelTitleFontSize,
                             fontWeight: FontWeight.w800,
                             color: ThemeHelper.onBackground(context),
                           ),
@@ -484,7 +495,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                         Text(
                           subtitle,
                           style: TextStyle(
-                            fontSize: 12.sp,
+                            fontSize: AppTypographyConstants.panelSubtitleFontSize,
                             height: 1.4,
                             color: ThemeHelper.onBackground(
                               context,
@@ -549,7 +560,7 @@ class _DataBackupPageState extends State<DataBackupPage>
       child: RichText(
         text: TextSpan(
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: AppTypographyConstants.cardSubtitleFontSize,
             color: ThemeHelper.onBackground(context),
           ),
           children: [
@@ -587,7 +598,7 @@ class _DataBackupPageState extends State<DataBackupPage>
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: AppTypographyConstants.cardSubtitleFontSize,
                 fontWeight: FontWeight.w600,
                 color: ThemeHelper.onBackground(context).withValues(alpha: 0.58),
               ),
@@ -598,7 +609,7 @@ class _DataBackupPageState extends State<DataBackupPage>
             child: Text(
               value,
               style: TextStyle(
-                fontSize: 12.sp,
+                fontSize: AppTypographyConstants.cardSubtitleFontSize,
                 height: 1.4,
                 color: ThemeHelper.onBackground(context).withValues(alpha: 0.84),
               ),

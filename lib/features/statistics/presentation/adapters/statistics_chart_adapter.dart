@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
 
 class StatisticsChartAdapter {
@@ -926,9 +926,9 @@ class StatisticsChartAdapter {
           value: completedDays.toDouble(),
           color: habitColor,
           title: '$completedDays',
-          radius: 60,
+          radius: AppDimensionConstants.r(60),
           titleStyle: TextStyle(
-            fontSize: ScreenUtil().setSp(20),
+            fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -941,9 +941,9 @@ class StatisticsChartAdapter {
         value: completedDays.toDouble(),
         color: habitColor,
         title: '$completedDays',
-        radius: 60,
+        radius: AppDimensionConstants.r(60),
         titleStyle: TextStyle(
-          fontSize: ScreenUtil().setSp(20),
+          fontSize: AppTypographyConstants.sectionTitleFontSize,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
@@ -952,9 +952,9 @@ class StatisticsChartAdapter {
         value: remainingDays.toDouble(),
         color: Colors.grey.shade400,
         title: '$remainingDays',
-        radius: 60,
+        radius: AppDimensionConstants.r(60),
         titleStyle: TextStyle(
-          fontSize: ScreenUtil().setSp(20),
+          fontSize: AppTypographyConstants.sectionTitleFontSize,
           fontWeight: FontWeight.bold,
           color: Colors.black54,
         ),

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/widgets/clock_widget.dart';
 import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:contrail/shared/models/habit.dart' show TrackingMode;
@@ -61,12 +63,12 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Clock Debug')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.w),
         children: [
           Center(
             child: SizedBox(
-              width: 280,
-              height: 280,
+              width: 280.w,
+              height: 280.w,
               child: Stack(
                 children: [
                   ClockWidget(
@@ -79,33 +81,34 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                   ),
                   if (_duration.inHours > 0)
                     Positioned(
-                      right: 8,
-                      top: 8,
+                      right: 8.w,
+                      top: 8.h,
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         transitionBuilder: (child, animation) =>
                             ScaleTransition(scale: animation, child: child),
                         child: Container(
                           key: ValueKey(_duration.inHours),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 5,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 5.h,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14.r),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 10.r,
+                                offset: Offset(0, 5.h),
                               ),
                             ],
                           ),
                           child: Text(
                             '${_duration.inHours}h',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize:
+                                  AppTypographyConstants.buttonLabelFontSize,
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -194,13 +197,13 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     valueIndicatorColor: Colors.white,
                     valueIndicatorTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
+                      fontSize: AppTypographyConstants.panelTitleFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 12,
                     ),
-                    overlayColor: Colors.white.withOpacity(0.12),
+                    overlayColor: Colors.white.withValues(alpha: 0.12),
                   ),
                   child: Slider(
                     value: minutes.toDouble().clamp(0, 300),
@@ -226,13 +229,13 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     valueIndicatorColor: Colors.white,
                     valueIndicatorTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
+                      fontSize: AppTypographyConstants.panelTitleFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 12,
                     ),
-                    overlayColor: Colors.white.withOpacity(0.12),
+                    overlayColor: Colors.white.withValues(alpha: 0.12),
                   ),
                   child: Slider(
                     value: seconds.toDouble(),
@@ -258,13 +261,13 @@ class _ClockDebugPageState extends State<ClockDebugPage> {
                     valueIndicatorColor: Colors.white,
                     valueIndicatorTextStyle: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
+                      fontSize: AppTypographyConstants.panelTitleFontSize,
                       fontWeight: FontWeight.w700,
                     ),
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 12,
                     ),
-                    overlayColor: Colors.white.withOpacity(0.12),
+                    overlayColor: Colors.white.withValues(alpha: 0.12),
                   ),
                   child: Slider(
                     value: _rotationSpeed,

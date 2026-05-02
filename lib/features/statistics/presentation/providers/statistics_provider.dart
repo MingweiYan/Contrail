@@ -68,6 +68,13 @@ class StatisticsProvider extends BaseStatsProvider {
     notifyListeners();
   }
 
+  void ensureHabitVisibility(List<Habit> habits) {
+    if (_isHabitVisible == null || _isHabitVisible!.length != habits.length) {
+      _isHabitVisible = List<bool>.filled(habits.length, true);
+      notifyListeners();
+    }
+  }
+
   /// 切换到下一个时间单位（年/周/月）
   void navigateToNextTimeUnit() {
     if (selectedPeriod == 'year') {

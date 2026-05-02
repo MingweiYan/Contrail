@@ -28,6 +28,112 @@ class BaseLayoutConstants {
   static final double fontSizeXLarge = ScreenUtil().setSp(20);
 }
 
+/// 应用级字号常量
+/// 统一维护页面头部、弹窗与卡片标签的字号层级
+class AppTypographyConstants extends BaseLayoutConstants {
+  static double _sp(double size) {
+    try {
+      return ScreenUtil().setSp(size);
+    } catch (_) {
+      return size;
+    }
+  }
+
+  // 主页面 Hero Header
+  static double get primaryHeroTitleFontSize => _sp(34);
+  static double get primaryHeroSubtitleFontSize => _sp(20);
+
+  // 普通功能页 Hero Header
+  static double get secondaryHeroTitleFontSize => _sp(28);
+  static double get secondaryHeroSubtitleFontSize => _sp(14);
+  static double get secondaryHeroButtonFontSize => _sp(12);
+
+  // 主页面 Hero 按钮
+  static double get primaryHeroActionTitleFontSize => _sp(14);
+  static double get primaryHeroActionSubtitleFontSize => _sp(12);
+  static double get primaryHeroBadgeFontSize => _sp(11);
+
+  // 弹窗与提示
+  static double get dialogTitleFontSize => _sp(18);
+  static double get dialogBodyFontSize => _sp(16);
+  static double get dialogActionFontSize => _sp(16);
+  static double get dialogMetaFontSize => _sp(12);
+  static double get snackbarFontSize => _sp(16);
+
+  // 通用分区与面板
+  static double get sectionTitleFontSize => _sp(20);
+  static double get sectionSubtitleFontSize => _sp(13);
+  static double get panelTitleFontSize => _sp(18);
+  static double get panelSubtitleFontSize => _sp(12);
+
+  // 表单
+  static double get formSectionTitleFontSize => _sp(16);
+  static double get formLabelFontSize => _sp(14);
+  static double get formInputFontSize => _sp(15);
+  static double get formHelperFontSize => _sp(12);
+  static double get formFieldTitleFontSize => _sp(13);
+
+  // 按钮与操作
+  static double get buttonLabelFontSize => _sp(14);
+  static double get buttonSecondaryLabelFontSize => _sp(13);
+  static double get buttonPrimaryLargeFontSize => _sp(20);
+  static double get bottomNavLabelFontSize => _sp(14);
+  static double get bottomNavBarVerticalPadding => ScreenUtil().setHeight(12);
+  static double get bottomNavItemVerticalPadding => ScreenUtil().setHeight(16);
+
+  // 预览与主题
+  static double get previewTitleFontSize => _sp(24);
+  static double get previewSubtitleFontSize => _sp(12);
+
+  // 卡片内容
+  static double get cardPrimaryTitleFontSize => _sp(29);
+  static double get cardTitleFontSize => _sp(15);
+  static double get cardBodyFontSize => _sp(14);
+  static double get cardDescriptionFontSize => _sp(15.5);
+  static double get cardSubtitleFontSize => _sp(12);
+  static double get cardBadgeFontSize => _sp(11);
+  static double get cardMetricValueFontSize => _sp(18);
+  static double get cardChipFontSize => _sp(13.5);
+  static double get cardChipStrongFontSize => _sp(14);
+  static double get cardChipActionFontSize => _sp(15);
+
+  // 图表与统计
+  static double get chartLegendFontSize => _sp(14);
+  static double get chartStatLabelFontSize => _sp(11);
+  static double get chartStatValueFontSize => _sp(15);
+
+  // 全局主题
+  static double get appBarTitleFontSize => _sp(22);
+}
+
+/// 应用级尺寸常量 helper
+/// 用于在 ScreenUtil 尚未初始化时安全回退到设计值
+class AppDimensionConstants extends BaseLayoutConstants {
+  static double w(double size) {
+    try {
+      return ScreenUtil().setWidth(size);
+    } catch (_) {
+      return size;
+    }
+  }
+
+  static double h(double size) {
+    try {
+      return ScreenUtil().setHeight(size);
+    } catch (_) {
+      return size;
+    }
+  }
+
+  static double r(double size) {
+    try {
+      return ScreenUtil().radius(size);
+    } catch (_) {
+      return size;
+    }
+  }
+}
+
 /// 数据备份页面专用常量
 class DataBackupPageConstants extends BaseLayoutConstants {
   // Container内边距

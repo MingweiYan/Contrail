@@ -37,7 +37,7 @@ class BackupListItem extends StatelessWidget {
               '删除',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: ScreenUtil().setSp(13),
+                fontSize: AppTypographyConstants.buttonSecondaryLabelFontSize,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -100,7 +100,7 @@ class BackupListItem extends StatelessWidget {
                   Text(
                     '文件大小 ${file.formattedSize}',
                     style: TextStyle(
-                      fontSize: ScreenUtil().setSp(12),
+                      fontSize: AppTypographyConstants.formHelperFontSize,
                       color: ThemeHelper.onBackground(
                         context,
                       ).withValues(alpha: 0.58),
@@ -115,7 +115,10 @@ class BackupListItem extends StatelessWidget {
               icon: Icon(Icons.restore_rounded, size: ScreenUtil().setSp(18)),
               label: Text(
                 '恢复',
-                style: TextStyle(fontSize: ScreenUtil().setSp(13)),
+                style: TextStyle(
+                  fontSize:
+                      AppTypographyConstants.buttonSecondaryLabelFontSize,
+                ),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: ThemeHelper.primary(context),

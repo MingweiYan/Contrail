@@ -112,10 +112,14 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     final List<LineChartBarData> filteredCountData = [];
     final List<LineChartBarData> filteredTimeData = [];
     final List<LineChartBarData> filteredCompletionData = [];
+    final List<String> filteredHabitNames = [];
+    final List<Color> filteredHabitColors = [];
     for (int i = 0; i < widget.habits.length; i++) {
       if (widget.isHabitVisible[i]) {
         filteredCountData.add(countData[i]);
         filteredCompletionData.add(completionData[i]);
+        filteredHabitNames.add(habitNames[i]);
+        filteredHabitColors.add(habitColors[i]);
         if (widget.habits[i].trackTime) {
           filteredTimeData.add(timeData[i]);
         }
@@ -138,11 +142,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                 semanticsLabel: '习惯完成次数统计折线图，点击数据点查看提示',
                 chartHeight: chartHeight,
                 chartData: _createLineChartData(
-                  filteredCountData.isEmpty ? countData : filteredCountData,
+                  filteredCountData,
                   titles,
                   'count',
-                  habitNames,
-                  habitColors,
+                  filteredHabitNames,
+                  filteredHabitColors,
                 ),
               ),
               if (hasTrackTime)
@@ -153,11 +157,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                   semanticsLabel: '习惯专注时间统计折线图，点击数据点查看提示',
                   chartHeight: chartHeight,
                   chartData: _createLineChartData(
-                    filteredTimeData.isEmpty ? [] : filteredTimeData,
+                    filteredTimeData,
                     titles,
                     'time',
-                    habitNames,
-                    habitColors,
+                    filteredHabitNames,
+                    filteredHabitColors,
                   ),
                 ),
               _buildChartPanel(
@@ -167,13 +171,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                 semanticsLabel: '习惯完成率趋势折线图，点击数据点查看提示',
                 chartHeight: chartHeight,
                 chartData: _createLineChartData(
-                  filteredCompletionData.isEmpty
-                      ? completionData
-                      : filteredCompletionData,
+                  filteredCompletionData,
                   completionTitles,
                   'completionRate',
-                  habitNames,
-                  habitColors,
+                  filteredHabitNames,
+                  filteredHabitColors,
                 ),
               ),
             ],
@@ -210,14 +212,31 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             ),
           ),
           SizedBox(height: StatisticsChartWidgetConstants.titleChartSpacing),
-          SizedBox(
-            height: chartHeight,
-            width: double.infinity,
-            child: Semantics(
-              label: semanticsLabel,
-              child: LineChart(chartData),
+          if (chartData.lineBarsData.isEmpty)
+            SizedBox(
+              height: chartHeight,
+              width: double.infinity,
+              child: Center(
+                child: Text(
+                  '当前没有选中的习惯',
+                  style: TextStyle(
+                    fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                    color: ThemeHelper.onBackground(
+                      context,
+                    ).withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: chartHeight,
+              width: double.infinity,
+              child: Semantics(
+                label: semanticsLabel,
+                child: LineChart(chartData),
+              ),
             ),
-          ),
           Padding(
             padding: EdgeInsets.only(
               top: StatisticsChartWidgetConstants.helperTopSpacing,
@@ -415,7 +434,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                   child: Text(
                     titles[value.toInt()],
                     style: TextStyle(
-                      fontSize: ScreenUtil().setSp(16),
+                      fontSize: AppTypographyConstants.formSectionTitleFontSize,
                       color: ThemeHelper.onSurfaceVariant(context),
                     ),
                   ),

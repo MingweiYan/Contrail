@@ -4,18 +4,21 @@ import 'package:provider/provider.dart';
 import 'package:contrail/features/statistics/presentation/providers/statistics_provider.dart';
 import 'package:contrail/features/statistics/presentation/widgets/statistics_chart_widget.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 
 /// 统计趋势视图组件
 /// 显示趋势图表和相关控件
 class StatisticsTrendView extends StatelessWidget {
-  final List<Habit> visibleHabits;
+  final List<Habit> habits;
+  final List<bool> isHabitVisible;
   final StatisticsProvider statisticsProvider;
 
   const StatisticsTrendView({
     super.key,
-    required this.visibleHabits,
+    required this.habits,
+    required this.isHabitVisible,
     required this.statisticsProvider,
   });
 
@@ -73,7 +76,7 @@ class StatisticsTrendView extends StatelessWidget {
               Text(
                 titleText,
                 style: TextStyle(
-                  fontSize: ScreenUtil().setSp(20),
+                  fontSize: AppTypographyConstants.sectionTitleFontSize,
                   fontWeight: FontWeight.bold,
                   color: ThemeHelper.onBackground(context),
                 ),
@@ -97,7 +100,7 @@ class StatisticsTrendView extends StatelessWidget {
           Text(
             isRolling ? rangeText : '近 $days 天数据 · $rangeText',
             style: TextStyle(
-              fontSize: ScreenUtil().setSp(14),
+              fontSize: AppTypographyConstants.chartLegendFontSize,
               color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
             ),
           ),
@@ -199,7 +202,7 @@ class StatisticsTrendView extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              fontSize: ScreenUtil().setSp(16),
+              fontSize: AppTypographyConstants.formSectionTitleFontSize,
               color: isSelected
                   ? ThemeHelper.onPrimary(context)
                   : ThemeHelper.onBackground(context),
@@ -213,10 +216,10 @@ class StatisticsTrendView extends StatelessWidget {
   // 构建图表
   Widget _buildChart(BuildContext context) {
     return StatisticsChartWidget(
-      habits: visibleHabits,
+      habits: habits,
       selectedPeriod: statisticsProvider.trendSelectedPeriod,
       rollingRange: statisticsProvider.getRollingDateRange(),
-      isHabitVisible: List<bool>.filled(visibleHabits.length, true),
+      isHabitVisible: isHabitVisible,
       weekStartDay: Provider.of<PersonalizationProvider>(
         context,
         listen: false,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:open_filex/open_filex.dart';
 
 enum LogFileType { error, info }
@@ -216,7 +217,7 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                         child: Text(
                           '目录: ${_logsDir ?? ''}',
                           style: TextStyle(
-                            fontSize: ScreenUtil().setSp(14),
+                            fontSize: AppTypographyConstants.buttonLabelFontSize,
                             color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -263,7 +264,7 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                         child: Text(
                           '文件: ${_currentFilePath ?? ''}',
                           style: TextStyle(
-                            fontSize: ScreenUtil().setSp(14),
+                            fontSize: AppTypographyConstants.buttonLabelFontSize,
                             color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -312,7 +313,8 @@ class _DebugLogsViewerPageState extends State<DebugLogsViewerPage> {
                             _content,
                             style: TextStyle(
                               fontFamily: 'monospace',
-                              fontSize: ScreenUtil().setSp(13),
+                              fontSize: AppTypographyConstants
+                                  .buttonSecondaryLabelFontSize,
                             ),
                           ),
                         ),
@@ -394,7 +396,7 @@ class _DebugLogsDirectoryPageState extends State<DebugLogsDirectoryPage> {
                         child: Text(
                           widget.logsDir,
                           style: TextStyle(
-                            fontSize: ScreenUtil().setSp(14),
+                            fontSize: AppTypographyConstants.buttonLabelFontSize,
                             color:
                                 Theme.of(context).textTheme.bodySmall?.color,
                           ),
@@ -420,7 +422,7 @@ class _DebugLogsDirectoryPageState extends State<DebugLogsDirectoryPage> {
                       _error!,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
-                        fontSize: ScreenUtil().setSp(14),
+                        fontSize: AppTypographyConstants.buttonLabelFontSize,
                       ),
                     )
                   else

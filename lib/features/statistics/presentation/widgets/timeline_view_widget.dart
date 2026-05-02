@@ -154,7 +154,7 @@ class TimelineViewWidget extends StatelessWidget {
                 },
                 background: Container(
                   alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
                   color: Colors.redAccent,
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
@@ -178,9 +178,9 @@ class TimelineViewWidget extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: color.withOpacity(0.5),
-                                spreadRadius: 2,
-                                blurRadius: 4,
+                                color: color.withValues(alpha: 0.5),
+                                spreadRadius: 2.r,
+                                blurRadius: 4.r,
                               ),
                             ],
                             border: Border.all(
@@ -223,10 +223,10 @@ class TimelineViewWidget extends StatelessWidget {
                             color: Theme.of(context).colorScheme.surface,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                spreadRadius: 2,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
+                                color: Colors.black.withValues(alpha: 0.05),
+                                spreadRadius: 2.r,
+                                blurRadius: 8.r,
+                                offset: Offset(0, 2.h),
                               ),
                             ],
                           ),
