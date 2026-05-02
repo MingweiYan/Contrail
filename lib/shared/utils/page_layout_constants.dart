@@ -600,17 +600,23 @@ class SupplementCheckInDialogConstants extends BaseLayoutConstants {
 /// 统计图表组件专用常量
 class StatisticsChartWidgetConstants extends BaseLayoutConstants {
   // 容器相关参数
-  static final EdgeInsets containerMargin = EdgeInsets.symmetric(
-    horizontal: ScreenUtil().setWidth(16),
-    vertical: ScreenUtil().setHeight(8),
-  );
-  static final double containerBorderRadius = ScreenUtil().setWidth(16);
-  static final EdgeInsets containerPadding = EdgeInsets.all(
-    ScreenUtil().setWidth(16),
-  );
+  static final EdgeInsets containerMargin =
+      HabitDetailStatisticsPageConstants.moduleContainerMargin;
+  static final double containerBorderRadius =
+      HabitDetailStatisticsPageConstants.moduleContainerBorderRadius;
+  static final EdgeInsets containerPadding =
+      HabitDetailStatisticsPageConstants.moduleContainerPadding;
 
   // 文本相关参数
-  static final double chartTitleFontSize = ScreenUtil().setSp(18);
+  static final double chartTitleFontSize =
+      HabitDetailStatisticsPageConstants.sectionTitleFontSize;
+  static final double titleChartSpacing =
+      HabitDetailStatisticsPageConstants.titleSectionSpacing;
+  static final double helperTopSpacing =
+      HabitDetailStatisticsPageConstants.smallSectionSpacing;
+  static final double helperIconSize = ScreenUtil().setSp(14);
+  static final double helperFontSize = ScreenUtil().setSp(12);
+  static final double helperIconTextSpacing = ScreenUtil().setWidth(6);
 
   // 图表相关参数
   static final double lineWidth = ScreenUtil().setWidth(3);

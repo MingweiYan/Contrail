@@ -1,13 +1,24 @@
 import 'dart:convert';
-import 'dart:async';
-import 'package:saf/src/storage_access_framework/document_file_column.dart';
+import 'package:flutter/services.dart';
 import 'package:saf/src/storage_access_framework/api.dart' as api;
 import 'package:contrail/shared/utils/logger.dart';
 
 class AndroidSafStorage {
+  static const MethodChannel _channel = MethodChannel('app.contrail/saf');
+
   static Future<String?> pickDirectoryUri() async {
-    final uriString = await api.openDocumentTree(grantWritePermission: true);
-    return uriString;
+    try {
+      final uriString = await _channel.invokeMethod<String>(
+        'openDocumentTreeReadWrite',
+      );
+      if (uriString != null && uriString.startsWith('content://')) {
+        return uriString;
+      }
+    } catch (e, st) {
+      logger.warning('应用内读写授权目录选择失败，回退到插件默认实现: $e');
+      logger.debug('$st');
+    }
+    return await api.openDocumentTree(grantWritePermission: true);
   }
 
   static Future<String> writeJson(
@@ -15,80 +26,61 @@ class AndroidSafStorage {
     String filename,
     Map<String, dynamic> data,
   ) async {
-    final parentUri = Uri.parse(treeUri);
-    final created = await api.createFileAsString(
-      parentUri,
-      mimeType: 'application/json',
-      displayName: filename,
-      content: json.encode(data),
+    final createdUri = await _channel.invokeMethod<String>(
+      'writeJsonFile',
+      {
+        'treeUri': treeUri,
+        'fileName': filename,
+        'content': json.encode(data),
+      },
     );
-    return created?.uri.toString() ?? '';
+    return createdUri ?? '';
   }
 
   static Future<List<Map<String, dynamic>>> listJsonFiles(
     String treeUri,
   ) async {
-    // 使用流式列举并从列数据中直接获取 name/size/lastModified，避免逐文件查询
-    final List<Map<String, dynamic>> files = [];
-    final tree = Uri.parse(treeUri);
-    final stream = api.listFiles(
-      tree,
-      columns: [
-        DocumentFileColumn.displayName,
-        DocumentFileColumn.size,
-        DocumentFileColumn.lastModified,
-        DocumentFileColumn.id,
-      ],
-    );
-    final done = Completer<void>();
-    final sub = stream.listen(
-      (row) async {
-        final name = row.data?[DocumentFileColumn.displayName] as String?;
-        if (name != null && name.endsWith('.json')) {
-          final size = (row.data?[DocumentFileColumn.size] as int?) ?? 0;
-          final lastModified =
-              row.data?[DocumentFileColumn.lastModified] as int?;
-          final docId = row.data?[DocumentFileColumn.id] as String?;
-          String? childUri;
-          if (docId != null) {
-            final u = await api.buildDocumentUriUsingTree(tree, docId);
-            childUri = u?.toString();
-          }
-          files.add({
-            'name': name,
-            'uri': childUri ?? '',
-            'size': size,
-            'lastModified':
-                lastModified ?? DateTime.now().millisecondsSinceEpoch,
-          });
-        }
-      },
-      onDone: () {
-        if (!done.isCompleted) done.complete();
-      },
-    );
     try {
-      await done.future.timeout(const Duration(milliseconds: 400));
-    } on TimeoutException {
-      try {
-        await sub.cancel();
-      } catch (_) {}
+      final raw = await _channel.invokeListMethod<dynamic>(
+        'listJsonFiles',
+        {'treeUri': treeUri},
+      );
+      if (raw == null) return [];
+      return raw.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        return {
+          'name': map['name'] as String? ?? '',
+          'uri': map['uri'] as String? ?? '',
+          'size': (map['size'] as num?)?.toInt() ?? 0,
+          'lastModified': (map['lastModified'] as num?)?.toInt() ?? 0,
+        };
+      }).toList();
+    } catch (e, st) {
+      logger.error('SAF列举JSON文件失败: $treeUri', e, st);
+      return [];
     }
-    return files;
   }
 
   static Future<Map<String, dynamic>?> readJson(String fileUri) async {
-    final uri = Uri.parse(fileUri);
-    final sb = StringBuffer();
     try {
-      await for (final line in api.getDocumentContent(uri)) {
-        sb.write(line);
-      }
-      if (sb.isEmpty) return null;
-      return json.decode(sb.toString()) as Map<String, dynamic>;
+      final content = await _channel.invokeMethod<String>(
+        'readTextFile',
+        {'fileUri': fileUri},
+      );
+      if (content == null || content.isEmpty) return null;
+      return json.decode(content) as Map<String, dynamic>;
     } catch (e, st) {
       logger.error('SAF读取JSON失败: $fileUri', e, st);
       return null;
+    }
+  }
+
+  static Future<bool> canRead(String uriString) async {
+    try {
+      return (await api.canRead(Uri.parse(uriString))) ?? false;
+    } catch (e, st) {
+      logger.error('检查SAF读取权限失败: $uriString', e, st);
+      return false;
     }
   }
 

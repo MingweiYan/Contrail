@@ -205,11 +205,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             title,
             style: TextStyle(
               fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
           ),
-          SizedBox(height: ScreenUtil().setHeight(10)),
+          SizedBox(height: StatisticsChartWidgetConstants.titleChartSpacing),
           SizedBox(
             height: chartHeight,
             width: double.infinity,
@@ -219,20 +219,24 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.only(top: ScreenUtil().setHeight(6)),
+            padding: EdgeInsets.only(
+              top: StatisticsChartWidgetConstants.helperTopSpacing,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.info_outline,
-                  size: ScreenUtil().setSp(14),
+                  size: StatisticsChartWidgetConstants.helperIconSize,
                   color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
                 ),
-                SizedBox(width: ScreenUtil().setWidth(6)),
+                SizedBox(
+                  width: StatisticsChartWidgetConstants.helperIconTextSpacing,
+                ),
                 Text(
                   helperText,
                   style: TextStyle(
-                    fontSize: ScreenUtil().setSp(12),
+                    fontSize: StatisticsChartWidgetConstants.helperFontSize,
                     color: ThemeHelper.onBackground(
                       context,
                     ).withValues(alpha: 0.7),
@@ -314,12 +318,11 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     // 根据图表类型和最大值设置不同的边距策略
 
     if (chartType == 'completionRate') {
-      maxY = 100;
+      maxY = 125;
     } else {
-      maxY = maxY == 0 ? 10 : maxY * 1.1;
+      maxY = maxY == 0 ? 10 : maxY * 1.2;
 
       // 向上取整到整数，以获得更规整的坐标上限
-      maxY = maxY.ceil().toDouble();
     }
 
     final leftInterval = chartType == 'count'

@@ -48,9 +48,21 @@ class LocalStorageService implements StorageServiceInterface {
         );
         if (!persisted) {
           logger.error('SAF授权已失效，请重新授权目录后再试');
-          return null;
+          return await _reauthorizeAndReadSafFile(file, prefs);
         }
-        return await AndroidSafStorage.readJson(file.path);
+        final canReadCurrentFile = await AndroidSafStorage.canRead(file.path);
+        if (!canReadCurrentFile) {
+          logger.warning('当前SAF文件URI缺少读取权限，准备重新授权: ${file.path}');
+          return await _reauthorizeAndReadSafFile(file, prefs);
+        }
+
+        final backupData = await AndroidSafStorage.readJson(file.path);
+        if (backupData != null) {
+          return backupData;
+        }
+
+        logger.warning('直接读取SAF文件失败，尝试重新授权并重试: ${file.path}');
+        return await _reauthorizeAndReadSafFile(file, prefs);
       }
       final filePath = File(file.path);
       if (!await filePath.exists()) {
@@ -62,6 +74,33 @@ class LocalStorageService implements StorageServiceInterface {
       return json.decode(content) as Map<String, dynamic>;
     } catch (e) {
       logger.error('读取备份文件失败', e);
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _reauthorizeAndReadSafFile(
+    BackupFileInfo file,
+    SharedPreferences prefs,
+  ) async {
+    try {
+      final newTreeUri = await AndroidSafStorage.pickDirectoryUri();
+      if (newTreeUri == null || !newTreeUri.startsWith('content://')) {
+        logger.error('重新授权SAF目录失败或用户已取消');
+        return null;
+      }
+
+      await prefs.setString(_localBackupTreeUriKey, newTreeUri);
+      _treeUri = newTreeUri;
+
+      final canReadCurrentFile = await AndroidSafStorage.canRead(file.path);
+      if (!canReadCurrentFile) {
+        logger.error('重新授权后目标备份文件仍不可读: ${file.path}');
+        return null;
+      }
+
+      return await AndroidSafStorage.readJson(file.path);
+    } catch (e, st) {
+      logger.error('重新授权并读取SAF备份文件失败', e, st);
       return null;
     }
   }

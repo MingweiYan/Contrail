@@ -18,86 +18,118 @@ class BackupListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
-      ),
-      child: Dismissible(
-        key: Key(file.path),
-        direction: DismissDirection.endToStart,
-        dismissThresholds: const {DismissDirection.endToStart: 0.8},
-        background: Container(),
-        secondaryBackground: Container(
-          decoration: BoxDecoration(
-            color: Colors.red,
-            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                '删除',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+    return Dismissible(
+      key: Key(file.path),
+      direction: DismissDirection.endToStart,
+      dismissThresholds: const {DismissDirection.endToStart: 0.8},
+      background: Container(),
+      secondaryBackground: Container(
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
+        ),
+        padding: EdgeInsets.only(right: ScreenUtil().setWidth(18)),
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '删除',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: ScreenUtil().setSp(13),
+                fontWeight: FontWeight.w700,
               ),
-              SizedBox(width: ScreenUtil().setWidth(8)),
-              const Icon(Icons.delete, color: Colors.white),
-              SizedBox(width: ScreenUtil().setWidth(10)),
-            ],
+            ),
+            SizedBox(width: ScreenUtil().setWidth(8)),
+            const Icon(Icons.delete_outline_rounded, color: Colors.white),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) => onDelete(),
+      child: Container(
+        padding: EdgeInsets.all(ScreenUtil().setWidth(14)),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
+          border: Border.all(
+            color: ThemeHelper.onBackground(context).withValues(alpha: 0.08),
           ),
         ),
-        confirmDismiss: (direction) => onDelete(),
-        child: ListTile(
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: ScreenUtil().setWidth(12),
-            vertical: ScreenUtil().setHeight(8),
-          ),
-          leading: Container(
-            width: ScreenUtil().setWidth(40),
-            height: ScreenUtil().setWidth(40),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+        child: Row(
+          children: [
+            Container(
+              width: ScreenUtil().setWidth(44),
+              height: ScreenUtil().setWidth(44),
+              decoration: BoxDecoration(
+                color: ThemeHelper.primary(context).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(14)),
+              ),
+              child: Icon(
+                Icons.description_outlined,
+                size: ScreenUtil().setSp(20),
+                color: ThemeHelper.primary(context),
+              ),
             ),
-            child: Icon(
-              Icons.insert_drive_file,
-              color: ThemeHelper.primary(context),
+            SizedBox(width: ScreenUtil().setWidth(12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    file.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: DataBackupPageConstants.fontSize_16,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeHelper.onBackground(context),
+                    ),
+                  ),
+                  SizedBox(height: ScreenUtil().setHeight(6)),
+                  Text(
+                    file.formattedLastModified,
+                    style: TextStyle(
+                      fontSize: DataBackupPageConstants.fontSize_14,
+                      color: ThemeHelper.onBackground(
+                        context,
+                      ).withValues(alpha: 0.7),
+                    ),
+                  ),
+                  SizedBox(height: ScreenUtil().setHeight(2)),
+                  Text(
+                    '文件大小 ${file.formattedSize}',
+                    style: TextStyle(
+                      fontSize: ScreenUtil().setSp(12),
+                      color: ThemeHelper.onBackground(
+                        context,
+                      ).withValues(alpha: 0.58),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          title: Text(
-            file.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: DataBackupPageConstants.fontSize_16,
-              fontWeight: FontWeight.w500,
+            SizedBox(width: ScreenUtil().setWidth(12)),
+            OutlinedButton.icon(
+              onPressed: onRestore,
+              icon: Icon(Icons.restore_rounded, size: ScreenUtil().setSp(18)),
+              label: Text(
+                '恢复',
+                style: TextStyle(fontSize: ScreenUtil().setSp(13)),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: ThemeHelper.primary(context),
+                side: BorderSide(color: ThemeHelper.primary(context)),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ScreenUtil().setWidth(12),
+                  vertical: ScreenUtil().setHeight(10),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ScreenUtil().setWidth(14)),
+                ),
+              ),
             ),
-          ),
-          subtitle: Text(
-            '备份时间: ' +
-                file.formattedLastModified +
-                ' · 大小: ' +
-                file.formattedSize,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: DataBackupPageConstants.fontSize_14,
-              color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
-            ),
-          ),
-          trailing: ElevatedButton.icon(
-            onPressed: () => onRestore(),
-            icon: Icon(Icons.restore, size: ScreenUtil().setSp(20)),
-            label: Text(
-              '恢复',
-              style: TextStyle(fontSize: DataBackupPageConstants.fontSize_16),
-            ),
-          ),
+          ],
         ),
       ),
     );

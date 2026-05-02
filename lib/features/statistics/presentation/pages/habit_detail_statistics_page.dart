@@ -495,26 +495,15 @@ class _HabitDetailStatisticsView extends StatelessWidget {
               _buildCalendarModule(context, singleHabitList, habitColors),
               _buildTimeRangeSelector(context),
               _buildPeriodSelector(context),
-              Container(
-                margin:
-                    HabitDetailStatisticsPageConstants.moduleContainerMargin,
-                padding:
-                    HabitDetailStatisticsPageConstants.moduleContainerPadding,
-                decoration: ThemeHelper.panelDecoration(
+              StatisticsChartWidget(
+                habits: [habit],
+                selectedPeriod: provider.selectedPeriod,
+                rollingRange: provider.getRollingDateRange(),
+                isHabitVisible: const [true],
+                weekStartDay: Provider.of<PersonalizationProvider>(
                   context,
-                  radius: HabitDetailStatisticsPageConstants
-                      .moduleContainerBorderRadius,
-                ),
-                child: StatisticsChartWidget(
-                  habits: [habit],
-                  selectedPeriod: provider.selectedPeriod,
-                  rollingRange: provider.getRollingDateRange(),
-                  isHabitVisible: const [true],
-                  weekStartDay: Provider.of<PersonalizationProvider>(
-                    context,
-                    listen: false,
-                  ).weekStartDay,
-                ),
+                  listen: false,
+                ).weekStartDay,
               ),
               SizedBox(
                 height: HabitDetailStatisticsPageConstants.bottomSpacing,
