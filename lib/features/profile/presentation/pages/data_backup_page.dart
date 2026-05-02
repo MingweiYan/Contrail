@@ -1,18 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:contrail/shared/utils/theme_helper.dart';
-import 'package:contrail/shared/utils/page_layout_constants.dart';
-
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
-import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
-import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
 import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
+import 'package:contrail/features/profile/presentation/pages/backup_config_page.dart';
+import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
+import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup/backup_list_section.dart';
-import 'package:contrail/features/profile/presentation/widgets/backup/webdav_settings_card.dart';
-import 'package:contrail/features/profile/presentation/widgets/backup_delete_confirmation_dialog.dart';
 import 'package:contrail/features/profile/presentation/widgets/backup_restore_confirmation_dialog.dart';
+import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class DataBackupPage extends StatefulWidget {
   const DataBackupPage({super.key});
@@ -26,25 +24,14 @@ class _DataBackupPageState extends State<DataBackupPage>
   @override
   void initState() {
     super.initState();
-
-    // 使用addPostFrameCallback确保在widget构建完成后再初始化BackupProvider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final backupProvider = Provider.of<BackupProvider>(
-        context,
-        listen: false,
-      );
-      backupProvider.initialize();
-      // 初始化 WebDAV Provider（仅用于页面内部）
-      // 如果外部已提供，可省略此处
+      context.read<BackupProvider>().initialize();
     });
-
-    // 添加观察者，监听页面可见性变化
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    // 移除观察者
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -52,47 +39,48 @@ class _DataBackupPageState extends State<DataBackupPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-
-    // 当应用从后台回到前台时，刷新备份文件列表
     if (state == AppLifecycleState.resumed) {
-      final backupProvider = Provider.of<BackupProvider>(
-        context,
-        listen: false,
-      );
-      backupProvider.refreshBackupFiles();
+      context.read<BackupProvider>().refreshBackupFiles();
     }
   }
 
-  // 显示恢复确认对话框
-  void _showRestoreConfirmation(BackupFileInfo backupFile) {
-    showDialog(
+  void _showErrorIfNeeded(
+    BuildContext context,
+    String? message,
+    VoidCallback onClear,
+  ) {
+    if (message == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      onClear();
+    });
+  }
+
+  Future<void> _showRestoreConfirmation(BackupFileInfo backupFile) async {
+    await showDialog(
       context: context,
       builder: (dialogContext) => BackupRestoreConfirmationDialog(
         backupFile: backupFile,
         onCancel: () => Navigator.pop(dialogContext),
         onConfirm: () async {
           Navigator.pop(dialogContext);
-
-          final backupProvider = Provider.of<BackupProvider>(
-            this.context,
-            listen: false,
-          );
+          final backupProvider = context.read<BackupProvider>();
           final success = await backupProvider.restoreFromBackup(
             backupFile,
-            this.context,
+            context,
           );
-
           if (!mounted) return;
 
           if (success) {
             ScaffoldMessenger.of(
-              this.context,
+              context,
             ).showSnackBar(const SnackBar(content: Text('从本地备份恢复成功')));
-            Navigator.pop(this.context);
+            Navigator.pop(context);
           } else if (backupProvider.errorMessage != null) {
-            ScaffoldMessenger.of(this.context).showSnackBar(
-              SnackBar(content: Text(backupProvider.errorMessage!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(backupProvider.errorMessage!)));
             backupProvider.clearError();
           }
         },
@@ -103,870 +91,104 @@ class _DataBackupPageState extends State<DataBackupPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('数据备份与恢复')),
       body: Container(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
-            BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
-            ),
+            BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
         width: double.infinity,
         height: double.infinity,
-        padding: PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
+        padding: PageLayoutConstants.getPageContainerPadding(),
         child: Consumer<BackupProvider>(
-          builder: (context, backupProvider, child) {
-            // 显示错误信息
-            if (backupProvider.errorMessage != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(backupProvider.errorMessage!)),
-                );
-                backupProvider.clearError();
-              });
-            }
+          builder: (context, backupProvider, _) {
+            _showErrorIfNeeded(
+              context,
+              backupProvider.errorMessage,
+              backupProvider.clearError,
+            );
 
-            return SingleChildScrollView(
-              padding: DataBackupPageConstants.containerPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 备份设置标题
-                  Text(
-                    '备份设置',
-                    style: TextStyle(
-                      fontSize: DataBackupPageConstants.fontSize_29,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingSmall),
+            return ChangeNotifierProvider<WebDavBackupProvider>(
+              create: (_) => WebDavBackupProvider(
+                WebDavBackupService(storageService: WebDavStorageService()),
+              )..initialize(),
+              child: Consumer<WebDavBackupProvider>(
+                builder: (context, webdavProvider, _) {
+                  _showErrorIfNeeded(
+                    context,
+                    webdavProvider.errorMessage,
+                    webdavProvider.clearError,
+                  );
 
-                  // 自动备份设置
-                  Container(
-                    padding: DataBackupPageConstants.containerPadding,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(
-                        ScreenUtil().setWidth(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ListTile(
-                          leading: Container(
-                            width: ScreenUtil().setWidth(40),
-                            height: ScreenUtil().setWidth(40),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.schedule,
-                              color: ThemeHelper.primary(context),
-                            ),
-                          ),
-                          title: Text(
-                            '自动备份',
-                            style: TextStyle(
-                              fontSize: DataBackupPageConstants.fontSize_18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          trailing: Switch(
-                            value: backupProvider.autoBackupEnabled,
-                            onChanged: (value) async {
-                              await backupProvider.saveAutoBackupSettings(
-                                value,
-                                backupProvider.backupFrequency,
-                              );
-                            },
-                          ),
-                        ),
-                        if (backupProvider.autoBackupEnabled) ...[
-                          Divider(
-                            height: ScreenUtil().setHeight(1),
-                            color: ThemeHelper.onBackground(
-                              context,
-                            ).withValues(alpha: 0.1),
-                          ),
-                          ListTile(
-                            leading: Container(
-                              width: ScreenUtil().setWidth(40),
-                              height: ScreenUtil().setWidth(40),
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.repeat,
-                                color: ThemeHelper.primary(context),
-                              ),
-                            ),
-                            title: Text(
-                              '备份频率:',
-                              style: TextStyle(
-                                fontSize: DataBackupPageConstants.fontSize_18,
-                              ),
-                            ),
-                            trailing: DropdownButton<int>(
-                              value: backupProvider.backupFrequency,
-                              items: const [
-                                DropdownMenuItem(value: 1, child: Text('每天')),
-                                DropdownMenuItem(value: 2, child: Text('每2天')),
-                                DropdownMenuItem(value: 7, child: Text('每周')),
-                                DropdownMenuItem(value: 30, child: Text('每月')),
-                              ],
-                              onChanged: (value) async {
-                                await backupProvider.saveAutoBackupSettings(
-                                  backupProvider.autoBackupEnabled,
-                                  value!,
-                                );
-                              },
-                            ),
-                          ),
-                          SizedBox(height: BaseLayoutConstants.spacingSmall),
-                          if (backupProvider.lastBackupTime != null)
-                            Text(
-                              '上次备份时间: ' +
-                                  backupProvider.lastBackupTime!
-                                      .toIso8601String()
-                                      .replaceAll('T', ' ')
-                                      .substring(0, 19),
-                              style: TextStyle(
-                                color: ThemeHelper.onBackground(
-                                  context,
-                                ).withValues(alpha: 0.6),
-                                fontSize: DataBackupPageConstants.fontSize_16,
-                              ),
-                            ),
-                          Text(
-                            '下次备份: ' +
-                                (backupProvider.lastBackupTime != null
-                                    ? backupProvider.lastBackupTime!
-                                          .add(
-                                            Duration(
-                                              days: backupProvider
-                                                  .backupFrequency,
-                                            ),
-                                          )
-                                          .toIso8601String()
-                                          .replaceAll('T', ' ')
-                                          .substring(0, 19)
-                                    : '开启后立即执行第一次备份'),
-                            style: TextStyle(
-                              color: ThemeHelper.onBackground(
-                                context,
-                              ).withValues(alpha: 0.6),
-                              fontSize: ScreenUtil().setSp(16),
-                            ),
-                          ),
-                          if (backupProvider.autoBackupLastRun != null)
-                            Text(
-                              '最近检查: ' +
-                                  backupProvider.autoBackupLastRun!
-                                      .toIso8601String()
-                                      .replaceAll('T', ' ')
-                                      .substring(0, 19),
-                              style: TextStyle(
-                                color: ThemeHelper.onBackground(
-                                  context,
-                                ).withValues(alpha: 0.6),
-                                fontSize: ScreenUtil().setSp(16),
-                              ),
-                            ),
-                          if (backupProvider.autoBackupLastError != null)
-                            Text(
-                              '最近错误: ${backupProvider.autoBackupLastError}'
-                                      .length >
-                                  80
-                                  ? '最近错误: ${backupProvider.autoBackupLastError!.substring(0, 80)}…'
-                                  : '最近错误: ${backupProvider.autoBackupLastError}',
-                              style: TextStyle(
-                                color: Colors.redAccent.withValues(alpha: 0.8),
-                                fontSize: ScreenUtil().setSp(16),
-                              ),
-                            ),
-                          // 结束：备份设置卡片
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingLarge),
-                  // 本地备份标题
-                  Text(
-                    '本地备份',
-                    style: TextStyle(
-                      fontSize: DataBackupPageConstants.fontSize_29,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingSmall),
-
-                  // 本地备份设置
-                  Container(
-                    padding: DataBackupPageConstants.containerPadding,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(
-                        ScreenUtil().setWidth(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: Container(
-                            width: ScreenUtil().setWidth(40),
-                            height: ScreenUtil().setWidth(40),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.folder_open,
-                              color: ThemeHelper.primary(context),
-                            ),
-                          ),
-                          title: Text(
-                            '备份路径',
-                            style: TextStyle(
-                              fontSize: DataBackupPageConstants.fontSize_18,
-                            ),
-                          ),
-                          subtitle: Text(
-                            backupProvider.localBackupPath,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextButton(
-                                onPressed: () async {
-                                  await backupProvider.changeBackupPath();
-                                  if (!mounted) return;
-                                  if (backupProvider.errorMessage == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '备份路径已更改为: ${backupProvider.localBackupPath}',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: Text(
-                                  '更换',
-                                  style: TextStyle(
-                                    fontSize:
-                                        DataBackupPageConstants.fontSize_18,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: BaseLayoutConstants.spacingSmall),
-                              TextButton(
-                                onPressed: () async {
-                                  await backupProvider
-                                      .resetBackupPathToDefault();
-                                  if (!mounted) return;
-                                  if (backupProvider.errorMessage == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('已回退到默认备份目录'),
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: Text(
-                                  '默认目录',
-                                  style: TextStyle(
-                                    fontSize:
-                                        DataBackupPageConstants.fontSize_18,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Divider(
-                          height: ScreenUtil().setHeight(1),
-                          color: ThemeHelper.onBackground(
+                  return DefaultTabController(
+                    length: 2,
+                    child: Padding(
+                      padding: DataBackupPageConstants.containerPadding,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeroHeader(context),
+                          SizedBox(height: BaseLayoutConstants.spacingLarge),
+                          _buildConfigStatusCard(
                             context,
-                          ).withValues(alpha: 0.1),
-                        ),
-                        ListTile(
-                          leading: Container(
-                            width: ScreenUtil().setWidth(40),
-                            height: ScreenUtil().setWidth(40),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.inventory_2,
-                              color: ThemeHelper.primary(context),
-                            ),
-                          ),
-                          title: Text(
-                            '本地保留数量',
-                            style: TextStyle(
-                              fontSize: DataBackupPageConstants.fontSize_18,
-                            ),
-                          ),
-                          trailing: DropdownButton<int>(
-                            value: backupProvider.retentionCount,
-                            items: const [
-                              DropdownMenuItem(value: 3, child: Text('3')),
-                              DropdownMenuItem(value: 5, child: Text('5')),
-                              DropdownMenuItem(value: 10, child: Text('10')),
-                              DropdownMenuItem(value: 20, child: Text('20')),
-                              DropdownMenuItem(value: 50, child: Text('50')),
+                            icon: Icons.schedule_rounded,
+                            title: '自动备份策略',
+                            subtitle: '页面级公共配置，统一影响本地与 WebDAV',
+                            statusItems: [
+                              _StatusItem(
+                                label: '自动备份',
+                                value: backupProvider.autoBackupEnabled
+                                    ? '已开启'
+                                    : '未开启',
+                              ),
+                              _StatusItem(
+                                label: '频率',
+                                value: _frequencyLabel(
+                                  backupProvider.backupFrequency,
+                                ),
+                              ),
                             ],
-                            onChanged: (value) async {
-                              if (value != null) {
-                                await backupProvider.saveRetentionCount(value);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '保留数量已设置为: ${backupProvider.retentionCount}',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                        SizedBox(height: BaseLayoutConstants.spacingMedium),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final success = await backupProvider
-                                .performBackup();
-                            if (!mounted) return;
-                            if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('本地备份成功')),
-                              );
-                            }
-                          },
-                          icon: Icon(Icons.save_alt),
-                          label: Text(
-                            '执行本地备份',
-                            style: TextStyle(fontSize: ScreenUtil().setSp(18)),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: Size(
-                              double.infinity,
-                              DataBackupPageConstants.buttonHeight,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: BaseLayoutConstants.spacingMedium),
-                        Text(
-                          '本地备份文件',
-                          style: TextStyle(
-                            fontSize: ScreenUtil().setSp(18),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: BaseLayoutConstants.spacingMedium),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      backupProvider.refreshBackupFiles();
-                    },
-                    icon: Icon(Icons.refresh),
-                    label: Text(
-                      '刷新备份文件列表',
-                      style: TextStyle(fontSize: ScreenUtil().setSp(18)),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(
-                        double.infinity,
-                        DataBackupPageConstants.buttonHeight,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: BaseLayoutConstants.spacingLarge),
-
-                  // 本地恢复卡片
-                  Container(
-                    padding: DataBackupPageConstants.containerPadding,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(
-                        ScreenUtil().setWidth(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: BaseLayoutConstants.spacingSmall),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: ScreenUtil().setSp(16),
-                              color: ThemeHelper.onBackground(
-                                context,
-                              ).withValues(alpha: 0.7),
-                            ),
-                            SizedBox(width: ScreenUtil().setWidth(6)),
-                            Expanded(
-                              child: Text(
-                                '提示：恢复将用所选备份覆盖当前数据，删除为不可逆操作。',
-                                style: TextStyle(
-                                  fontSize: ScreenUtil().setSp(14),
-                                  color: ThemeHelper.onBackground(
-                                    context,
-                                  ).withValues(alpha: 0.7),
+                            detailItems: [
+                              _DetailItem(
+                                label: '最近备份',
+                                value: _formatDateTime(
+                                  backupProvider.lastBackupTime,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: BaseLayoutConstants.spacingMedium),
-                        if (backupProvider.isLoading)
-                          Center(child: CircularProgressIndicator())
-                        else if (backupProvider.backupFiles.isEmpty)
-                          Center(
-                            child: Text(
-                              '没有找到备份文件',
-                              style: TextStyle(
-                                fontSize: ScreenUtil().setSp(16),
+                              _DetailItem(
+                                label: '最近检查',
+                                value: _formatDateTime(
+                                  backupProvider.autoBackupLastRun,
+                                ),
                               ),
-                            ),
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: backupProvider.backupFiles.length,
-                            itemBuilder: (context, index) {
-                              final backupFile =
-                                  backupProvider.backupFiles[index];
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: BaseLayoutConstants.spacingMedium,
-                                ),
-                                child: Card(
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      ScreenUtil().setWidth(12),
-                                    ),
-                                  ),
-                                  child: Dismissible(
-                                    key: Key(backupFile.path),
-                                    direction: DismissDirection.endToStart,
-                                    dismissThresholds: const {
-                                      DismissDirection.endToStart: 0.6,
-                                    },
-                                    background: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.red,
-                                        borderRadius: BorderRadius.circular(
-                                          ScreenUtil().setWidth(12),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '删除',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: ScreenUtil().setWidth(8),
-                                          ),
-                                          const Icon(
-                                            Icons.delete,
-                                            color: Colors.white,
-                                          ),
-                                          SizedBox(
-                                            width: ScreenUtil().setWidth(10),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    confirmDismiss: (direction) async {
-                                      final shouldDelete =
-                                          await showDialog<bool>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: const Text('确认删除'),
-                                              content: Text(
-                                                '确定要删除备份文件 "${backupFile.name}" 吗？',
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                        context,
-                                                        false,
-                                                      ),
-                                                  child: const Text('取消'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                        context,
-                                                        true,
-                                                      ),
-                                                  child: const Text(
-                                                    '删除',
-                                                    style: TextStyle(
-                                                      color: Colors.red,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ) ??
-                                          false;
-                                      if (shouldDelete) {
-                                        final bp = Provider.of<BackupProvider>(
-                                          context,
-                                          listen: false,
-                                        );
-                                        final success = await bp
-                                            .deleteBackupFile(backupFile);
-                                        if (!mounted) return false;
-                                        if (success) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('备份文件已删除'),
-                                            ),
-                                          );
-                                        } else if (bp.errorMessage != null) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(bp.errorMessage!),
-                                            ),
-                                          );
-                                          bp.clearError();
-                                        }
-                                      }
-                                      return false;
-                                    },
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: ScreenUtil().setWidth(12),
-                                        vertical: ScreenUtil().setHeight(8),
-                                      ),
-                                      leading: Container(
-                                        width: ScreenUtil().setWidth(40),
-                                        height: ScreenUtil().setWidth(40),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withValues(alpha: 0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.insert_drive_file,
-                                          color: ThemeHelper.primary(context),
-                                        ),
-                                      ),
-                                      title: Text(
-                                        backupFile.name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: DataBackupPageConstants
-                                              .fontSize_16,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      subtitle: Text(
-                                        '备份时间: ' +
-                                            backupFile.formattedLastModified +
-                                            '\n大小: ' +
-                                            backupFile.formattedSize,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: DataBackupPageConstants
-                                              .fontSize_14,
-                                          color: ThemeHelper.onBackground(
-                                            context,
-                                          ).withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                      trailing: OutlinedButton.icon(
-                                        onPressed: () {
-                                          _showRestoreConfirmation(backupFile);
-                                        },
-                                        icon: Icon(
-                                          Icons.restore,
-                                          size: ScreenUtil().setSp(22),
-                                        ),
-                                        label: Text(
-                                          '恢复',
-                                          style: TextStyle(
-                                            fontSize: DataBackupPageConstants
-                                                .fontSize_16,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          minimumSize: Size(
-                                            ScreenUtil().setWidth(100),
-                                            ScreenUtil().setHeight(34),
-                                          ),
-                                          foregroundColor: ThemeHelper.primary(
-                                            context,
-                                          ),
-                                          side: BorderSide(
-                                            color: ThemeHelper.primary(context),
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: ScreenUtil().setWidth(
-                                              10,
-                                            ),
-                                            vertical: ScreenUtil().setHeight(6),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                            ],
+                            onTap: () =>
+                                _openAutoBackupPolicyPage(context, backupProvider),
                           ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: BaseLayoutConstants.spacingLarge),
-
-                  // 网络备份（WebDAV）分组
-                  ChangeNotifierProvider<WebDavBackupProvider>(
-                    create: (_) => WebDavBackupProvider(
-                      WebDavBackupService(
-                        storageService: WebDavStorageService(),
+                          SizedBox(height: BaseLayoutConstants.spacingLarge),
+                          _buildTabShell(context),
+                          SizedBox(height: BaseLayoutConstants.spacingMedium),
+                          Expanded(
+                            child: TabBarView(
+                              children: [
+                                SingleChildScrollView(
+                                  padding: EdgeInsets.only(
+                                    bottom: BaseLayoutConstants.spacingLarge,
+                                  ),
+                                  child: _buildLocalTab(context, backupProvider),
+                                ),
+                                SingleChildScrollView(
+                                  padding: EdgeInsets.only(
+                                    bottom: BaseLayoutConstants.spacingLarge,
+                                  ),
+                                  child: _buildWebDavTab(context, webdavProvider),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    )..initialize(),
-                    child: Consumer<WebDavBackupProvider>(
-                      builder: (context, webdavProvider, _) {
-                        // 错误提示
-                        if (webdavProvider.errorMessage != null) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(webdavProvider.errorMessage!),
-                              ),
-                            );
-                            webdavProvider.clearError();
-                          });
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '网络备份（WebDAV）',
-                              style: TextStyle(
-                                fontSize: DataBackupPageConstants.fontSize_29,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: BaseLayoutConstants.spacingSmall),
-                            WebDavSettingsCard(
-                              url: webdavProvider.webdavUrl,
-                              username: webdavProvider.webdavUsername,
-                              password: webdavProvider.webdavPassword,
-                              path: webdavProvider.webdavPath,
-                              retentionCount: webdavProvider.retentionCount,
-                              onUrlChanged: webdavProvider.setWebDavUrl,
-                              onUsernameChanged:
-                                  webdavProvider.setWebDavUsername,
-                              onPasswordChanged:
-                                  webdavProvider.setWebDavPassword,
-                              onPathChanged: webdavProvider.setWebDavPath,
-                              onSaveConfig: () async {
-                                await webdavProvider.saveWebDavConfig();
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('WebDAV 配置已保存')),
-                                );
-                              },
-                              onRetentionChanged: (val) async {
-                                await webdavProvider.saveRetentionCount(val);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'WebDAV 保留数量已设置为: ${webdavProvider.retentionCount}',
-                                    ),
-                                  ),
-                                );
-                              },
-                              onPerformBackup: () async {
-                                final ok = await webdavProvider.performBackup();
-                                if (!mounted) return;
-                                if (ok) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('网络备份成功')),
-                                  );
-                                }
-                              },
-                            ),
-                            SizedBox(height: BaseLayoutConstants.spacingLarge),
-                            BackupListSection(
-                              title: '网络备份（WebDAV）文件',
-                              isLoading: webdavProvider.isLoading,
-                              files: webdavProvider.backupFiles,
-                              onRefresh: () {
-                                webdavProvider.refreshBackupFiles();
-                              },
-                              onRestore: (file) async {
-                                final shouldRestore =
-                                    await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: Theme.of(
-                                          context,
-                                        ).cardColor,
-                                        title: Text(
-                                          '确认恢复',
-                                          style: TextStyle(
-                                            fontSize: ScreenUtil().setSp(16),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        content: Text(
-                                          '将用该网络备份覆盖当前数据，确定继续？',
-                                          style: TextStyle(
-                                            fontSize: ScreenUtil().setSp(20),
-                                            color: ThemeHelper.onBackground(
-                                              context,
-                                            ),
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text('取消'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text('确认'),
-                                          ),
-                                        ],
-                                      ),
-                                    ) ??
-                                    false;
-                                if (!shouldRestore) return;
-                                final ok = await webdavProvider
-                                    .restoreBackupFile(context, file);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(ok ? '网络数据恢复成功' : '恢复失败'),
-                                  ),
-                                );
-                              },
-                              onDelete: (file) async {
-                                final shouldDelete =
-                                    await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: Theme.of(
-                                          context,
-                                        ).cardColor,
-                                        title: Text(
-                                          '确认删除',
-                                          style: TextStyle(
-                                            fontSize: ScreenUtil().setSp(16),
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                        content: Text(
-                                          '确定要删除备份文件吗？此操作不可撤销！',
-                                          style: TextStyle(
-                                            fontSize: ScreenUtil().setSp(20),
-                                            color: ThemeHelper.onBackground(
-                                              context,
-                                            ),
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text('取消'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text('确认'),
-                                          ),
-                                        ],
-                                      ),
-                                    ) ??
-                                    false;
-                                if (!shouldDelete) return false;
-                                final ok = await webdavProvider
-                                    .deleteBackupFile(file);
-                                if (!mounted) return false;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(ok ? '已删除网络备份' : '删除失败'),
-                                  ),
-                                );
-                                return ok;
-                              },
-                            ),
-                          ],
-                        );
-                      },
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             );
           },
@@ -974,4 +196,613 @@ class _DataBackupPageState extends State<DataBackupPage>
       ),
     );
   }
+
+  Widget _buildHeroHeader(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: ThemeHelper.heroDecoration(context, radius: 28),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          _buildHeaderButton(context),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '数据备份与恢复',
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w800,
+                    color: heroForeground,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  '分别在本地与 WebDAV 子页管理配置、查看状态，并处理备份文件。',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: heroSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderButton(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pop(context),
+        borderRadius: BorderRadius.circular(16.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_back_rounded,
+                size: 18.sp,
+                color: heroForeground,
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                '返回',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabShell(BuildContext context) {
+    final primary = ThemeHelper.primary(context);
+    return Container(
+      padding: EdgeInsets.all(6.w),
+      decoration: ThemeHelper.panelDecoration(context, radius: 22.r),
+      child: TabBar(
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: Colors.white,
+        unselectedLabelColor: ThemeHelper.onBackground(
+          context,
+        ).withValues(alpha: 0.7),
+        labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w600,
+        ),
+        indicator: BoxDecoration(
+          color: primary,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        tabs: const [
+          Tab(text: '本地'),
+          Tab(text: 'WebDAV'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocalTab(BuildContext context, BackupProvider backupProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildConfigStatusCard(
+          context,
+          icon: Icons.folder_open_rounded,
+          title: '本地配置与状态',
+          subtitle: '点击进入本地备份配置页面',
+          statusItems: [
+            _StatusItem(
+              label: '保留数量',
+              value: '${backupProvider.retentionCount} 份',
+            ),
+            _StatusItem(
+              label: '本地文件',
+              value: '${backupProvider.backupFiles.length} 份',
+            ),
+          ],
+          detailItems: [
+            _DetailItem(
+              label: '最近备份',
+              value: _formatDateTime(backupProvider.lastBackupTime),
+            ),
+            _DetailItem(
+              label: '备份目录',
+              value: backupProvider.localBackupPath,
+            ),
+          ],
+          onTap: () => _openLocalConfigPage(context, backupProvider),
+        ),
+        SizedBox(height: BaseLayoutConstants.spacingLarge),
+        BackupListSection(
+          title: '本地备份文件',
+          caption: '恢复会覆盖当前数据，左滑可删除。',
+          primaryActionLabel: '立即备份',
+          primaryActionIcon: Icons.save_alt_rounded,
+          onPrimaryAction: () async {
+            final success = await backupProvider.performBackup();
+            if (!mounted || !success) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('本地备份成功')));
+          },
+          secondaryActionLabel: '刷新列表',
+          secondaryActionIcon: Icons.refresh_rounded,
+          onSecondaryAction: backupProvider.refreshBackupFiles,
+          isLoading: backupProvider.isLoading,
+          files: backupProvider.backupFiles,
+          onRefresh: backupProvider.refreshBackupFiles,
+          onRestore: _showRestoreConfirmation,
+          onDelete: (file) => _deleteLocalBackupFile(context, file),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebDavTab(
+    BuildContext context,
+    WebDavBackupProvider webdavProvider,
+  ) {
+    final configured = _isWebDavConfigured(webdavProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildConfigStatusCard(
+          context,
+          icon: Icons.cloud_sync_rounded,
+          title: 'WebDAV 配置与状态',
+          subtitle: '点击进入 WebDAV 配置页面',
+          statusItems: [
+            _StatusItem(label: '配置状态', value: configured ? '已就绪' : '待配置'),
+            _StatusItem(
+              label: '远端文件',
+              value: '${webdavProvider.backupFiles.length} 份',
+            ),
+            _StatusItem(
+              label: '保留数量',
+              value: '${webdavProvider.retentionCount} 份',
+            ),
+          ],
+          detailItems: [
+            _DetailItem(
+              label: '最近备份',
+              value: _formatDateTime(webdavProvider.lastBackupTime),
+            ),
+            _DetailItem(
+              label: '当前地址',
+              value: webdavProvider.webdavUrl.isEmpty
+                  ? '未填写 WebDAV URL'
+                  : webdavProvider.webdavUrl,
+            ),
+            _DetailItem(
+              label: '远端目录',
+              value: webdavProvider.displayPath.isEmpty
+                  ? '尚未创建远端目录'
+                  : webdavProvider.displayPath,
+            ),
+          ],
+          onTap: () => _openWebDavConfigPage(context, webdavProvider),
+        ),
+        SizedBox(height: BaseLayoutConstants.spacingLarge),
+        BackupListSection(
+          title: 'WebDAV 文件列表',
+          caption: '远端文件同样支持恢复与左滑删除。',
+          primaryActionLabel: '立即备份',
+          primaryActionIcon: Icons.cloud_upload_outlined,
+          onPrimaryAction: () async {
+            final success = await webdavProvider.performBackup();
+            if (!mounted || !success) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('网络备份成功')));
+          },
+          secondaryActionLabel: '刷新列表',
+          secondaryActionIcon: Icons.refresh_rounded,
+          onSecondaryAction: webdavProvider.refreshBackupFiles,
+          isLoading: webdavProvider.isLoading,
+          files: webdavProvider.backupFiles,
+          onRefresh: webdavProvider.refreshBackupFiles,
+          onRestore: (file) => _restoreWebDavBackup(context, webdavProvider, file),
+          onDelete: (file) => _deleteWebDavBackup(context, webdavProvider, file),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConfigStatusCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<_StatusItem> statusItems,
+    required List<_DetailItem> detailItems,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24.r),
+        child: Ink(
+          width: double.infinity,
+          padding: EdgeInsets.all(18.w),
+          decoration: ThemeHelper.panelDecoration(context, radius: 24.r),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42.w,
+                    height: 42.w,
+                    decoration: BoxDecoration(
+                      color: ThemeHelper.primary(context).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 20.sp,
+                      color: ThemeHelper.primary(context),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w800,
+                            color: ThemeHelper.onBackground(context),
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            height: 1.4,
+                            color: ThemeHelper.onBackground(
+                              context,
+                            ).withValues(alpha: 0.62),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 22.sp,
+                    color: ThemeHelper.onBackground(
+                      context,
+                    ).withValues(alpha: 0.42),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: statusItems
+                    .map(
+                      (item) => _buildStatusPill(
+                        context,
+                        label: item.label,
+                        value: item.value,
+                      ),
+                    )
+                    .toList(),
+              ),
+              SizedBox(height: 16.h),
+              ...detailItems.map(
+                (item) => _buildInfoRow(
+                  context,
+                  label: item.label,
+                  value: item.value,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: ThemeHelper.primary(context).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: ThemeHelper.primary(context).withValues(alpha: 0.12),
+        ),
+      ),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: ThemeHelper.onBackground(context),
+          ),
+          children: [
+            TextSpan(
+              text: '$label ',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: ThemeHelper.onBackground(
+                  context,
+                ).withValues(alpha: 0.6),
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 82.w,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: ThemeHelper.onBackground(context).withValues(alpha: 0.58),
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12.sp,
+                height: 1.4,
+                color: ThemeHelper.onBackground(context).withValues(alpha: 0.84),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openLocalConfigPage(
+    BuildContext context,
+    BackupProvider backupProvider,
+  ) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: backupProvider,
+          child: const LocalBackupConfigPage(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAutoBackupPolicyPage(
+    BuildContext context,
+    BackupProvider backupProvider,
+  ) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: backupProvider,
+          child: const AutoBackupPolicyPage(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openWebDavConfigPage(
+    BuildContext context,
+    WebDavBackupProvider webdavProvider,
+  ) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: webdavProvider,
+          child: const WebDavBackupConfigPage(),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _deleteLocalBackupFile(
+    BuildContext context,
+    BackupFileInfo backupFile,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('确认删除'),
+            content: Text('确定要删除备份文件 "${backupFile.name}" 吗？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('删除', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDelete) return false;
+    final backupProvider = context.read<BackupProvider>();
+    final success = await backupProvider.deleteBackupFile(backupFile);
+    if (!mounted) return false;
+
+    if (success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('备份文件已删除')));
+    } else if (backupProvider.errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(backupProvider.errorMessage!)));
+      backupProvider.clearError();
+    }
+    return success;
+  }
+
+  Future<void> _restoreWebDavBackup(
+    BuildContext context,
+    WebDavBackupProvider webdavProvider,
+    BackupFileInfo file,
+  ) async {
+    final shouldRestore = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: const Text('确认恢复'),
+            content: const Text('将用该网络备份覆盖当前数据，确定继续？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('确认'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldRestore) return;
+    final success = await webdavProvider.restoreBackupFile(context, file);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(success ? '网络数据恢复成功' : '恢复失败')));
+  }
+
+  Future<bool> _deleteWebDavBackup(
+    BuildContext context,
+    WebDavBackupProvider webdavProvider,
+    BackupFileInfo file,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            title: const Text('确认删除'),
+            content: const Text('确定要删除备份文件吗？此操作不可撤销。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('确认'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDelete) return false;
+    final success = await webdavProvider.deleteBackupFile(file);
+    if (!mounted) return false;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(success ? '已删除网络备份' : '删除失败')));
+    return success;
+  }
+
+  bool _isWebDavConfigured(WebDavBackupProvider provider) {
+    return provider.webdavUrl.trim().isNotEmpty &&
+        provider.webdavUsername.trim().isNotEmpty &&
+        provider.webdavPath.trim().isNotEmpty;
+  }
+
+  String _frequencyLabel(int frequency) {
+    switch (frequency) {
+      case 1:
+        return '每天';
+      case 2:
+        return '每 2 天';
+      case 7:
+        return '每周';
+      case 30:
+        return '每月';
+      default:
+        return '每 $frequency 天';
+    }
+  }
+
+  String _formatDateTime(DateTime? value) {
+    if (value == null) return '暂无记录';
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+    return '${value.year}-${twoDigits(value.month)}-${twoDigits(value.day)} '
+        '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
+  }
+}
+
+class _StatusItem {
+  final String label;
+  final String value;
+
+  const _StatusItem({required this.label, required this.value});
+}
+
+class _DetailItem {
+  final String label;
+  final String value;
+
+  const _DetailItem({required this.label, required this.value});
 }

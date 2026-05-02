@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile Page Content Preview</title>
+    <style>
+      :root {
+        --bg: #eef4fb;
+        --panel: rgba(255, 255, 255, 0.82);
+        --panel-2: rgba(241, 247, 255, 0.88);
+        --line: rgba(128, 155, 190, 0.24);
+        --text: #17243c;
+        --muted: rgba(23, 36, 60, 0.66);
+        --blue: #607392;
+        --blue-2: #7f96b4;
+        --green: #3cb59a;
+        --orange: #f29b55;
+        --purple: #8677ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter, "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial,
+          sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(155, 188, 228, 0.24), transparent 24%),
+          linear-gradient(180deg, #f5f9fe 0%, #e9f0f8 100%);
+      }
+
+      .page {
+        width: min(1380px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 40px 0 64px;
+      }
+
+      .hero {
+        padding: 28px 30px;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: linear-gradient(135deg, rgba(120, 144, 176, 0.95), rgba(91, 115, 146, 0.96));
+        color: #f8fbff;
+        box-shadow: 0 18px 40px rgba(38, 56, 82, 0.16);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 14px 0 12px;
+        font-size: clamp(28px, 5vw, 42px);
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 920px;
+        line-height: 1.8;
+        color: rgba(248, 251, 255, 0.82);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+        margin-top: 24px;
+      }
+
+      .variant {
+        padding: 22px;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.58);
+        box-shadow: 0 16px 32px rgba(38, 56, 82, 0.08);
+        backdrop-filter: blur(16px);
+      }
+
+      .variant h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+
+      .desc {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0 18px;
+      }
+
+      .chip {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(128, 155, 190, 0.22);
+        background: rgba(255, 255, 255, 0.62);
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .phone {
+        padding: 14px;
+        border-radius: 28px;
+        border: 1px solid rgba(128, 155, 190, 0.26);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(230, 240, 251, 0.72)),
+          #eff5fb;
+      }
+
+      .screen-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      .header {
+        padding: 18px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, #8ea5c4, #5b7392);
+        color: #f8fbff;
+        box-shadow: 0 12px 28px rgba(53, 84, 118, 0.14);
+      }
+
+      .header-title {
+        font-size: 26px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+
+      .header-sub {
+        font-size: 14px;
+        color: rgba(248, 251, 255, 0.82);
+      }
+
+      .header-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .header-action {
+        padding: 12px 8px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.12);
+        text-align: center;
+        font-size: 12px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .card {
+        border-radius: 24px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: 0 14px 26px rgba(38, 56, 82, 0.08);
+        padding: 16px;
+      }
+
+      .card.secondary {
+        background: var(--panel-2);
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 800;
+        margin-bottom: 12px;
+      }
+
+      .metrics3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 12px;
+        border-radius: 18px;
+        border: 1px solid rgba(128, 155, 190, 0.18);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .metric .label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .metric .value {
+        margin-top: 8px;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(128, 155, 190, 0.18);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .row .left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .blue { background: linear-gradient(135deg, var(--blue), var(--blue-2)); }
+      .green { background: linear-gradient(135deg, var(--green), #67d1bb); }
+      .orange { background: linear-gradient(135deg, var(--orange), #f5b47d); }
+      .purple { background: linear-gradient(135deg, var(--purple), #a89bff); }
+
+      .title {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      .badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(96, 115, 146, 0.12);
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .progress {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(118, 140, 168, 0.14);
+        overflow: hidden;
+        margin-top: 10px;
+      }
+
+      .progress span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--green), #67d1bb);
+      }
+
+      .chart {
+        height: 120px;
+        border-radius: 20px;
+        border: 1px solid rgba(128, 155, 190, 0.18);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.82), rgba(236, 244, 252, 0.92));
+        display: flex;
+        align-items: end;
+        gap: 10px;
+        padding: 16px;
+      }
+
+      .chart div {
+        flex: 1;
+        border-radius: 14px 14px 6px 6px;
+        background: linear-gradient(180deg, rgba(96,115,146,0.92), rgba(60,181,154,0.9));
+      }
+
+      .note {
+        margin-top: 20px;
+        padding: 16px 18px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      @media (max-width: 1100px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="eyebrow">Profile Page / Content Ideas</div>
+        <h1>「我的」页下面内容替换方案预览</h1>
+        <p>
+          现在 header 已经承担了「主题 / 个性化 / 备份」这类导航功能，下面更适合改成“状态区、数据区、个人区”，而不是再重复一排按钮。
+          这一页只预览 header 下面那块内容可以换成什么。
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="variant">
+          <h2>方案 A：个人总览面板</h2>
+          <p class="desc">下面改成“我的数据总览”，更像控制中心首页。适合现在整套控制台风格。</p>
+          <div class="chips">
+            <span class="chip">推荐优先看</span>
+            <span class="chip">最不重复</span>
+            <span class="chip">信息价值高</span>
+          </div>
+          <div class="phone">
+            <div class="screen-top"><span>09:41</span><span>Profile Overview</span></div>
+            <div class="header">
+              <div class="header-title">我的</div>
+              <div class="header-sub">把主题、资料和备份统一收进控制中心</div>
+              <div class="header-actions">
+                <div class="header-action">主题</div>
+                <div class="header-action">个性化</div>
+                <div class="header-action">备份</div>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="section-title">本周总览</div>
+                <div class="metrics3">
+                  <div class="metric">
+                    <div class="label">活跃习惯</div>
+                    <div class="value">8</div>
+                  </div>
+                  <div class="metric">
+                    <div class="label">完成率</div>
+                    <div class="value">84%</div>
+                  </div>
+                  <div class="metric">
+                    <div class="label">专注时长</div>
+                    <div class="value">7.2h</div>
+                  </div>
+                </div>
+              </div>
+              <div class="card secondary">
+                <div class="section-title">状态提醒</div>
+                <div class="list">
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon green">备</span>
+                      <div>
+                        <div class="title">最近备份正常</div>
+                        <div class="sub">上次备份：今天 08:40</div>
+                      </div>
+                    </div>
+                    <span class="badge">已同步</span>
+                  </div>
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon blue">主</span>
+                      <div>
+                        <div class="title">当前主题：极夜蓝</div>
+                        <div class="sub">界面状态一致，切换入口保留在 header</div>
+                      </div>
+                    </div>
+                    <span class="badge">主题 2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="variant">
+          <h2>方案 B：个人名片 + 系统状态</h2>
+          <p class="desc">更偏“用户中心”。上半是名片，下半展示主题、备份、通知等系统状态，但不做跳转按钮重复。</p>
+          <div class="chips">
+            <span class="chip">更像个人中心</span>
+            <span class="chip">温和稳妥</span>
+            <span class="chip">适合长期使用</span>
+          </div>
+          <div class="phone">
+            <div class="screen-top"><span>09:41</span><span>Profile Status</span></div>
+            <div class="header">
+              <div class="header-title">我的</div>
+              <div class="header-sub">把主题、资料和备份统一收进控制中心</div>
+              <div class="header-actions">
+                <div class="header-action">主题</div>
+                <div class="header-action">个性化</div>
+                <div class="header-action">备份</div>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="section-title">个人名片</div>
+                <div class="row">
+                  <div class="left">
+                    <span class="icon blue" style="width:48px;height:48px;border-radius:16px;">你</span>
+                    <div>
+                      <div class="title">Bytedance 用户</div>
+                      <div class="sub">已使用 Contrail 36 天</div>
+                    </div>
+                  </div>
+                  <span class="badge">编辑资料</span>
+                </div>
+              </div>
+              <div class="card secondary">
+                <div class="section-title">系统状态</div>
+                <div class="list">
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon purple">T</span>
+                      <div>
+                        <div class="title">主题风格</div>
+                        <div class="sub">深色沉浸 · 统一主视觉</div>
+                      </div>
+                    </div>
+                    <span class="badge">正常</span>
+                  </div>
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon orange">通</span>
+                      <div>
+                        <div class="title">提醒与通知</div>
+                        <div class="sub">当前已开启 3 个提醒</div>
+                      </div>
+                    </div>
+                    <span class="badge">3 项</span>
+                  </div>
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon green">云</span>
+                      <div>
+                        <div class="title">备份状态</div>
+                        <div class="sub">WebDAV 已连接，上次同步正常</div>
+                      </div>
+                    </div>
+                    <span class="badge">在线</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="variant">
+          <h2>方案 C：成长数据中心</h2>
+          <p class="desc">把下面区域彻底做成“成长记录”。这会让「我的」和统计页有区别，但会更偏个人复盘感。</p>
+          <div class="chips">
+            <span class="chip">数据感最强</span>
+            <span class="chip">科技感更重</span>
+            <span class="chip">和统计页有联动</span>
+          </div>
+          <div class="phone">
+            <div class="screen-top"><span>09:41</span><span>Growth Center</span></div>
+            <div class="header">
+              <div class="header-title">我的</div>
+              <div class="header-sub">把主题、资料和备份统一收进控制中心</div>
+              <div class="header-actions">
+                <div class="header-action">主题</div>
+                <div class="header-action">个性化</div>
+                <div class="header-action">备份</div>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="section-title">本月成长曲线</div>
+                <div class="chart">
+                  <div style="height: 42%;"></div>
+                  <div style="height: 64%;"></div>
+                  <div style="height: 56%;"></div>
+                  <div style="height: 78%;"></div>
+                  <div style="height: 88%;"></div>
+                  <div style="height: 74%;"></div>
+                </div>
+              </div>
+              <div class="card secondary">
+                <div class="metrics3">
+                  <div class="metric">
+                    <div class="label">最长连续</div>
+                    <div class="value">18天</div>
+                  </div>
+                  <div class="metric">
+                    <div class="label">最佳周</div>
+                    <div class="value">91%</div>
+                  </div>
+                  <div class="metric">
+                    <div class="label">总专注</div>
+                    <div class="value">26h</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="variant">
+          <h2>方案 D：最近活动 / 待处理</h2>
+          <p class="desc">下面改成“动态区”，展示最近换了什么主题、最近一次备份、头像/用户名修改记录，更像工作台。</p>
+          <div class="chips">
+            <span class="chip">更像工作台</span>
+            <span class="chip">动态感强</span>
+            <span class="chip">内容更新自然</span>
+          </div>
+          <div class="phone">
+            <div class="screen-top"><span>09:41</span><span>Recent Activity</span></div>
+            <div class="header">
+              <div class="header-title">我的</div>
+              <div class="header-sub">把主题、资料和备份统一收进控制中心</div>
+              <div class="header-actions">
+                <div class="header-action">主题</div>
+                <div class="header-action">个性化</div>
+                <div class="header-action">备份</div>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="section-title">最近活动</div>
+                <div class="list">
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon purple">主</span>
+                      <div>
+                        <div class="title">已切换到极夜蓝主题</div>
+                        <div class="sub">今天 09:12</div>
+                      </div>
+                    </div>
+                    <span class="badge">主题</span>
+                  </div>
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon green">备</span>
+                      <div>
+                        <div class="title">完成一次本地备份</div>
+                        <div class="sub">今天 08:40</div>
+                      </div>
+                    </div>
+                    <span class="badge">备份</span>
+                  </div>
+                  <div class="row">
+                    <div class="left">
+                      <span class="icon blue">资</span>
+                      <div>
+                        <div class="title">更新了头像和用户名</div>
+                        <div class="sub">昨天 22:16</div>
+                      </div>
+                    </div>
+                    <span class="badge">资料</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card secondary">
+                <div class="section-title">待处理</div>
+                <div class="sub">建议检查一次云端同步状态，避免多设备数据滞后。</div>
+                <div class="progress"><span style="width: 68%;"></span></div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <div class="note">
+        如果从产品逻辑来推荐：
+        <strong>最合理的是方案 A</strong>，因为 header 负责入口，下面负责状态；
+        <strong>最像“我的页”的是方案 B</strong>；
+        <strong>最有科技感的是方案 C</strong>；
+        <strong>最有持续更新空间的是方案 D</strong>。
+        如果你希望我直接落到真实页面，我建议先从 <strong>A 或 B</strong> 选一个。
+      </div>
+    </main>
+  </body>
+</html>

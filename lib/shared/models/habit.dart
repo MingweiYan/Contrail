@@ -12,6 +12,7 @@ enum TrackingMode { stopwatch, pomodoro, countdown }
 
 @HiveType(typeId: 0)
 class Habit extends HiveObject {
+  static const String defaultShortDescription = '点击查看详情，双击追踪专注，长按编辑习惯';
   // firt part is about property
 
   // unique id
@@ -60,12 +61,23 @@ class Habit extends HiveObject {
   @HiveField(17)
   int? targetTimeMinutes; // 目标时间，单位为分钟
 
+  @HiveField(18)
+  String? shortDescription; // 用于卡片等场景的简短描述
+
   // 获取Color对象
   Color get color => Color(colorValue);
 
   // 设置Color对象
   set color(Color newColor) {
-    colorValue = newColor.value;
+    colorValue = newColor.toARGB32();
+  }
+
+  String get effectiveShortDescription {
+    final value = shortDescription?.trim();
+    if (value == null || value.isEmpty) {
+      return defaultShortDescription;
+    }
+    return value;
   }
 
   Habit({
@@ -84,7 +96,8 @@ class Habit extends HiveObject {
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
     this.targetTimeMinutes,
-  }) : colorValue = colorValue ?? Colors.blue.value,
+    this.shortDescription,
+  }) : colorValue = colorValue ?? Colors.blue.toARGB32(),
        trackingDurations = trackingDurations ?? {},
        dailyCompletionStatus = dailyCompletionStatus ?? {};
 
@@ -105,6 +118,7 @@ class Habit extends HiveObject {
     Map<DateTime, List<Duration>>? trackingDurations,
     Map<DateTime, bool>? dailyCompletionStatus,
     this.targetTimeMinutes,
+    this.shortDescription,
   }) : trackingDurations = trackingDurations ?? {},
        dailyCompletionStatus = dailyCompletionStatus ?? {};
 }

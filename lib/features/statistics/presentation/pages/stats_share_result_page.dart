@@ -242,7 +242,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     drawVerticalLine: false,
                     horizontalInterval: 0.25,
                     getDrawingHorizontalLine: (value) => FlLine(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       strokeWidth: ScreenUtil().setWidth(1),
                     ),
                   ),
@@ -274,39 +274,46 @@ class _StatsResultPageState extends State<StatsResultPage> {
   }
 
   Widget _buildPeriodControls() {
-    return Padding(
-      padding: EdgeInsets.all(ScreenUtil().setWidth(12)),
+    return Container(
+      padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+      decoration: ThemeHelper.panelDecoration(
+        context,
+        radius: ScreenUtil().setWidth(24),
+      ),
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              ChoiceChip(
-                label: const Text('月'),
-                selected: _periodType == 'month',
-                onSelected: (_) => setState(() {
-                  _periodType = 'month';
-                  _loadStatistics();
-                }),
+              Expanded(
+                child: _buildFilterChip(
+                  label: '月',
+                  selected: _periodType == 'month',
+                  onTap: () => setState(() {
+                    _periodType = 'month';
+                    _loadStatistics();
+                  }),
+                ),
               ),
-              SizedBox(width: ScreenUtil().setWidth(8)),
-              ChoiceChip(
-                label: const Text('年'),
-                selected: _periodType == 'year',
-                onSelected: (_) => setState(() {
-                  _periodType = 'year';
-                  _loadStatistics();
-                }),
+              SizedBox(width: ScreenUtil().setWidth(10)),
+              Expanded(
+                child: _buildFilterChip(
+                  label: '年',
+                  selected: _periodType == 'year',
+                  onTap: () => setState(() {
+                    _periodType = 'year';
+                    _loadStatistics();
+                  }),
+                ),
               ),
             ],
           ),
-          SizedBox(height: ScreenUtil().setHeight(12)),
+          SizedBox(height: ScreenUtil().setHeight(14)),
           if (_periodType == 'month')
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(
-                  onPressed: () {
+                _buildCompactNavButton(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: () {
                     setState(() {
                       final m = _selectedMonth - 1;
                       if (m >= 1) {
@@ -318,17 +325,21 @@ class _StatsResultPageState extends State<StatsResultPage> {
                       _loadStatistics();
                     });
                   },
-                  icon: const Icon(Icons.chevron_left),
                 ),
-                Text(
-                  '${_selectedYear}年${_selectedMonth}月',
-                  style: TextStyle(
-                    fontSize:
-                        StatsShareResultPageConstants.sectionTitleFontSize,
+                Expanded(
+                  child: Text(
+                    '${_selectedYear}年${_selectedMonth}月',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize:
+                          StatsShareResultPageConstants.sectionTitleFontSize,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () {
+                _buildCompactNavButton(
+                  icon: Icons.chevron_right_rounded,
+                  onTap: () {
                     setState(() {
                       final m = _selectedMonth + 1;
                       final now = DateTime.now();
@@ -348,32 +359,35 @@ class _StatsResultPageState extends State<StatsResultPage> {
                       _loadStatistics();
                     });
                   },
-                  icon: const Icon(Icons.chevron_right),
                 ),
               ],
             )
           else if (_periodType == 'year')
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(
-                  onPressed: () {
+                _buildCompactNavButton(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: () {
                     setState(() {
                       _selectedYear -= 1;
                       _loadStatistics();
                     });
                   },
-                  icon: const Icon(Icons.chevron_left),
                 ),
-                Text(
-                  '${_selectedYear}年',
-                  style: TextStyle(
-                    fontSize:
-                        StatsShareResultPageConstants.sectionTitleFontSize,
+                Expanded(
+                  child: Text(
+                    '${_selectedYear}年',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize:
+                          StatsShareResultPageConstants.sectionTitleFontSize,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () {
+                _buildCompactNavButton(
+                  icon: Icons.chevron_right_rounded,
+                  onTap: () {
                     setState(() {
                       final now = DateTime.now();
                       if (_selectedYear < now.year) {
@@ -382,7 +396,6 @@ class _StatsResultPageState extends State<StatsResultPage> {
                       _loadStatistics();
                     });
                   },
-                  icon: const Icon(Icons.chevron_right),
                 ),
               ],
             ),
@@ -746,11 +759,6 @@ class _StatsResultPageState extends State<StatsResultPage> {
       child: Consumer<StatisticsResultProvider>(
         builder: (context, provider, child) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text('月度统计报告'),
-              elevation: 0,
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            ),
             body: Container(
               decoration:
                   ThemeHelper.generateBackgroundDecoration(context) ??
@@ -771,92 +779,313 @@ class _StatsResultPageState extends State<StatsResultPage> {
 
   Widget _buildContent() {
     final goalCompletionData = _getHabitGoalCompletionData();
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final completionCounts = _getMonthlyHabitCompletionCounts();
+    final completionMinutes = _getMonthlyHabitCompletionMinutes();
+    final totalCount = completionCounts.values.fold(0, (sum, count) => sum + count);
+    final totalMinutes = completionMinutes.values.fold(
+      0,
+      (sum, minutes) => sum + minutes,
+    );
+    final minutesText = totalMinutes >= 60
+        ? '${totalMinutes ~/ 60}时${totalMinutes % 60}分'
+        : '$totalMinutes 分';
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(ScreenUtil().setWidth(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPeriodControls(),
-          // 移除了日期范围显示，因为当前只统计当前月的结果
-          SizedBox(height: ScreenUtil().setHeight(10)),
-
-          // 结果统计
-          ThemeHelper.gradientText(
-            context,
-            '结果统计',
-            style: ThemeHelper.textStyleWithTheme(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            decoration: ThemeHelper.heroDecoration(
               context,
-              fontSize: ScreenUtil().setSp(22),
-              fontWeight: FontWeight.bold,
+              radius: ScreenUtil().setWidth(28),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              ScreenUtil().setWidth(18),
+              ScreenUtil().setHeight(18),
+              ScreenUtil().setWidth(18),
+              ScreenUtil().setHeight(18),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    _buildTopAction(
+                      icon: Icons.arrow_back_rounded,
+                      label: '返回',
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    SizedBox(width: ScreenUtil().setWidth(14)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '统计结果',
+                            style: TextStyle(
+                              fontSize: ScreenUtil().setSp(24),
+                              fontWeight: FontWeight.w800,
+                              color: heroForeground,
+                            ),
+                          ),
+                          SizedBox(height: ScreenUtil().setHeight(6)),
+                          Text(
+                            '聚合查看当前时间范围内的次数、时长与目标完成情况',
+                            style: TextStyle(
+                              fontSize: ScreenUtil().setSp(13),
+                              color: heroSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ScreenUtil().setHeight(18)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildHeroStat(
+                        label: '完成次数',
+                        value: '$totalCount 次',
+                      ),
+                    ),
+                    SizedBox(width: ScreenUtil().setWidth(10)),
+                    Expanded(
+                      child: _buildHeroStat(
+                        label: '专注时长',
+                        value: minutesText,
+                      ),
+                    ),
+                    SizedBox(width: ScreenUtil().setWidth(10)),
+                    Expanded(
+                      child: _buildHeroStat(
+                        label: '目标项',
+                        value: '${goalCompletionData.length} 个',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           SizedBox(height: ScreenUtil().setHeight(16)),
-
-          // 饼状图部分（使用一个大的背景块）
-          SizedBox(
+          _buildPeriodControls(),
+          SizedBox(height: ScreenUtil().setHeight(16)),
+          Container(
             width: double.infinity,
-            child: Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
-              ),
-              color: Theme.of(context).cardColor,
-              child: Padding(
-                // 增加顶部和底部内边距，特别是顶部内边距以避免饼图超出
-                padding: EdgeInsets.fromLTRB(
-                  ScreenUtil().setWidth(16),
-                  ScreenUtil().setHeight(30), // 增大顶部内边距
-                  ScreenUtil().setWidth(16),
-                  ScreenUtil().setHeight(24), // 增大底部内边距
+            decoration: ThemeHelper.panelDecoration(
+              context,
+              radius: ScreenUtil().setWidth(28),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              ScreenUtil().setWidth(16),
+              ScreenUtil().setHeight(24),
+              ScreenUtil().setWidth(16),
+              ScreenUtil().setHeight(24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '结果统计',
+                  style: ThemeHelper.textStyleWithTheme(
+                    context,
+                    fontSize: ScreenUtil().setSp(22),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    // 完成次数饼状图
-                    _buildCompletionCountPieChart(),
-                    SizedBox(
-                      height: ScreenUtil().setHeight(60),
-                    ), // 增大次数和时间统计之间的间隔
-                    // 完成时间饼状图
-                    _buildCompletionTimePieChart(),
-                  ],
-                ),
-              ),
+                SizedBox(height: ScreenUtil().setHeight(18)),
+                _buildCompletionCountPieChart(),
+                SizedBox(height: ScreenUtil().setHeight(60)),
+                _buildCompletionTimePieChart(),
+              ],
             ),
           ),
           SizedBox(height: ScreenUtil().setHeight(30)),
 
-          // 目标追踪
           if (goalCompletionData.isNotEmpty) ...[
-            ThemeHelper.gradientText(
-              context,
-              '目标追踪',
-              style: ThemeHelper.textStyleWithTheme(
-                context,
-                fontSize: ScreenUtil().setSp(22),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: ScreenUtil().setHeight(16)),
-
-            // 习惯目标完成度柱状图
-            SizedBox(
+            Container(
               width: double.infinity,
-              child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    ScreenUtil().setWidth(16),
+              decoration: ThemeHelper.panelDecoration(
+                context,
+                radius: ScreenUtil().setWidth(28),
+              ),
+              padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '目标追踪',
+                    style: ThemeHelper.textStyleWithTheme(
+                      context,
+                      fontSize: ScreenUtil().setSp(22),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
-                  child: _buildGoalCompletionBarChart(),
-                ),
+                  SizedBox(height: ScreenUtil().setHeight(18)),
+                  _buildGoalCompletionBarChart(),
+                ],
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+        child: Ink(
+          padding: EdgeInsets.symmetric(
+            horizontal: ScreenUtil().setWidth(14),
+            vertical: ScreenUtil().setHeight(11),
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: ScreenUtil().setSp(18), color: heroForeground),
+              SizedBox(width: ScreenUtil().setWidth(6)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: ScreenUtil().setSp(12),
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroStat({
+    required String label,
+    required String value,
+  }) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: ScreenUtil().setWidth(12),
+        vertical: ScreenUtil().setHeight(12),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: ScreenUtil().setSp(11),
+              fontWeight: FontWeight.w600,
+              color: heroSecondary,
+            ),
+          ),
+          SizedBox(height: ScreenUtil().setHeight(6)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: ScreenUtil().setSp(15),
+              fontWeight: FontWeight.w800,
+              color: heroForeground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
+        child: Ink(
+          padding: EdgeInsets.symmetric(
+            horizontal: ScreenUtil().setWidth(14),
+            vertical: ScreenUtil().setHeight(12),
+          ),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.15)
+                : ThemeHelper.visualTheme(context).panelSecondaryColor,
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
+            border: Border.all(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.45)
+                  : ThemeHelper.visualTheme(context).panelBorderColor,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: ScreenUtil().setSp(15),
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected ? scheme.primary : ThemeHelper.onBackground(context),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactNavButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(14)),
+        child: Ink(
+          width: ScreenUtil().setWidth(36),
+          height: ScreenUtil().setWidth(36),
+          decoration: BoxDecoration(
+            color: ThemeHelper.visualTheme(context).panelSecondaryColor,
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(14)),
+            border: Border.all(
+              color: ThemeHelper.visualTheme(context).panelBorderColor,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: ScreenUtil().setSp(18),
+            color: ThemeHelper.onBackground(context),
+          ),
+        ),
       ),
     );
   }

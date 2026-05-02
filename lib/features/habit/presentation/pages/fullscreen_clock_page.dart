@@ -86,7 +86,6 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 大字体显示时间
                 Text(
                   _formatDuration(_elapsedTime),
                   style: TextStyle(
@@ -98,12 +97,11 @@ class _FullscreenClockPageState extends State<FullscreenClockPage> {
                 SizedBox(
                   height: FullscreenClockPageConstants.clockToHintSpacing,
                 ),
-                // 提示文字
                 Text(
                   '点击屏幕返回专注页面',
                   style: TextStyle(
                     fontSize: FullscreenClockPageConstants.hintTextFontSize,
-                    color: Colors.grey,
+                    color: Colors.white70,
                   ),
                 ),
               ],

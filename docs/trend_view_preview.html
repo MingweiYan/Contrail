@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>趋势视图预览</title>
+  <style>
+    :root {
+      --bg: #eef3fb;
+      --panel: rgba(132, 156, 192, 0.18);
+      --panel-strong: rgba(132, 156, 192, 0.24);
+      --border: rgba(255, 255, 255, 0.34);
+      --text: #eff5ff;
+      --muted: rgba(239, 245, 255, 0.72);
+      --ink: #22324d;
+      --blue: #8ed0ff;
+      --cyan: #6de3ff;
+      --violet: #b6a7ff;
+      --green: #76e1b0;
+      --red: #ff9da2;
+      --shadow: 0 20px 48px rgba(33, 47, 79, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(164, 212, 255, 0.55), transparent 36%),
+        radial-gradient(circle at top right, rgba(173, 184, 255, 0.44), transparent 28%),
+        linear-gradient(180deg, #8ea4c6 0%, #7088ad 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1440px, calc(100vw - 48px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    .hero {
+      padding: 26px 28px;
+      border-radius: 30px;
+      background: linear-gradient(135deg, rgba(183, 211, 247, 0.44), rgba(117, 143, 181, 0.28));
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    .hero h1 { font-size: 34px; font-weight: 800; letter-spacing: 0.02em; }
+    .hero p { margin-top: 10px; font-size: 15px; color: var(--muted); max-width: 820px; line-height: 1.7; }
+
+    .section-title {
+      margin: 28px 0 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .section-title h2 { font-size: 22px; font-weight: 800; }
+    .section-title span { font-size: 13px; color: rgba(239,245,255,.74); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: rgba(111, 136, 171, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .card-head {
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255,255,255,.84);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .card-head h3 {
+      margin-top: 14px;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .card-head p {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .preview {
+      padding: 18px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .phone {
+      background: linear-gradient(180deg, rgba(150, 173, 208, 0.54), rgba(106, 129, 164, 0.56));
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,.16);
+      padding: 18px;
+      min-height: 580px;
+      position: relative;
+    }
+
+    .module {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .module.secondary { background: rgba(132, 156, 192, 0.14); }
+    .module.tight { padding: 12px 14px; }
+
+    .row { display: flex; align-items: center; }
+    .between { justify-content: space-between; }
+    .gap-8 { gap: 8px; }
+    .gap-10 { gap: 10px; }
+    .gap-12 { gap: 12px; }
+    .gap-14 { gap: 14px; }
+
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.11);
+      border: 1px solid rgba(255,255,255,.16);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .title { margin-top: 14px; }
+    .title h4 { font-size: 28px; font-weight: 800; }
+    .title p { margin-top: 8px; font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .chip.active {
+      background: linear-gradient(135deg, rgba(118, 227, 255, .92), rgba(173, 184, 255, .92));
+      color: #23314a;
+      border-color: transparent;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: rgba(239,245,255,.68);
+      line-height: 1.6;
+    }
+
+    .chart {
+      height: 170px;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.08) 0,
+          rgba(255,255,255,.08) 1px,
+          transparent 1px,
+          transparent 42px
+        ),
+        repeating-linear-gradient(
+          to right,
+          rgba(255,255,255,.06) 0,
+          rgba(255,255,255,.06) 1px,
+          transparent 1px,
+          transparent 54px
+        );
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .chart svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: rgba(239,245,255,.78);
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.06);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .metric label {
+      display: block;
+      font-size: 11px;
+      color: rgba(239,245,255,.6);
+      margin-bottom: 8px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .metric strong {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .stack { display: grid; gap: 12px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .side-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .side-item {
+      padding: 12px 13px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .side-item .name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .bar {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+    }
+
+    .tab {
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(239,245,255,.8);
+    }
+    .tab.active {
+      background: rgba(255,255,255,.16);
+      color: #fff;
+    }
+
+    .insight {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .insight strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .insight p {
+      color: rgba(239,245,255,.68);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .dual {
+      display: grid;
+      gap: 12px;
+    }
+
+    .dual-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .dual-card h5 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .axis-note {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 11px;
+      color: rgba(239,245,255,.56);
+    }
+
+    .accent-blue { stroke: var(--blue); }
+    .accent-cyan { stroke: var(--cyan); }
+    .accent-violet { stroke: var(--violet); }
+    .accent-green { stroke: var(--green); }
+    .accent-red { stroke: var(--red); }
+
+    @media (max-width: 1080px) {
+      .grid { grid-template-columns: 1fr; }
+      .page { width: min(880px, calc(100vw - 28px)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>趋势视图 UI 预览</h1>
+      <p>这次只做预览，不改真实 Flutter 代码。目标是优化统计页中的趋势区域，以及习惯明细统计页里的趋势模块，让控制区更集中、图表更有主次、单习惯趋势更容易读。</p>
+    </section>
+
+    <div class="section-title">
+      <h2>优化方向</h2>
+      <span>重点在结构、层级和图表承载方式，不是单纯换颜色</span>
+    </div>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-head">
+          <span class="eyebrow">方案 A</span>
+          <h3>控制台总览式</h3>
+          <p>把时间切换、周期切换、摘要指标和总图合并成一个大面板，适合统计总览页的趋势模式。优点是进入后信息完整，不用来回扫多个卡片。</p>
+        </div>
+        <div class="preview">
+          <div class="phone">
+            <div class="module">
+              <div class="row between">
+                <div class="back">← 返回</div>
+                <div class="chip">趋势模式</div>
+              </div>
+              <div class="title">
+                <h4>习惯趋势总览</h4>
+                <p>把时间范围、周期筛选和趋势摘要放进同一个头部面板，降低当前统计页里卡片碎片化的感觉。</p>
+              </div>
+            </div>
+            <div class="module">
+              <div class="row between gap-12">
+                <div>
+                  <div style="font-size:14px;font-weight:800;">2026 / 04 / 25 - 2026 / 05 / 01</div>
+                  <div class="sub" style="margin-top:6px;">近 7 天数据 · 当前完成率较上周期提升 8.6%</div>
+                </div>
+                <div class="row gap-8">
+                  <div class="chip">‹</div>
+                  <div class="chip">›</div>
+                </div>
+              </div>
+              <div class="chip-row" style="margin-top:14px;">
+                <div class="chip active">周</div>
+                <div class="chip">月</div>
+                <div class="chip">年</div>
+                <div class="chip active">滚动窗口</div>
+                <div class="chip">自然周期</div>
+              </div>
+              <div class="mini-grid" style="margin-top:14px;">
+                <div class="metric"><label>主趋势</label><strong>76%</strong></div>
+                <div class="metric"><label>峰值日</label><strong>周三</strong></div>
+                <div class="metric"><label>波动</label><strong>中等</strong></div>
+              </div>
+              <div class="chart">
+                <svg viewBox="0 0 320 170" preserveAspectRatio="none">
+                  <polyline points="16,118 58,102 100,108 142,84 184,86 226,63 304,38" fill="none" stroke="rgba(142,208,255,.95)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <polyline points="16,130 58,126 100,116 142,128 184,94 226,103 304,82" fill="none" stroke="rgba(182,167,255,.72)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="chart-legend">
+                <div class="legend"><span class="dot" style="background:var(--blue)"></span> 完成率</div>
+                <div class="legend"><span class="dot" style="background:var(--violet)"></span> 上周期基线</div>
+              </div>
+            </div>
+            <div class="module secondary tight">
+              <div class="sub">适用：统计主页趋势模式。优化点：把 `_buildTimeSelector()` 和 `_buildPeriodSelector()` 从两个面板合并成一个有摘要的“控制台头部”。</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <span class="eyebrow">方案 B</span>
+          <h3>双列分析式</h3>
+          <p>左边放主图，右边放当前周期的关键说明和习惯排行，强调“读图 + 解读”。适合统计页趋势区，尤其在多习惯时更容易建立比较关系。</p>
+        </div>
+        <div class="preview">
+          <div class="phone">
+            <div class="module">
+              <div class="title" style="margin-top:0;">
+                <h4>完成率趋势分析</h4>
+                <p>主图负责走势，右侧说明负责“结论”，减少用户只看到线条、看不出重点的问题。</p>
+              </div>
+            </div>
+            <div class="module">
+              <div class="row between">
+                <div class="chip-row">
+                  <div class="tab active">周</div>
+                  <div class="tab">月</div>
+                  <div class="tab">年</div>
+                </div>
+                <div class="chip">最近 7 天</div>
+              </div>
+              <div class="split" style="margin-top:14px;">
+                <div>
+                  <div class="chart">
+                    <svg viewBox="0 0 320 170" preserveAspectRatio="none">
+                      <polyline points="16,124 58,110 100,90 142,96 184,80 226,70 304,56" fill="none" stroke="rgba(109,227,255,.95)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <polyline points="16,140 58,138 100,132 142,126 184,122 226,110 304,102" fill="none" stroke="rgba(118,225,176,.8)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="axis-note"><span>周一</span><span>周日</span></div>
+                </div>
+                <div class="side-list">
+                  <div class="insight">
+                    <strong>本周结论</strong>
+                    <p>后半段完成率持续走高，趋势最稳定的时间集中在工作日。</p>
+                  </div>
+                  <div class="side-item">
+                    <div class="name">阅读</div>
+                    <div class="bar"><span style="width:82%;background:linear-gradient(90deg,var(--cyan),var(--blue));"></span></div>
+                  </div>
+                  <div class="side-item">
+                    <div class="name">冥想</div>
+                    <div class="bar"><span style="width:68%;background:linear-gradient(90deg,var(--violet),var(--blue));"></span></div>
+                  </div>
+                  <div class="side-item">
+                    <div class="name">运动</div>
+                    <div class="bar"><span style="width:54%;background:linear-gradient(90deg,var(--green),var(--cyan));"></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="module secondary tight">
+              <div class="sub">适用：统计页趋势模块。优化点：让趋势图不只是“图表本身”，而是有解释层和排序层。</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <span class="eyebrow">方案 C</span>
+          <h3>单习惯聚焦式</h3>
+          <p>给习惯明细统计页用。把当前习惯的趋势图做成主卡，上面是时间范围和周期切换，下面是单独的次数/时间双轨图，减少“通用统计组件搬过来”的割裂感。</p>
+        </div>
+        <div class="preview">
+          <div class="phone">
+            <div class="module">
+              <div class="row between">
+                <div>
+                  <div class="eyebrow">Habit Focus</div>
+                  <div class="title" style="margin-top:12px;">
+                    <h4>阅读习惯趋势</h4>
+                    <p>当前周期：2026 第 18 周 · 趋势模块改成更强的单习惯主视图。</p>
+                  </div>
+                </div>
+                <div class="metric" style="min-width:112px;">
+                  <label>完成率</label>
+                  <strong>84%</strong>
+                </div>
+              </div>
+            </div>
+            <div class="module">
+              <div class="row between">
+                <div class="row gap-8">
+                  <div class="chip">‹</div>
+                  <div class="chip">第 18 周</div>
+                  <div class="chip">›</div>
+                </div>
+                <div class="chip-row">
+                  <div class="tab active">周</div>
+                  <div class="tab">月</div>
+                  <div class="tab">年</div>
+                </div>
+              </div>
+              <div class="dual" style="margin-top:14px;">
+                <div class="dual-card">
+                  <h5>完成次数</h5>
+                  <div class="chart" style="height:124px;">
+                    <svg viewBox="0 0 320 124" preserveAspectRatio="none">
+                      <polyline points="12,94 58,78 104,70 150,82 196,60 242,66 308,34" fill="none" stroke="rgba(142,208,255,.94)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="dual-card">
+                  <h5>专注时长</h5>
+                  <div class="chart" style="height:124px;">
+                    <svg viewBox="0 0 320 124" preserveAspectRatio="none">
+                      <polyline points="12,102 58,88 104,84 150,74 196,68 242,52 308,44" fill="none" stroke="rgba(109,227,255,.9)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="module secondary">
+              <div class="insight">
+                <strong>本周期洞察</strong>
+                <p>次数已经超过上周期均值，但时长提升相对平缓。适合在习惯明细页里把“数量”和“质量”拆开，避免三张通用卡片并列显得过于机械。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <span class="eyebrow">方案 D</span>
+          <h3>时间轴对照式</h3>
+          <p>还是给习惯明细趋势页用，但更偏“回顾感”。把图表和阶段结论做成竖向时间轴式分段，更适合周期复盘和个人习惯演化查看。</p>
+        </div>
+        <div class="preview">
+          <div class="phone">
+            <div class="module">
+              <div class="title" style="margin-top:0;">
+                <h4>专注轨迹回顾</h4>
+                <p>强调“这段时间发生了什么”，而不是只给一张折线图。适合单习惯详情页做更强的故事感。</p>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="module secondary">
+                <div class="row gap-12">
+                  <div style="width:12px;height:12px;border-radius:999px;background:var(--cyan);box-shadow:0 0 0 8px rgba(109,227,255,.16);margin-top:2px;"></div>
+                  <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:800;">周初启动偏慢</div>
+                    <div class="sub" style="margin-top:6px;">前两天频次较低，但基线稳定，没有出现断档。</div>
+                    <div class="chart" style="height:100px;margin-top:10px;">
+                      <svg viewBox="0 0 320 100" preserveAspectRatio="none">
+                        <polyline points="12,70 76,76 140,58 204,54 308,36" fill="none" stroke="rgba(255,157,162,.86)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="module secondary">
+                <div class="row gap-12">
+                  <div style="width:12px;height:12px;border-radius:999px;background:var(--violet);box-shadow:0 0 0 8px rgba(182,167,255,.16);margin-top:2px;"></div>
+                  <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:800;">周中进入稳定区</div>
+                    <div class="sub" style="margin-top:6px;">次数和时长同步抬升，连续性明显增强。</div>
+                    <div class="chart" style="height:100px;margin-top:10px;">
+                      <svg viewBox="0 0 320 100" preserveAspectRatio="none">
+                        <polyline points="12,78 76,54 140,48 204,42 308,26" fill="none" stroke="rgba(182,167,255,.9)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="module secondary">
+                <div class="row gap-12">
+                  <div style="width:12px;height:12px;border-radius:999px;background:var(--green);box-shadow:0 0 0 8px rgba(118,225,176,.16);margin-top:2px;"></div>
+                  <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:800;">周末形成峰值</div>
+                    <div class="sub" style="margin-top:6px;">周末单次时长拉高，形成当前周期最高点。</div>
+                    <div class="chart" style="height:100px;margin-top:10px;">
+                      <svg viewBox="0 0 320 100" preserveAspectRatio="none">
+                        <polyline points="12,84 76,72 140,66 204,46 308,18" fill="none" stroke="rgba(118,225,176,.92)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

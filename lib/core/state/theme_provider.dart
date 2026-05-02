@@ -1,82 +1,121 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 使用前缀导入来解决命名冲突
 import '../../shared/models/theme_model.dart' as app_theme;
+import '../../shared/theme/custom_theme_palette.dart';
+import '../../shared/theme/visual_theme_definitions.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  app_theme.ThemeMode _themeMode = app_theme.ThemeMode.light;
-  String _selectedThemeName = '默认蓝色';
-  List<app_theme.AppTheme> _availableThemes = app_theme.defaultAppThemes();
+  static const String _themeModeKey = 'themeMode';
+  static const String _selectedThemeIdKey = 'selectedThemeId';
+  static const String _legacySelectedThemeKey = 'selectedTheme';
+  static const String _themeOverridesKey = 'themeOverrides';
+  static const String _legacyCustomThemePaletteKey = 'customThemePalette';
+  static const String _themeOrderKey = 'themeOrder';
 
-  // 获取当前主题模式
+  static const Map<String, String> _legacyThemeNameToId = {
+    '方案 3 · 银雾玻璃白': 'theme-3-silver-mist',
+    '方案 1 · 冷静科技蓝': 'theme-1-calm-tech',
+    '方案 2 · 夜幕数据舱': 'theme-2-night-capsule',
+  };
+
+  List<app_theme.AppTheme> _availableThemes = [];
+  Map<String, CustomThemePalette> _themeOverrides = {};
+  List<String> _themeOrderIds = _defaultThemeOrder;
+  app_theme.ThemeMode _themeMode = app_theme.ThemeMode.light;
+  String _selectedThemeId = 'theme-3-silver-mist';
+
   app_theme.ThemeMode get themeMode => _themeMode;
 
-  // 获取当前选择的主题
   app_theme.AppTheme get currentTheme => _availableThemes.firstWhere(
-    (app_theme.AppTheme theme) => theme.name == _selectedThemeName,
+    (app_theme.AppTheme theme) => theme.id == _selectedThemeId,
     orElse: () => _availableThemes[0],
   );
 
-  // 获取所有可用主题
   List<app_theme.AppTheme> get availableThemes => _availableThemes;
 
-  // 构造函数
+  String get selectedThemeId => _selectedThemeId;
+
   ThemeProvider() {
+    _rebuildAvailableThemes();
     _loadSettings();
   }
 
-  // 加载主题设置
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final themeModeStr = prefs.getString('themeMode') ?? 'light';
-      _selectedThemeName = prefs.getString('selectedTheme') ?? '默认蓝色';
-
-      // 转换主题模式字符串为枚举
-      switch (themeModeStr) {
-        case 'light':
-          _themeMode = app_theme.ThemeMode.light;
-          break;
-        case 'dark':
-          _themeMode = app_theme.ThemeMode.dark;
-          break;
-        case 'system':
-          _themeMode = app_theme.ThemeMode.system;
-          break;
-        default:
-          _themeMode = app_theme.ThemeMode.light;
+      final storedThemeOverrides = prefs.getString(_themeOverridesKey);
+      if (storedThemeOverrides != null && storedThemeOverrides.isNotEmpty) {
+        final decoded = jsonDecode(storedThemeOverrides) as Map<String, dynamic>;
+        _themeOverrides = decoded.map(
+          (key, value) => MapEntry(
+            key,
+            CustomThemePalette.fromMap(value as Map<String, dynamic>),
+          ),
+        );
+      } else {
+        final legacyCustomTheme = prefs.getString(_legacyCustomThemePaletteKey);
+        if (legacyCustomTheme != null && legacyCustomTheme.isNotEmpty) {
+          final legacyPalette = CustomThemePalette.fromMap(
+            jsonDecode(legacyCustomTheme) as Map<String, dynamic>,
+          );
+          _themeOverrides = {'theme-3-silver-mist': legacyPalette};
+        }
       }
-    } catch (e) {
-      // 如果加载失败，使用默认设置
-      _themeMode = app_theme.ThemeMode.light;
-      _selectedThemeName = '默认蓝色';
+      final storedThemeOrder = prefs.getStringList(_themeOrderKey);
+      if (storedThemeOrder != null && storedThemeOrder.isNotEmpty) {
+        _themeOrderIds = List<String>.from(storedThemeOrder);
+      }
+      _rebuildAvailableThemes();
+
+      final storedThemeId = prefs.getString(_selectedThemeIdKey);
+      final legacyThemeName = prefs.getString(_legacySelectedThemeKey);
+      final legacyThemeId = _legacyThemeNameToId[legacyThemeName];
+      final matchedLegacyTheme = _availableThemes.cast<app_theme.AppTheme?>().firstWhere(
+        (theme) => theme?.name == legacyThemeName || theme?.id == legacyThemeId,
+        orElse: () => null,
+      );
+
+      _selectedThemeId =
+          storedThemeId ??
+          matchedLegacyTheme?.id ??
+          _availableThemes.first.id;
+      if (!_availableThemes.any((theme) => theme.id == _selectedThemeId)) {
+        _selectedThemeId = _availableThemes.first.id;
+      }
+      _syncThemeModeWithCurrentTheme();
+      final storedThemeMode = prefs.getString(_themeModeKey);
+      if (storedThemeMode != null) {
+        _themeMode = _parseThemeMode(storedThemeMode);
+      }
+    } catch (_) {
+      _themeOverrides = {};
+      _rebuildAvailableThemes();
+      _selectedThemeId = _availableThemes.first.id;
+      _syncThemeModeWithCurrentTheme();
     }
     notifyListeners();
   }
 
-  // 保存主题设置
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    String themeModeStr;
-
-    switch (_themeMode) {
-      case app_theme.ThemeMode.light:
-        themeModeStr = 'light';
-        break;
-      case app_theme.ThemeMode.dark:
-        themeModeStr = 'dark';
-        break;
-      case app_theme.ThemeMode.system:
-        themeModeStr = 'system';
-        break;
-    }
-
-    await prefs.setString('themeMode', themeModeStr);
-    await prefs.setString('selectedTheme', _selectedThemeName);
+    await prefs.setString(_themeModeKey, _themeMode.name);
+    await prefs.setString(_selectedThemeIdKey, _selectedThemeId);
+    await prefs.setString(_legacySelectedThemeKey, currentTheme.name);
+    await prefs.setStringList(_themeOrderKey, _themeOrderIds);
+    await prefs.setString(
+      _themeOverridesKey,
+      jsonEncode(
+        _themeOverrides.map(
+          (key, value) => MapEntry(key, value.toMap()),
+        ),
+      ),
+    );
+    await prefs.remove(_legacyCustomThemePaletteKey);
   }
 
-  // 设置主题模式
   Future<void> setThemeMode(app_theme.ThemeMode mode) async {
     if (_themeMode != mode) {
       _themeMode = mode;
@@ -85,54 +124,167 @@ class ThemeProvider extends ChangeNotifier {
     }
   }
 
-  // 设置主题
   Future<void> setThemeByName(String themeName) async {
-    if (_selectedThemeName != themeName &&
-        _availableThemes.any(
-          (app_theme.AppTheme theme) => theme.name == themeName,
-        )) {
-      _selectedThemeName = themeName;
-      await _saveSettings();
-      notifyListeners();
+    final matchedTheme = _availableThemes.cast<app_theme.AppTheme?>().firstWhere(
+          (theme) => theme?.name == themeName,
+          orElse: () => null,
+        );
+    if (matchedTheme != null) {
+      await setThemeById(matchedTheme.id);
     }
   }
 
-  // 添加自定义主题
-  Future<void> addCustomTheme(Color color) async {
-    // 生成一个唯一的主题名称
-    final themeName = '自定义主题_${color.value.toRadixString(16).substring(2)}';
+  Future<void> setThemeById(String themeId) async {
+    if (_selectedThemeId == themeId ||
+        !_availableThemes.any((theme) => theme.id == themeId)) {
+      return;
+    }
 
-    // 创建一个新的AppTheme对象
-    final customTheme = app_theme.AppTheme(
-      name: themeName,
-      lightTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: color),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: color,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      lightBackgroundStyle: app_theme.BackgroundStyle.gradient,
-      darkBackgroundStyle: app_theme.BackgroundStyle.gradient,
-      gradientColors: [color.withOpacity(0.2), color.withOpacity(0.1)],
-      iconStyle: app_theme.IconStyle.defaultStyle,
-    );
-
-    // 检查是否已经存在相同的主题，如果存在则先移除
-    _availableThemes.removeWhere((theme) => theme.name == themeName);
-
-    // 添加新的主题到可用主题列表
-    _availableThemes.add(customTheme);
-
-    // 选择新添加的主题
-    await setThemeByName(themeName);
+    _selectedThemeId = themeId;
+    _syncThemeModeWithCurrentTheme();
+    await _saveSettings();
+    notifyListeners();
   }
 
-  // 获取Flutter的ThemeMode
+  CustomThemePalette paletteForThemeId(String themeId) {
+    final overridden = _themeOverrides[themeId];
+    if (overridden != null) {
+      return overridden;
+    }
+    return defaultPaletteForThemeId(themeId);
+  }
+
+  CustomThemePalette defaultPaletteForThemeId(String themeId) {
+    final defaultTheme = _buildBaseThemes().firstWhere(
+      (theme) => theme.id == themeId,
+      orElse: () => _buildBaseThemes().first,
+    );
+    return CustomThemePalette.fromTheme(defaultTheme);
+  }
+
+  bool hasThemeOverride(String themeId) => _themeOverrides.containsKey(themeId);
+
+  Future<void> saveThemeOverride(
+    String themeId,
+    CustomThemePalette palette, {
+    bool applyAfterSave = true,
+  }) async {
+    _themeOverrides = {
+      ..._themeOverrides,
+      themeId: palette,
+    };
+    _rebuildAvailableThemes();
+    if (applyAfterSave) {
+      _selectedThemeId = themeId;
+      _syncThemeModeWithCurrentTheme();
+    }
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  Future<void> resetThemeOverride(
+    String themeId, {
+    bool applyAfterReset = true,
+  }) async {
+    if (!_themeOverrides.containsKey(themeId)) {
+      if (applyAfterReset &&
+          _availableThemes.any((theme) => theme.id == themeId)) {
+        _selectedThemeId = themeId;
+        _syncThemeModeWithCurrentTheme();
+        await _saveSettings();
+        notifyListeners();
+      }
+      return;
+    }
+
+    final nextOverrides = Map<String, CustomThemePalette>.from(_themeOverrides);
+    nextOverrides.remove(themeId);
+    _themeOverrides = nextOverrides;
+    _rebuildAvailableThemes();
+    if (applyAfterReset &&
+        _availableThemes.any((theme) => theme.id == themeId)) {
+      _selectedThemeId = themeId;
+      _syncThemeModeWithCurrentTheme();
+    }
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  Future<void> reorderThemes(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 ||
+        oldIndex >= _availableThemes.length ||
+        newIndex < 0 ||
+        newIndex > _availableThemes.length) {
+      return;
+    }
+
+    final targetIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
+    final orderedIds = _availableThemes.map((theme) => theme.id).toList();
+    final movedThemeId = orderedIds.removeAt(oldIndex);
+    final clampedIndex = targetIndex.clamp(0, orderedIds.length);
+    orderedIds.insert(clampedIndex, movedThemeId);
+    _themeOrderIds = orderedIds;
+    _rebuildAvailableThemes();
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  void _syncThemeModeWithCurrentTheme() {
+    _themeMode = currentTheme.preferredMode;
+  }
+
+  void _rebuildAvailableThemes() {
+    final builtThemes = _buildBaseThemes()
+        .map((theme) {
+          final override = _themeOverrides[theme.id];
+          if (override == null) {
+            return theme;
+          }
+          return buildEditedVisualTheme(
+            themeId: theme.id,
+            description: theme.description,
+            iconStyle: theme.iconStyle,
+            palette: override,
+          );
+        })
+        .toList(growable: false);
+    final themeMap = {
+      for (final theme in builtThemes) theme.id: theme,
+    };
+    final sanitizedOrder = <String>[];
+
+    for (final themeId in _themeOrderIds) {
+      if (themeMap.containsKey(themeId) && !sanitizedOrder.contains(themeId)) {
+        sanitizedOrder.add(themeId);
+      }
+    }
+
+    for (final theme in builtThemes) {
+      if (!sanitizedOrder.contains(theme.id)) {
+        sanitizedOrder.add(theme.id);
+      }
+    }
+
+    _themeOrderIds = sanitizedOrder;
+    _availableThemes = _themeOrderIds
+        .map((themeId) => themeMap[themeId]!)
+        .toList(growable: false);
+  }
+
+  List<app_theme.AppTheme> _buildBaseThemes() => buildVisualThemes();
+
+  app_theme.ThemeMode _parseThemeMode(String value) {
+    switch (value) {
+      case 'dark':
+        return app_theme.ThemeMode.dark;
+      case 'system':
+        return app_theme.ThemeMode.system;
+      case 'light':
+      default:
+        return app_theme.ThemeMode.light;
+    }
+  }
+
   ThemeData getCurrentTheme(BuildContext context) {
     if (_themeMode == app_theme.ThemeMode.system) {
       final brightness = MediaQuery.of(context).platformBrightness;
@@ -146,3 +298,15 @@ class ThemeProvider extends ChangeNotifier {
     }
   }
 }
+
+const List<String> _defaultThemeOrder = [
+  'theme-3-silver-mist',
+  'theme-peach-dawn',
+  'theme-moss-dew',
+  'theme-forest-light',
+  'theme-dune-gold',
+  'theme-1-calm-tech',
+  'theme-2-night-capsule',
+  'theme-tidal-teal',
+  'theme-ember-glow',
+];

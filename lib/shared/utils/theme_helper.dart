@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:contrail/shared/theme/visual_theme_tokens.dart';
 import '../../core/state/theme_provider.dart';
 import '../../shared/models/theme_model.dart' as app_theme;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -224,63 +225,102 @@ class ThemeHelper {
     );
   }
 
+  static VisualThemeTokens visualTheme(BuildContext context) {
+    final extension = Theme.of(context).extension<VisualThemeTokens>();
+    if (extension != null) {
+      return extension;
+    }
+
+    final theme = currentTheme(context);
+    return theme.tokensForBrightness(Theme.of(context).brightness);
+  }
+
+  static app_theme.AppTheme currentTheme(BuildContext context) {
+    return Provider.of<ThemeProvider>(context, listen: false).currentTheme;
+  }
+
   /// 获取当前主题的背景样式
   static app_theme.BackgroundStyle getBackgroundStyle(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final isDarkMode =
-        themeProvider.themeMode == app_theme.ThemeMode.dark ||
-        (themeProvider.themeMode == app_theme.ThemeMode.system &&
-            MediaQuery.of(context).platformBrightness == Brightness.dark);
-
-    return isDarkMode
-        ? themeProvider.currentTheme.darkBackgroundStyle
-        : themeProvider.currentTheme.lightBackgroundStyle;
+    final theme = currentTheme(context);
+    return isDarkMode(context)
+        ? theme.darkBackgroundStyle
+        : theme.lightBackgroundStyle;
   }
 
   /// 根据当前主题生成背景装饰
   static BoxDecoration? generateBackgroundDecoration(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final currentTheme = themeProvider.currentTheme;
-    final isDarkMode =
-        themeProvider.themeMode == app_theme.ThemeMode.dark ||
-        (themeProvider.themeMode == app_theme.ThemeMode.system &&
-            MediaQuery.of(context).platformBrightness == Brightness.dark);
+    return BoxDecoration(gradient: visualTheme(context).backgroundGradient);
+  }
 
-    final backgroundStyle = isDarkMode
-        ? currentTheme.darkBackgroundStyle
-        : currentTheme.lightBackgroundStyle;
+  static BoxDecoration panelDecoration(
+    BuildContext context, {
+    bool secondary = false,
+    double radius = 24,
+    bool highlight = false,
+  }) {
+    final theme = visualTheme(context);
+    return BoxDecoration(
+      color: secondary ? theme.panelSecondaryColor : theme.panelColor,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: highlight ? theme.panelHighlightColor : theme.panelBorderColor,
+      ),
+      boxShadow: theme.panelShadow,
+    );
+  }
 
-    switch (backgroundStyle) {
-      case app_theme.BackgroundStyle.gradient:
-        if (currentTheme.gradientColors != null &&
-            currentTheme.gradientColors!.isNotEmpty) {
-          return BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: currentTheme.gradientColors!,
-              stops: const [0.0, 1.0],
-            ),
-          );
-        }
-        break;
+  static BoxDecoration heroDecoration(
+    BuildContext context, {
+    double radius = 28,
+  }) {
+    final theme = visualTheme(context);
+    return BoxDecoration(
+      gradient: theme.heroGradient,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: theme.panelBorderColor),
+      boxShadow: theme.panelShadow,
+    );
+  }
 
-      case app_theme.BackgroundStyle.pattern:
-        // 跳过pattern样式，因为项目中不存在模式图片资源文件
-        // 如果尝试加载不存在的资源，会导致应用程序崩溃
-        break;
+  static BoxDecoration navigationDecoration(
+    BuildContext context, {
+    double radius = 24,
+  }) {
+    final theme = visualTheme(context);
+    return BoxDecoration(
+      color: theme.navBackground,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: theme.panelBorderColor),
+      boxShadow: theme.panelShadow,
+    );
+  }
 
-      case app_theme.BackgroundStyle.image:
-        // 跳过image样式，因为项目中不存在背景图片资源文件
-        // 如果尝试加载不存在的资源，会导致应用程序崩溃
-        break;
+  static BoxDecoration selectedNavigationItemDecoration(BuildContext context) {
+    final theme = visualTheme(context);
+    return BoxDecoration(
+      color: theme.navSelectedBackground,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: theme.panelBorderColor),
+    );
+  }
 
-      case app_theme.BackgroundStyle.none:
-      default:
-        return null;
-    }
+  static BoxDecoration listCardDecoration(
+    BuildContext context, {
+    double radius = 22,
+  }) {
+    return panelDecoration(context, radius: radius);
+  }
 
-    return null;
+  static BoxDecoration settingCardDecoration(
+    BuildContext context, {
+    double radius = 22,
+  }) {
+    return panelDecoration(context, secondary: true, radius: radius);
+  }
+
+  static List<Color> splashColors(BuildContext context) {
+    final theme = visualTheme(context);
+    return [theme.splashBackground, theme.splashTitleColor];
   }
 
   /// 根据当前主题样式处理图标
@@ -342,7 +382,6 @@ class ThemeHelper {
         );
 
       case app_theme.IconStyle.defaultStyle:
-      default:
         return Icon(iconData, size: size, color: defaultColor);
     }
   }
@@ -416,23 +455,8 @@ class ThemeHelper {
     BuildContext context, {
     bool usePattern = false,
   }) {
-    return BoxDecoration(
-      color: background(context),
-      // 如果启用图案背景，则添加简单的图案
-      image: usePattern && _createPatternImage(context) != null
-          ? DecorationImage(
-              image: _createPatternImage(context)!,
-              fit: BoxFit.cover,
-            )
-          : null,
-    );
-  }
-
-  /// 创建图案背景的ImageProvider
-  static ImageProvider? _createPatternImage(BuildContext context) {
-    // 实际应用中可以使用SVG或其他图像格式
-    // 这里使用简单的逻辑表示图案
-    return null;
+    return generateBackgroundDecoration(context) ??
+        BoxDecoration(color: background(context));
   }
 
   /// 获取主题输入框装饰

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contrail UI Preview</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111f;
+        --panel: rgba(10, 18, 32, 0.72);
+        --line: rgba(140, 180, 255, 0.2);
+        --text: #e8f1ff;
+        --muted: #8ba0c7;
+        --chip: rgba(255, 255, 255, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter, "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial,
+          sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(50, 120, 255, 0.18), transparent 28%),
+          radial-gradient(circle at top right, rgba(0, 214, 201, 0.12), transparent 24%),
+          linear-gradient(180deg, #09111f 0%, #070b14 100%);
+      }
+
+      .page {
+        width: min(1400px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 56px 0 64px;
+      }
+
+      .hero {
+        padding: 36px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background:
+          linear-gradient(135deg, rgba(15, 29, 49, 0.88), rgba(8, 14, 25, 0.72)),
+          rgba(10, 18, 32, 0.72);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(86, 150, 255, 0.12);
+        color: #a9c7ff;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(32px, 5vw, 52px);
+        line-height: 1.08;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 860px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.8;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+        margin-top: 28px;
+      }
+
+      .concept {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        padding: 22px;
+        background:
+          linear-gradient(180deg, rgba(17, 26, 42, 0.92), rgba(9, 16, 27, 0.82));
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+      }
+
+      .concept::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top right, var(--accent-soft), transparent 28%);
+        pointer-events: none;
+      }
+
+      .concept.a {
+        --accent: #7ec8ff;
+        --accent-2: #4ff5d2;
+        --accent-soft: rgba(82, 168, 255, 0.24);
+        --screen-bg: linear-gradient(180deg, #08111d 0%, #0e1d33 100%);
+        --card-bg: linear-gradient(135deg, rgba(126, 200, 255, 0.16), rgba(79, 245, 210, 0.08));
+      }
+
+      .concept.b {
+        --accent: #87a8ff;
+        --accent-2: #c09bff;
+        --accent-soft: rgba(152, 112, 255, 0.24);
+        --screen-bg: linear-gradient(180deg, #090b14 0%, #14182a 100%);
+        --card-bg: linear-gradient(135deg, rgba(135, 168, 255, 0.12), rgba(192, 155, 255, 0.12));
+      }
+
+      .concept.c {
+        --accent: #8bb7ff;
+        --accent-2: #89efe3;
+        --accent-soft: rgba(172, 221, 255, 0.28);
+        --screen-bg: linear-gradient(180deg, #edf3fb 0%, #dce8f7 100%);
+        --card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(230, 241, 255, 0.52));
+      }
+
+      .concept.c,
+      .concept.c .kpi-label,
+      .concept.c .screen-note,
+      .concept.c .subtle,
+      .concept.c .list-meta {
+        color: #17243c;
+      }
+
+      .concept.c .muted,
+      .concept.c .screen-note,
+      .concept.c .list-meta,
+      .concept.c .subtle {
+        color: rgba(23, 36, 60, 0.66);
+      }
+
+      .concept-head {
+        position: relative;
+        z-index: 1;
+      }
+
+      .tag {
+        display: inline-flex;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+
+      .concept h2 {
+        margin: 12px 0 8px;
+        font-size: 24px;
+      }
+
+      .muted {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 14px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .chip {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--chip);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 12px;
+        color: inherit;
+      }
+
+      .phone-stack {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 20px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .phone {
+        min-height: 460px;
+        padding: 14px;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+          var(--screen-bg);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.08),
+          0 12px 30px rgba(0, 0, 0, 0.24);
+      }
+
+      .screen-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        opacity: 0.86;
+        margin-bottom: 14px;
+      }
+
+      .island {
+        width: 74px;
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .hero-card,
+      .mini-card,
+      .list-card,
+      .stat-card,
+      .profile-card {
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+      }
+
+      .hero-card {
+        padding: 18px;
+      }
+
+      .hero-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .screen-note {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .mini-card {
+        padding: 12px;
+      }
+
+      .kpi-value {
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .kpi-label {
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 18px 2px 10px;
+        font-size: 14px;
+      }
+
+      .subtle {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .list-card {
+        padding: 14px;
+      }
+
+      .list-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .list-title {
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+
+      .list-meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .pill {
+        min-width: 68px;
+        text-align: center;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent) 18%, transparent);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .bar {
+        height: 6px;
+        margin-top: 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+
+      .bar > span {
+        display: block;
+        height: 100%;
+        width: var(--w);
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        border-radius: inherit;
+      }
+
+      .stats {
+        display: grid;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 14px;
+      }
+
+      .chart {
+        height: 92px;
+        margin-top: 12px;
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+          repeating-linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0.05) 0,
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px,
+            transparent 24px
+          );
+      }
+
+      .chart svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .profile-card {
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .profile-head {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        opacity: 0.9;
+      }
+
+      .settings {
+        display: grid;
+        gap: 8px;
+      }
+
+      .setting {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .footer-note {
+        margin-top: 24px;
+        padding: 18px 20px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        background: rgba(10, 18, 32, 0.5);
+        line-height: 1.7;
+        font-size: 14px;
+      }
+
+      @media (max-width: 1180px) {
+        .board {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          width: min(100vw - 24px, 960px);
+          padding-top: 24px;
+        }
+
+        .hero {
+          padding: 24px;
+        }
+
+        .phone-stack {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="eyebrow">Contrail / UI Direction Preview</div>
+        <h1>更现代、有科技感，但不过分花哨的 3 套视觉方向</h1>
+        <p>
+          这份预览只展示视觉方向，不改业务交互逻辑。重点优化启动页、首页卡片层次、统计页数据面板感，以及“我的”页面的信息结构。
+          风格都尽量保持克制，避免高饱和霓虹和过多装饰。
+        </p>
+      </section>
+
+      <section class="board">
+        <article class="concept a">
+          <div class="concept-head">
+            <span class="tag">方案 A</span>
+            <h2>冷静科技蓝</h2>
+            <p class="muted">
+              用深海蓝和青色做低饱和点缀，强化数据产品感。适合 Contrail
+              这种“记录痕迹”的定位，专业、轻盈、耐看。
+            </p>
+            <div class="chips">
+              <span class="chip">玻璃卡片</span>
+              <span class="chip">低饱和蓝青</span>
+              <span class="chip">信息层级更清晰</span>
+              <span class="chip">推荐优先尝试</span>
+            </div>
+          </div>
+          <div class="phone-stack">
+            <div class="phone">
+              <div class="screen-top"><span>09:41</span><div class="island"></div><span>5G</span></div>
+              <div class="hero-card">
+                <div class="hero-title">Contrail</div>
+                <div class="screen-note">Every step leaves a trace</div>
+                <div class="kpis">
+                  <div class="mini-card">
+                    <div class="kpi-value">12</div>
+                    <div class="kpi-label">连续记录</div>
+                  </div>
+                  <div class="mini-card">
+                    <div class="kpi-value">86%</div>
+                    <div class="kpi-label">本周完成率</div>
+                  </div>
+                  <div class="mini-card">
+                    <div class="kpi-value">4.8h</div>
+                    <div class="kpi-label">本周专注</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-title">
+                <span>今日习惯</span>
+                <span class="subtle">更像仪表盘</span>
+              </div>
+              <div class="list">
+                <div class="list-card">
+                  <div class="list-row">
+                    <div>
+                      <div class="list-title">每日阅读</div>
+                      <div class="list-meta">35 分钟 · 今日已完成 28 分钟</div>
+                    </div>
+                    <div class="pill">继续</div>
+                  </div>
+                  <div class="bar" style="--w: 80%"><span></span></div>
+                </div>
+                <div class="list-card">
+                  <div class="list-row">
+                    <div>
+                      <div class="list-title">英语模拟</div>
+                      <div class="list-meta">180 分钟 · 目标拆分更明确</div>
+                    </div>
+                    <div class="pill">开始</div>
+                  </div>
+                  <div class="bar" style="--w: 42%"><span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone">
+              <div class="screen-top"><span>09:41</span><div class="island"></div><span>97%</span></div>
+              <div class="stats">
+                <div class="stat-card">
+                  <div class="list-title">习惯统计</div>
+                  <div class="list-meta">主卡片弱化渐变，强化数据本身</div>
+                  <div class="chart">
+                    <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                      <polyline fill="none" stroke="#7ec8ff" stroke-width="2.4" points="2,28 18,22 32,24 48,14 62,16 78,10 98,12"></polyline>
+                      <polyline fill="none" stroke="#4ff5d2" stroke-width="2.1" points="2,32 18,30 32,24 48,20 62,24 78,18 98,16"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="profile-card">
+                  <div class="profile-head">
+                    <div class="avatar"></div>
+                    <div>
+                      <div class="list-title">你的记录档案</div>
+                      <div class="list-meta">“我的”页面从设置列表升级为个人面板</div>
+                    </div>
+                  </div>
+                  <div class="settings">
+                    <div class="setting"><span>主题风格</span><span class="subtle">冷静科技蓝</span></div>
+                    <div class="setting"><span>个性化设置</span><span class="subtle">更紧凑</span></div>
+                    <div class="setting"><span>数据备份</span><span class="subtle">卡片式入口</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="concept b">
+          <div class="concept-head">
+            <span class="tag">方案 B</span>
+            <h2>夜幕数据舱</h2>
+            <p class="muted">
+              更偏深色模式，强化沉浸和专注氛围。适合启动页、专注页和统计页，科技感更明显，但仍保持克制。
+            </p>
+            <div class="chips">
+              <span class="chip">深色主视觉</span>
+              <span class="chip">紫蓝点缀</span>
+              <span class="chip">更沉浸</span>
+              <span class="chip">专注页提升最大</span>
+            </div>
+          </div>
+          <div class="phone-stack">
+            <div class="phone">
+              <div class="screen-top"><span>09:41</span><div class="island"></div><span>5G</span></div>
+              <div class="hero-card" style="padding-top: 28px; padding-bottom: 28px;">
+                <div class="hero-title">Contrail</div>
+                <div class="screen-note">冷静深色背景 + 细微流光</div>
+                <div style="margin-top: 24px; height: 180px; border-radius: 26px; border: 1px solid rgba(255,255,255,0.06); background: radial-gradient(circle at center, rgba(192,155,255,0.24), transparent 38%), radial-gradient(circle at center, rgba(135,168,255,0.18), transparent 62%), rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:center; font-size:44px; font-weight:800; letter-spacing:0.06em;">C</div>
+              </div>
+              <div class="section-title">
+                <span>专注面板</span>
+                <span class="subtle">更接近设备控制台</span>
+              </div>
+              <div class="stat-card">
+                <div class="list-row">
+                  <div>
+                    <div class="list-title">复习中</div>
+                    <div class="list-meta">今日累计 25 / 100 分钟</div>
+                  </div>
+                  <div class="pill" style="color:#c09bff;">进行中</div>
+                </div>
+                <div style="margin:18px auto 4px; width:180px; height:180px; border-radius:50%; border:2px solid rgba(255,255,255,0.78); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                  <div class="screen-note" style="margin-bottom:8px;">FOCUS</div>
+                  <div style="font-size:44px; font-weight:800;">24:50</div>
+                  <div class="screen-note" style="margin-top:8px;">专注中</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone">
+              <div class="screen-top"><span>09:41</span><div class="island"></div><span>97%</span></div>
+              <div class="stats">
+                <div class="stat-card">
+                  <div class="list-title">趋势分析</div>
+                  <div class="list-meta">用深色背景突出图表发光线条</div>
+                  <div class="chart">
+                    <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                      <polyline fill="none" stroke="#87a8ff" stroke-width="2.4" points="2,24 18,26 32,18 48,22 62,12 78,16 98,8"></polyline>
+                      <polyline fill="none" stroke="#c09bff" stroke-width="2.1" points="2,30 18,28 32,30 48,18 62,22 78,12 98,14"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="list">
+                  <div class="list-card">
+                    <div class="list-row">
+                      <div>
+                        <div class="list-title">阅读轨迹</div>
+                        <div class="list-meta">把杂乱按钮收束到顶部工具区</div>
+                      </div>
+                      <div class="pill" style="color:#87a8ff;">查看</div>
+                    </div>
+                    <div class="bar" style="--w: 68%"><span></span></div>
+                  </div>
+                  <div class="list-card">
+                    <div class="list-row">
+                      <div>
+                        <div class="list-title">周报生成</div>
+                        <div class="list-meta">适合做分享页统一视觉</div>
+                      </div>
+                      <div class="pill" style="color:#c09bff;">导出</div>
+                    </div>
+                    <div class="bar" style="--w: 56%"><span></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="concept c">
+          <div class="concept-head">
+            <span class="tag">方案 C</span>
+            <h2>银雾玻璃白</h2>
+            <p class="muted">
+              更接近高端效率工具，浅色底配轻玻璃质感和细线边框。科技感较弱一点，但最稳重、最容易长期看不腻。
+            </p>
+            <div class="chips">
+              <span class="chip">浅色高级感</span>
+              <span class="chip">银蓝边框</span>
+              <span class="chip">适合日用</span>
+              <span class="chip">最克制</span>
+            </div>
+          </div>
+          <div class="phone-stack">
+            <div class="phone">
+              <div class="screen-top"><span>09:41</span><div class="island" style="background:rgba(23,36,60,0.12)"></div><span>5G</span></div>
+              <div class="hero-card">
+                <div class="hero-title">我的习惯</div>
+                <div class="screen-note">标题卡片更轻，减少现有大面积纯色头图压迫感</div>
+                <div class="kpis">
+                  <div class="mini-card">
+                    <div class="kpi-value">08</div>
+                    <div class="kpi-label">进行中</div>
+                  </div>
+                  <div class="mini-card">
+                    <div class="kpi-value">03</div>
+                    <div class="kpi-label">已完成</div>
+                  </div>
+                  <div class="mini-card">
+                    <div class="kpi-value">2.1h</div>
+                    <div class="kpi-label">今日专注</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-title">
+                <span>习惯列表</span>
+                <span class="subtle">大卡片改为精致清单</span>
+              </div>
+              <div class="list">
+                <div class="list-card">
+                  <div class="list-row">
+                    <div>
+                      <div class="list-title">每周读两本好书</div>
+                      <div class="list-meta">本周 1 / 2 本 · 更注重阅读感</div>
+                    </div>
+                    <div class="pill" style="color:#4c7dff;">开始</div>
+                  </div>
+                  <div class="bar" style="--w: 50%"><span></span></div>
+                </div>
+                <div class="list-card">
+                  <div class="list-row">
+                    <div>
+                      <div class="list-title">跑步锻炼</div>
+                      <div class="list-meta">今日 18 / 40 分钟</div>
+                    </div>
+                    <div class="pill" style="color:#2e958a;">继续</div>
+                  </div>
+                  <div class="bar" style="--w: 45%"><span></span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone">
+              <div class="screen-top"><span>09:41</span><div class="island" style="background:rgba(23,36,60,0.12)"></div><span>97%</span></div>
+              <div class="profile-card">
+                <div class="profile-head">
+                  <div class="avatar"></div>
+                  <div>
+                    <div class="list-title">吃葡萄不吃葡萄皮</div>
+                    <div class="list-meta">“我的”页信息架构更像系统设置</div>
+                  </div>
+                </div>
+                <div class="settings">
+                  <div class="setting"><span>主题设置</span><span class="subtle">外观</span></div>
+                  <div class="setting"><span>个性化</span><span class="subtle">行为与显示</span></div>
+                  <div class="setting"><span>数据备份</span><span class="subtle">本地 / WebDAV</span></div>
+                  <div class="setting"><span>关于应用</span><span class="subtle">版本信息</span></div>
+                </div>
+              </div>
+              <div class="section-title">
+                <span>统计卡片</span>
+                <span class="subtle">更偏高级效率工具</span>
+              </div>
+              <div class="stat-card">
+                <div class="list-title">月度趋势</div>
+                <div class="chart">
+                  <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <polyline fill="none" stroke="#8bb7ff" stroke-width="2.4" points="2,30 18,24 32,22 48,18 62,14 78,16 98,10"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <div class="footer-note">
+        如果你要我给出建议，我会优先推荐 <strong>方案 A</strong>：
+        它最符合你说的“现代化、有科技感、但不要过于花哨”。如果你更看重专注页沉浸感，选
+        <strong>方案 B</strong>；如果你想更稳重耐看，选 <strong>方案 C</strong>。
+      </div>
+    </main>
+  </body>
+</html>

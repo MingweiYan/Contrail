@@ -18,59 +18,83 @@ class _PersonalizationSettingsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('个性化设置'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: ThemeHelper.onPrimary(context),
-      ),
       body: ChangeNotifierProvider(
         create: (context) => PersonalizationProvider()..initialize(),
         child: Container(
           decoration:
               ThemeHelper.generateBackgroundDecoration(context) ??
               BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-          padding: PageLayoutConstants.getPageContainerPadding(),
           width: double.infinity,
           height: double.infinity,
           child: Consumer<PersonalizationProvider>(
             builder: (context, provider, child) {
+              final heroForeground =
+                  ThemeHelper.visualTheme(context).heroForeground;
+              final heroSecondary =
+                  ThemeHelper.visualTheme(context).heroSecondaryForeground;
+
               return SingleChildScrollView(
+                padding: PageLayoutConstants.getPageContainerPadding(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 周起始日设置模块
-                    Container(
-                      margin: EdgeInsets.only(
-                        top: PersonalizationSettingsPageConstants
-                            .containerTopMargin,
-                      ),
-                      padding:
-                          PersonalizationSettingsPageConstants.containerPadding,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(
-                          PersonalizationSettingsPageConstants
-                              .containerBorderRadius,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      decoration: ThemeHelper.heroDecoration(context, radius: 28),
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          _buildHeaderButton(context),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '个性化设置',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w800,
+                                    color: heroForeground,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '调整与你的日历、统计与使用习惯相关的个人偏好',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    color: heroSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
+                      ),
+                    ),
+                    SizedBox(
+                      height:
+                          PersonalizationSettingsPageConstants.containerTopMargin,
+                    ),
+                    Container(
+                      width: double.infinity,
+                      padding:
+                          PersonalizationSettingsPageConstants.containerPadding,
+                      decoration: ThemeHelper.panelDecoration(
+                        context,
+                        radius: PersonalizationSettingsPageConstants
+                            .containerBorderRadius,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 模块标题
                           Text(
                             '每周第一天',
                             style: TextStyle(
                               fontSize: PersonalizationSettingsPageConstants
                                   .titleFontSize,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
                               color: ThemeHelper.onBackground(context),
                             ),
                           ),
@@ -78,115 +102,51 @@ class _PersonalizationSettingsPageState
                             height: PersonalizationSettingsPageConstants
                                 .titleDescriptionSpacing,
                           ),
-
-                          // 说明文字
                           Text(
                             '选择每周的起始日期，影响日历显示和周统计数据',
                             style: TextStyle(
                               fontSize: PersonalizationSettingsPageConstants
                                   .descriptionFontSize,
+                              height: 1.5,
                               color: ThemeHelper.onBackground(
                                 context,
-                              ).withOpacity(0.7),
+                              ).withValues(alpha: 0.7),
                             ),
                           ),
                           SizedBox(
                             height: PersonalizationSettingsPageConstants
                                 .descriptionOptionsSpacing,
                           ),
-
-                          // 单选选择器
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              // 周天选项
                               Expanded(
-                                child: RadioListTile<WeekStartDay>(
-                                  title: Text(
-                                    '周天',
-                                    style: TextStyle(
-                                      fontSize:
-                                          PersonalizationSettingsPageConstants
-                                              .optionFontSize,
-                                      color:
-                                          provider.weekStartDay ==
-                                              WeekStartDay.sunday
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : ThemeHelper.onBackground(context),
-                                    ),
-                                  ),
-                                  value: WeekStartDay.sunday,
-                                  groupValue: provider.weekStartDay,
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      provider.setWeekStartDay(value);
-                                    }
+                                child: _buildOptionTile(
+                                  context,
+                                  label: '周天',
+                                  selected: provider.weekStartDay ==
+                                      WeekStartDay.sunday,
+                                  onTap: () {
+                                    provider.setWeekStartDay(
+                                      WeekStartDay.sunday,
+                                    );
                                   },
-                                  activeColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  tileColor:
-                                      provider.weekStartDay ==
-                                          WeekStartDay.sunday
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.primary.withOpacity(0.1)
-                                      : null,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      PersonalizationSettingsPageConstants
-                                          .radioBorderRadius,
-                                    ),
-                                  ),
                                 ),
                               ),
                               SizedBox(
                                 width: PersonalizationSettingsPageConstants
                                     .optionsSpacing,
                               ),
-                              // 周一选项
                               Expanded(
-                                child: RadioListTile<WeekStartDay>(
-                                  title: Text(
-                                    '周一',
-                                    style: TextStyle(
-                                      fontSize:
-                                          PersonalizationSettingsPageConstants
-                                              .optionFontSize,
-                                      color:
-                                          provider.weekStartDay ==
-                                              WeekStartDay.monday
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : ThemeHelper.onBackground(context),
-                                    ),
-                                  ),
-                                  value: WeekStartDay.monday,
-                                  groupValue: provider.weekStartDay,
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      provider.setWeekStartDay(value);
-                                    }
+                                child: _buildOptionTile(
+                                  context,
+                                  label: '周一',
+                                  selected: provider.weekStartDay ==
+                                      WeekStartDay.monday,
+                                  onTap: () {
+                                    provider.setWeekStartDay(
+                                      WeekStartDay.monday,
+                                    );
                                   },
-                                  activeColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  tileColor:
-                                      provider.weekStartDay ==
-                                          WeekStartDay.monday
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.primary.withOpacity(0.1)
-                                      : null,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      PersonalizationSettingsPageConstants
-                                          .radioBorderRadius,
-                                    ),
-                                  ),
                                 ),
                               ),
                             ],
@@ -194,8 +154,6 @@ class _PersonalizationSettingsPageState
                         ],
                       ),
                     ),
-
-                    // 保存提示
                     Padding(
                       padding: EdgeInsets.only(
                         top: PersonalizationSettingsPageConstants
@@ -208,7 +166,7 @@ class _PersonalizationSettingsPageState
                               PersonalizationSettingsPageConstants.hintFontSize,
                           color: ThemeHelper.onBackground(
                             context,
-                          ).withOpacity(0.5),
+                          ).withValues(alpha: 0.52),
                         ),
                       ),
                     ),
@@ -216,6 +174,84 @@ class _PersonalizationSettingsPageState
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderButton(BuildContext context) {
+    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pop(context),
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.arrow_back_rounded, size: 18, color: heroForeground),
+              const SizedBox(width: 6),
+              Text(
+                '返回',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: heroForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionTile(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(
+          PersonalizationSettingsPageConstants.radioBorderRadius,
+        ),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.14)
+                : ThemeHelper.visualTheme(context).panelSecondaryColor,
+            borderRadius: BorderRadius.circular(
+              PersonalizationSettingsPageConstants.radioBorderRadius,
+            ),
+            border: Border.all(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.46)
+                  : ThemeHelper.visualTheme(context).panelBorderColor,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: PersonalizationSettingsPageConstants.optionFontSize,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected ? scheme.primary : ThemeHelper.onBackground(context),
+              ),
+            ),
           ),
         ),
       ),
