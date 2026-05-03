@@ -254,7 +254,7 @@ class HabitItemWidget extends StatelessWidget {
                       ),
                     ),
                     child: SizedBox(
-                      height: habit.trackTime ? 160.h : 144.h,
+                      height: 160.h,
                       child: Stack(
                         children: [
                           Positioned(
