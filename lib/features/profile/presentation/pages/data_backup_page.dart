@@ -157,6 +157,14 @@ class _DataBackupPageState extends State<DataBackupPage>
                                     backupProvider.autoBackupLastRun,
                                   ),
                                 ),
+                                _DetailItem(
+                                  label: '下次备份',
+                                  value: _nextBackupLabel(
+                                    enabled: backupProvider.autoBackupEnabled,
+                                    lastBackupTime: backupProvider.lastBackupTime,
+                                    frequency: backupProvider.backupFrequency,
+                                  ),
+                                ),
                               ],
                               onTap: () => _openAutoBackupPolicyPage(
                                 context,
@@ -801,6 +809,16 @@ class _DataBackupPageState extends State<DataBackupPage>
     String twoDigits(int number) => number.toString().padLeft(2, '0');
     return '${value.year}-${twoDigits(value.month)}-${twoDigits(value.day)} '
         '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
+  }
+
+  String _nextBackupLabel({
+    required bool enabled,
+    required DateTime? lastBackupTime,
+    required int frequency,
+  }) {
+    if (!enabled) return '未开启';
+    if (lastBackupTime == null) return '待首次执行';
+    return _formatDateTime(lastBackupTime.add(Duration(days: frequency)));
   }
 }
 
