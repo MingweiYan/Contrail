@@ -24,7 +24,7 @@ class NativeLogger {
     String tag = 'Contrail',
     required String message,
   }) async {
-    if (!Platform.isAndroid) {
+    if (kIsWeb || !Platform.isAndroid) {
       _fallbackLog(level, tag, message);
       return;
     }
@@ -75,11 +75,7 @@ class _NativeLogOutput extends LogOutput {
   void output(OutputEvent event) {
     final message = event.lines.join('\n');
     final level = _levelToString(event.level);
-    NativeLogger.log(
-      level: level,
-      tag: _tag,
-      message: message,
-    );
+    NativeLogger.log(level: level, tag: _tag, message: message);
   }
 }
 
@@ -187,10 +183,7 @@ class _LevelFileOutput extends LogOutput {
   late final String rotatedPath;
   bool _inited = false;
   // 文件输出使用 SimplePrinter，保证单行、无框线
-  final LogPrinter _filePrinter = SimplePrinter(
-    printTime: true,
-    colors: false,
-  );
+  final LogPrinter _filePrinter = SimplePrinter(printTime: true, colors: false);
 
   _LevelFileOutput(this.dirPath, this.maxBytes, this.fileName, this.minLevel);
 

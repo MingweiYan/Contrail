@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -386,6 +387,7 @@ class LocalStorageService implements StorageServiceInterface {
 
   @override
   Future<bool> checkPermissions() async {
+    if (kIsWeb) return false;
     try {
       if (Platform.isAndroid) {
         final deviceInfo = DeviceInfoPlugin();

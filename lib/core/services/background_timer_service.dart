@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/services/notification_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/core/state/focus_tracking_manager.dart';
@@ -59,6 +60,7 @@ class BackgroundTimerService {
 
   // 初始化后台服务
   Future<void> initialize() async {
+    if (kIsWeb) return;
     if (!_isInitialized) {
       await _service.configure(
         iosConfiguration: IosConfiguration(
@@ -104,6 +106,7 @@ class BackgroundTimerService {
 
   // 开始后台服务
   Future<void> start() async {
+    if (kIsWeb) return;
     if (_focusState != null) {
       // 确保服务已初始化
       await initialize();
@@ -119,6 +122,7 @@ class BackgroundTimerService {
 
   // 调用开始计时
   Future<void> startTimer() async {
+    if (kIsWeb) return;
     if (_focusState != null) {
       // 确保服务已初始化
       await initialize();
@@ -136,6 +140,7 @@ class BackgroundTimerService {
 
   // 停止后台计时器&服务
   Future<void> stop() async {
+    if (kIsWeb) return;
     try {
       // 停止后台服务&定时器
       _service.invoke('stop');
@@ -147,6 +152,7 @@ class BackgroundTimerService {
   }
 
   Future<void> stopTimer() async {
+    if (kIsWeb) return;
     try {
       // 向后台服务发送停止命令
       _service.invoke('stopTimer');
