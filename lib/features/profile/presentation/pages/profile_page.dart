@@ -12,6 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/features/profile/presentation/providers/profile_view_model.dart';
 import 'package:contrail/shared/widgets/app_hero_header.dart';
+import 'package:contrail/shared/widgets/scroll_to_top_fab.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,12 +22,20 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BackupProvider>().initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,20 +48,14 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Consumer<ProfileViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
+            floatingActionButton: ScrollToTopFab(controller: _scrollController),
             body: Container(
               decoration:
                   ThemeHelper.generateBackgroundDecoration(context) ??
                   BoxDecoration(
                     color: Theme.of(context).scaffoldBackgroundColor,
                   ),
-              padding: PageLayoutConstants.getPageContainerPadding(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(viewModel),
-                  _buildProfileContent(viewModel),
-                ],
-              ),
+              child: _buildProfileContent(viewModel),
             ),
           );
         },
@@ -95,15 +98,15 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileContent(ProfileViewModel viewModel) {
-    return Expanded(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _buildWeeklyOverviewCard(topMargin: 16.h),
-          _buildSystemStatusCard(viewModel),
-          _buildClearDataCard(),
-        ],
-      ),
+    return ListView(
+      controller: _scrollController,
+      padding: HeroHeaderPageConstants.mainPagePadding,
+      children: [
+        _buildHeader(viewModel),
+        _buildWeeklyOverviewCard(topMargin: 16.h),
+        _buildSystemStatusCard(viewModel),
+        _buildClearDataCard(),
+      ],
     );
   }
 
@@ -211,7 +214,9 @@ class _ProfilePageState extends State<ProfilePage> {
             width: 40.w,
             height: 40.w,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14.r),
             ),
             child: Icon(icon, color: ThemeHelper.primary(context), size: 20.sp),
@@ -235,7 +240,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: TextStyle(
                     fontSize: AppTypographyConstants.cardSubtitleFontSize,
                     height: 1.35,
-                    color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
+                    color: ThemeHelper.onBackground(
+                      context,
+                    ).withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -245,7 +252,9 @@ class _ProfilePageState extends State<ProfilePage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(999.r),
             ),
             child: Text(
@@ -364,10 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               SizedBox(width: 10.w),
               Expanded(
-                child: _buildWeeklyMetric(
-                  label: '专注时长',
-                  value: minutesText,
-                ),
+                child: _buildWeeklyMetric(label: '专注时长', value: minutesText),
               ),
             ],
           ),
@@ -407,10 +413,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildWeeklyMetric({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildWeeklyMetric({required String label, required String value}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
       decoration: BoxDecoration(
@@ -615,5 +618,4 @@ class _ProfilePageState extends State<ProfilePage> {
     final minute = dateTime.minute.toString().padLeft(2, '0');
     return '$month-$day $hour:$minute';
   }
-
 }

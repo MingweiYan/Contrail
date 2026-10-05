@@ -17,6 +17,7 @@ import 'package:contrail/features/habit/presentation/widgets/supplement_check_in
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/widgets/app_hero_header.dart';
+import 'package:contrail/shared/widgets/scroll_to_top_fab.dart';
 
 class HabitManagementPage extends StatefulWidget {
   const HabitManagementPage({super.key});
@@ -31,7 +32,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   late final DeleteHabitUseCase _deleteHabitUseCase;
   late final HabitManagementService _habitManagementService;
   List<Habit> _habits = [];
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  final GlobalKey<SliverAnimatedListState> _listKey =
+      GlobalKey<SliverAnimatedListState>();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -41,6 +44,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     _deleteHabitUseCase = sl<DeleteHabitUseCase>();
     _habitManagementService = sl<HabitManagementService>();
     _loadHabits();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // 加载用户使用天数 - 使用统计服务
@@ -81,9 +90,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       if (index == -1) {
         return;
       }
-      
+
       final removedHabit = _habits.removeAt(index);
-      
+
       if (_listKey.currentState != null) {
         _listKey.currentState!.removeItem(
           index,
@@ -103,9 +112,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
           duration: const Duration(milliseconds: 300),
         );
       }
-      
+
       await _deleteHabitUseCase.execute(habitId);
-      
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('习惯删除成功')));
@@ -224,125 +233,139 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: ScrollToTopFab(controller: _scrollController),
       body: Container(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
             ),
-        padding: PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
         child: _buildHabitList(),
       ),
     );
   }
 
   Widget _buildHabitList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppHeroHeader(
-          title: '我的习惯',
-          subtitle: '从新增一个习惯出发吧',
-          badge: const AppHeroHeaderBadgeData(
-            icon: Icons.dashboard_customize_outlined,
-            label: '控制台',
-          ),
-          actions: [
-            AppHeroHeaderActionData(
-              icon: Icons.edit_outlined,
-              title: '补充记录',
-              subtitle: 'Record',
-              onTap: () => _showSupplementCheckInDialog(context),
-            ),
-            AppHeroHeaderActionData(
-              icon: Icons.timer_outlined,
-              title: '查看专注',
-              subtitle: 'Focus',
-              onTap: _openCurrentFocus,
-            ),
-            AppHeroHeaderActionData(
-              icon: Icons.add_rounded,
-              title: '新增习惯',
-              subtitle: 'Create',
-              onTap: _openAddHabit,
-            ),
-          ],
-        ),
+    final pagePadding = HeroHeaderPageConstants.mainPagePadding;
+    final listPadding = HabitManagementPageConstants.listPadding;
 
-        // 习惯列表或空状态
-        Expanded(
-          child: Container(
-            padding: HabitManagementPageConstants.contentPadding,
-            child: _habits.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedContainer(
-                          duration: Duration(seconds: 1),
-                          curve: Curves.bounceInOut,
-                          child: Icon(
-                            Icons.list,
-                            size:
-                                HabitManagementPageConstants.emptyStateIconSize,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        SizedBox(height: ScreenUtil().setHeight(24)),
-                        Text(
-                          '还没有添加习惯',
-                          style: ThemeHelper.textStyleWithTheme(
-                            context,
-                            fontSize: HabitManagementPageConstants
-                                .emptyStateTitleFontSize,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(
-                          height: HabitManagementPageConstants.mediumSpacing,
-                        ),
-                        Text(
-                          '点击右下角的+按钮开始添加',
-                          style: ThemeHelper.textStyleWithTheme(
-                            context,
-                            fontSize: HabitManagementPageConstants
-                                .emptyStateSubtitleFontSize,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : AnimatedList(
-                    key: _listKey,
-                    initialItemCount: _habits.length,
-                    padding: HabitManagementPageConstants.listPadding,
-                    itemBuilder: (context, index, animation) {
-                      final item = _habits[index];
-                      return SizeTransition(
-                        sizeFactor: animation,
-                        child: HabitItemWidget(
-                          key: ValueKey(item.id),
-                          habit: item,
-                          onDelete: _deleteHabit,
-                          onRefresh: _refreshHabits,
-                          onNavigateToTracking: _navigateToTrackingPage,
-                          formatDescription: _formatHabitDescription,
-                          getFinalProgress: _getFinalProgress,
-                          isFirst: index == 0,
-                        ),
-                      );
-                    },
-                  ),
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverPadding(
+          padding: pagePadding,
+          sliver: SliverToBoxAdapter(
+            child: AppHeroHeader(
+              title: '我的习惯',
+              subtitle: '从新增一个习惯出发吧',
+              badge: const AppHeroHeaderBadgeData(
+                icon: Icons.dashboard_customize_outlined,
+                label: '控制台',
+              ),
+              actions: [
+                AppHeroHeaderActionData(
+                  icon: Icons.edit_outlined,
+                  title: '补充记录',
+                  subtitle: 'Record',
+                  onTap: () => _showSupplementCheckInDialog(context),
+                ),
+                AppHeroHeaderActionData(
+                  icon: Icons.timer_outlined,
+                  title: '查看专注',
+                  subtitle: 'Focus',
+                  onTap: _openCurrentFocus,
+                ),
+                AppHeroHeaderActionData(
+                  icon: Icons.add_rounded,
+                  title: '新增习惯',
+                  subtitle: 'Create',
+                  onTap: _openAddHabit,
+                ),
+              ],
+            ),
           ),
         ),
+        if (_habits.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: pagePadding.left),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: Duration(seconds: 1),
+                      curve: Curves.bounceInOut,
+                      child: Icon(
+                        Icons.list,
+                        size: HabitManagementPageConstants.emptyStateIconSize,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    SizedBox(height: ScreenUtil().setHeight(24)),
+                    Text(
+                      '还没有添加习惯',
+                      style: ThemeHelper.textStyleWithTheme(
+                        context,
+                        fontSize: HabitManagementPageConstants
+                            .emptyStateTitleFontSize,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(
+                      height: HabitManagementPageConstants.mediumSpacing,
+                    ),
+                    Text(
+                      '点击右下角的+按钮开始添加',
+                      style: ThemeHelper.textStyleWithTheme(
+                        context,
+                        fontSize: HabitManagementPageConstants
+                            .emptyStateSubtitleFontSize,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              pagePadding.left,
+              listPadding.top,
+              pagePadding.right,
+              listPadding.bottom,
+            ),
+            sliver: SliverAnimatedList(
+              key: _listKey,
+              initialItemCount: _habits.length,
+              itemBuilder: (context, index, animation) {
+                final item = _habits[index];
+                return SizeTransition(
+                  sizeFactor: animation,
+                  child: HabitItemWidget(
+                    key: ValueKey(item.id),
+                    habit: item,
+                    onDelete: _deleteHabit,
+                    onRefresh: _refreshHabits,
+                    onNavigateToTracking: _navigateToTrackingPage,
+                    formatDescription: _formatHabitDescription,
+                    getFinalProgress: _getFinalProgress,
+                    isFirst: index == 0,
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -358,9 +381,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   Future<void> _openAddHabit() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddHabitPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const AddHabitPage()),
     );
     if (result is Habit) {
       await _loadHabits();
