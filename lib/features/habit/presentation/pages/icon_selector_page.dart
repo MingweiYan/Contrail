@@ -203,13 +203,14 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                     itemCount: categoryIcons.length,
                                     itemBuilder: (context, index) {
                                       final icon = categoryIcons[index];
-                                      final iconName =
-                                          IconHelper.getIconName(icon);
+                                      final iconName = IconHelper.getIconName(
+                                        icon,
+                                      );
                                       final isSelected =
                                           iconName == _currentSelectedIcon;
                                       final colorIndex =
                                           iconName.hashCode %
-                                              presetColors.length;
+                                          presetColors.length;
                                       final iconBackgroundColor =
                                           presetColors[colorIndex];
 
@@ -241,11 +242,13 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                                         context,
                                                       ).primaryColor
                                                     : iconBackgroundColor
-                                                        .withValues(alpha: 0.12),
+                                                          .withValues(
+                                                            alpha: 0.12,
+                                                          ),
                                                 border: Border.all(
                                                   width: isSelected
                                                       ? IconSelectorPageConstants
-                                                          .selectedBorderWidth
+                                                            .selectedBorderWidth
                                                       : 1.2,
                                                   color: isSelected
                                                       ? Theme.of(
@@ -259,10 +262,13 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                                               child: Center(
                                                 child: Icon(
                                                   icon,
-                                                  size: IconSelectorPageConstants
-                                                      .iconSize,
+                                                  size:
+                                                      IconSelectorPageConstants
+                                                          .iconSize,
                                                   color: isSelected
-                                                      ? Colors.white
+                                                      ? ThemeHelper.onPrimary(
+                                                          context,
+                                                        )
                                                       : iconBackgroundColor,
                                                 ),
                                               ),
@@ -308,8 +314,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
                 Text(
                   '选择图标',
                   style: TextStyle(
-                    fontSize:
-                        AppTypographyConstants.secondaryHeroTitleFontSize,
+                    fontSize: AppTypographyConstants.secondaryHeroTitleFontSize,
                     fontWeight: FontWeight.w800,
                     color: heroForeground,
                   ),
@@ -356,11 +361,7 @@ class _IconSelectorPageState extends State<IconSelectorPage> {
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

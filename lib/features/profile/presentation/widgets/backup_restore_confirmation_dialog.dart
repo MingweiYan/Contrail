@@ -18,6 +18,9 @@ class BackupRestoreConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final warningColor = ThemeHelper.warning(context);
+    final warningForeground = ThemeHelper.onWarning(context);
+
     return AlertDialog(
       backgroundColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
@@ -31,7 +34,7 @@ class BackupRestoreConfirmationDialog extends StatelessWidget {
         style: TextStyle(
           fontSize: BackupRestoreConfirmationDialogConstants.titleFontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.orange,
+          color: ThemeHelper.onBackground(context),
         ),
       ),
       content: Text(
@@ -51,7 +54,9 @@ class BackupRestoreConfirmationDialog extends StatelessWidget {
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: ThemeHelper.primary(context).withOpacity(0.8),
+            backgroundColor: ThemeHelper.primary(
+              context,
+            ).withValues(alpha: 0.8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                 BackupRestoreConfirmationDialogConstants.buttonBorderRadius,
@@ -65,11 +70,11 @@ class BackupRestoreConfirmationDialog extends StatelessWidget {
             '确认恢复',
             style: TextStyle(
               fontSize: BackupRestoreConfirmationDialogConstants.buttonFontSize,
-              color: Colors.white,
+              color: warningForeground,
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
+            backgroundColor: warningColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                 BackupRestoreConfirmationDialogConstants.buttonBorderRadius,

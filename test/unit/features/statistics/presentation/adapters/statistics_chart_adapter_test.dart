@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:contrail/features/statistics/presentation/adapters/statistics_chart_adapter.dart';
 import 'package:contrail/shared/models/habit.dart';
@@ -9,7 +10,7 @@ void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
-  
+
   group('StatisticsChartAdapter', () {
     late StatisticsChartAdapter adapter;
 
@@ -57,21 +58,11 @@ void main() {
 
       expect(weekLabel.isNotEmpty, true);
 
-      final monthLabel = adapter.getTooltipLabel(
-        'count',
-        0,
-        1.0,
-        'month',
-      );
+      final monthLabel = adapter.getTooltipLabel('count', 0, 1.0, 'month');
 
       expect(monthLabel.isNotEmpty, true);
 
-      final yearLabel = adapter.getTooltipLabel(
-        'count',
-        0,
-        1.0,
-        'year',
-      );
+      final yearLabel = adapter.getTooltipLabel('count', 0, 1.0, 'year');
 
       expect(yearLabel.isNotEmpty, true);
     });
@@ -80,7 +71,7 @@ void main() {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
       );
 
@@ -101,7 +92,7 @@ void main() {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
         trackTime: false,
       );
@@ -126,15 +117,11 @@ void main() {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
       );
 
-      final spots = adapter.generateCountTrendDataWithOffset(
-        habit,
-        'week',
-        0,
-      );
+      final spots = adapter.generateCountTrendDataWithOffset(habit, 'week', 0);
 
       expect(spots.length, 7);
     });
@@ -143,16 +130,12 @@ void main() {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
         trackTime: false,
       );
 
-      final spots = adapter.generateTimeTrendDataWithOffset(
-        habit,
-        'week',
-        0,
-      );
+      final spots = adapter.generateTimeTrendDataWithOffset(habit, 'week', 0);
 
       expect(spots.length, 7);
       for (var spot in spots) {
@@ -160,45 +143,73 @@ void main() {
       }
     });
 
-    test('generatePieData 应该生成饼图数据', () {
+    testWidgets('generatePieData 应该生成饼图数据', (tester) async {
+      await _initializeScreenUtil(tester);
+
       final completedDays = 5;
       final remainingDays = 3;
       final habitColor = Colors.blue;
-      
-      final result = adapter.generatePieData(completedDays, remainingDays, habitColor);
-      
+      final remainingColor = Colors.grey.shade400;
+
+      final result = adapter.generatePieData(
+        completedDays,
+        remainingDays,
+        habitColor,
+        remainingColor: remainingColor,
+        completedForeground: Colors.white,
+        remainingForeground: Colors.black54,
+      );
+
       expect(result.length, 2);
       expect(result[0].value, completedDays.toDouble());
       expect(result[0].color, habitColor);
       expect(result[0].title, '$completedDays');
       expect(result[1].value, remainingDays.toDouble());
-      expect(result[1].color, Colors.grey.shade400);
+      expect(result[1].color, remainingColor);
       expect(result[1].title, '$remainingDays');
-    }, skip: 'ScreenUtil 初始化问题');
+    });
 
-    test('generatePieData 当没有剩余天数时只显示完成部分', () {
+    testWidgets('generatePieData 当没有剩余天数时只显示完成部分', (tester) async {
+      await _initializeScreenUtil(tester);
+
       final completedDays = 10;
       final remainingDays = 0;
       final habitColor = Colors.green;
-      
-      final result = adapter.generatePieData(completedDays, remainingDays, habitColor);
-      
+
+      final result = adapter.generatePieData(
+        completedDays,
+        remainingDays,
+        habitColor,
+        remainingColor: Colors.grey,
+        completedForeground: Colors.white,
+        remainingForeground: Colors.black,
+      );
+
       expect(result.length, 1);
       expect(result[0].value, completedDays.toDouble());
       expect(result[0].color, habitColor);
       expect(result[0].title, '$completedDays');
-    }, skip: 'ScreenUtil 初始化问题');
+    });
 
-    test('generatePieData 当剩余天数为负数时只显示完成部分', () {
+    testWidgets('generatePieData 当剩余天数为负数时只显示完成部分', (tester) async {
+      await _initializeScreenUtil(tester);
+
       final completedDays = 8;
       final remainingDays = -2;
       final habitColor = Colors.orange;
-      
-      final result = adapter.generatePieData(completedDays, remainingDays, habitColor);
-      
+
+      final result = adapter.generatePieData(
+        completedDays,
+        remainingDays,
+        habitColor,
+        remainingColor: Colors.grey,
+        completedForeground: Colors.black,
+        remainingForeground: Colors.black,
+      );
+
       expect(result.length, 1);
       expect(result[0].value, completedDays.toDouble());
-    }, skip: 'ScreenUtil 初始化问题');
+    });
 
     // ---------- 滚动窗口（近 N 天）方法测试 ----------
 
@@ -257,7 +268,7 @@ void main() {
       final habit = Habit(
         id: 'daily-week',
         name: '日习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         cycleType: CycleType.daily,
         dailyCompletionStatus: {
           DateTime(2026, 4, 1): true,
@@ -285,7 +296,7 @@ void main() {
       final habit = Habit(
         id: 'daily-month',
         name: '日习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         cycleType: CycleType.daily,
         dailyCompletionStatus: {
           DateTime(2026, 4, 1): true,
@@ -312,7 +323,7 @@ void main() {
       final habit = Habit(
         id: 'weekly-month',
         name: '周习惯',
-        colorValue: Colors.green.value,
+        colorValue: Colors.green.toARGB32(),
         cycleType: CycleType.weekly,
         targetDays: 5,
         dailyCompletionStatus: {
@@ -339,7 +350,7 @@ void main() {
       final habit = Habit(
         id: 'monthly-month',
         name: '月习惯',
-        colorValue: Colors.orange.value,
+        colorValue: Colors.orange.toARGB32(),
         cycleType: CycleType.monthly,
         targetDays: 10,
         dailyCompletionStatus: {
@@ -369,7 +380,7 @@ void main() {
       final habit = Habit(
         id: 'annual-year',
         name: '年习惯',
-        colorValue: Colors.purple.value,
+        colorValue: Colors.purple.toARGB32(),
         cycleType: CycleType.annual,
         targetDays: 12,
         dailyCompletionStatus: {
@@ -413,7 +424,7 @@ void main() {
       final habit = Habit(
         id: 'weekly-no-target',
         name: '周习惯',
-        colorValue: Colors.red.value,
+        colorValue: Colors.red.toARGB32(),
         cycleType: CycleType.weekly,
       );
 
@@ -433,35 +444,39 @@ void main() {
       }
     });
 
-    test('generateRollingTrendSpots week count 应返回 7 个点并读取 dailyCompletionStatus', () {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final habit = Habit(
-        id: 'test',
-        name: '测试习惯',
-        colorValue: Colors.blue.value,
-        icon: 'run',
-      );
-      // 今天完成一次
-      habit.dailyCompletionStatus[today] = true;
-      // 昨天也完成
-      habit.dailyCompletionStatus[today.subtract(const Duration(days: 1))] = true;
+    test(
+      'generateRollingTrendSpots week count 应返回 7 个点并读取 dailyCompletionStatus',
+      () {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final habit = Habit(
+          id: 'test',
+          name: '测试习惯',
+          colorValue: Colors.blue.toARGB32(),
+          icon: 'run',
+        );
+        // 今天完成一次
+        habit.dailyCompletionStatus[today] = true;
+        // 昨天也完成
+        habit.dailyCompletionStatus[today.subtract(const Duration(days: 1))] =
+            true;
 
-      final spots = adapter.generateRollingTrendSpots(habit, 'count', 'week');
-      expect(spots.length, 7);
-      // 最后一个点（index=6）对应今天
-      expect(spots[6].y, 1.0);
-      // 倒数第二个点（index=5）对应昨天
-      expect(spots[5].y, 1.0);
-      // 其他日期默认 0
-      expect(spots[0].y, 0.0);
-    });
+        final spots = adapter.generateRollingTrendSpots(habit, 'count', 'week');
+        expect(spots.length, 7);
+        // 最后一个点（index=6）对应今天
+        expect(spots[6].y, 1.0);
+        // 倒数第二个点（index=5）对应昨天
+        expect(spots[5].y, 1.0);
+        // 其他日期默认 0
+        expect(spots[0].y, 0.0);
+      },
+    );
 
     test('generateRollingTrendSpots month count 应返回 30 个点', () {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
       );
       final spots = adapter.generateRollingTrendSpots(habit, 'count', 'month');
@@ -477,7 +492,7 @@ void main() {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
       );
       // 今天完成一次，应累加到最后一个月（index=11）的当月
@@ -492,13 +507,25 @@ void main() {
       final habit = Habit(
         id: 'test',
         name: '测试习惯',
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         icon: 'run',
         trackTime: false,
       );
-      final weekSpots = adapter.generateRollingTrendSpots(habit, 'time', 'week');
-      final monthSpots = adapter.generateRollingTrendSpots(habit, 'time', 'month');
-      final yearSpots = adapter.generateRollingTrendSpots(habit, 'time', 'year');
+      final weekSpots = adapter.generateRollingTrendSpots(
+        habit,
+        'time',
+        'week',
+      );
+      final monthSpots = adapter.generateRollingTrendSpots(
+        habit,
+        'time',
+        'month',
+      );
+      final yearSpots = adapter.generateRollingTrendSpots(
+        habit,
+        'time',
+        'year',
+      );
       expect(weekSpots.length, 7);
       expect(monthSpots.length, 30);
       expect(yearSpots.length, 12);
@@ -512,12 +539,35 @@ void main() {
       expect(weekLabel.contains('完成'), true);
       expect(weekLabel.contains('次'), true);
 
-      final monthLabel = adapter.getRollingTooltipLabel('time', 29, 15.0, 'month');
+      final monthLabel = adapter.getRollingTooltipLabel(
+        'time',
+        29,
+        15.0,
+        'month',
+      );
       expect(monthLabel.contains('分钟'), true);
 
-      final yearLabel = adapter.getRollingTooltipLabel('count', 11, 2.0, 'year');
+      final yearLabel = adapter.getRollingTooltipLabel(
+        'count',
+        11,
+        2.0,
+        'year',
+      );
       expect(yearLabel.contains('/'), true);
       expect(yearLabel.contains('完成'), true);
     });
   });
+}
+
+Future<void> _initializeScreenUtil(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1080, 1920);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    const ScreenUtilInit(
+      designSize: Size(375, 812),
+      child: MaterialApp(home: SizedBox()),
+    ),
+  );
 }

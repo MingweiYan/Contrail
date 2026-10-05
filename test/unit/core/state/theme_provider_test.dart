@@ -10,9 +10,9 @@ void main() {
       final themeProvider = ThemeProvider();
       await Future<void>.delayed(Duration.zero);
 
-      expect(themeProvider.availableThemes, hasLength(3));
+      expect(themeProvider.availableThemes, hasLength(9));
       expect(themeProvider.currentTheme.id, 'theme-3-silver-mist');
-      expect(themeProvider.currentTheme.name, contains('方案 3'));
+      expect(themeProvider.currentTheme.name, '银雾');
     });
 
     test('setThemeMode 应该更新主题模式', () async {
@@ -41,7 +41,7 @@ void main() {
       final themeProvider = ThemeProvider();
       await Future<void>.delayed(Duration.zero);
 
-      const testThemeName = '方案 1 · 冷静科技蓝';
+      const testThemeName = '深海蓝';
       await themeProvider.setThemeByName(testThemeName);
 
       expect(themeProvider.currentTheme.name, testThemeName);
@@ -76,15 +76,12 @@ void main() {
       final themeProvider = ThemeProvider();
       await themeProvider.setThemeByName('方案 1 · 冷静科技蓝');
 
-      SharedPreferences.setMockInitialValues({
-        'selectedTheme': '方案 1 · 冷静科技蓝',
-      });
+      SharedPreferences.setMockInitialValues({'selectedTheme': '方案 1 · 冷静科技蓝'});
 
       final loadedProvider = ThemeProvider();
       await Future<void>.delayed(Duration.zero);
 
       expect(loadedProvider.currentTheme.id, 'theme-1-calm-tech');
     });
-
   });
 }

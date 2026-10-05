@@ -18,6 +18,9 @@ class BackupListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final destructiveColor = ThemeHelper.destructive(context);
+    final destructiveForeground = ThemeHelper.onDestructive(context);
+
     return Dismissible(
       key: Key(file.path),
       direction: DismissDirection.endToStart,
@@ -25,7 +28,7 @@ class BackupListItem extends StatelessWidget {
       background: Container(),
       secondaryBackground: Container(
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: destructiveColor,
           borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
         ),
         padding: EdgeInsets.only(right: ScreenUtil().setWidth(18)),
@@ -36,13 +39,13 @@ class BackupListItem extends StatelessWidget {
             Text(
               '删除',
               style: TextStyle(
-                color: Colors.white,
+                color: destructiveForeground,
                 fontSize: AppTypographyConstants.buttonSecondaryLabelFontSize,
                 fontWeight: FontWeight.w700,
               ),
             ),
             SizedBox(width: ScreenUtil().setWidth(8)),
-            const Icon(Icons.delete_outline_rounded, color: Colors.white),
+            Icon(Icons.delete_outline_rounded, color: destructiveForeground),
           ],
         ),
       ),
@@ -116,8 +119,7 @@ class BackupListItem extends StatelessWidget {
               label: Text(
                 '恢复',
                 style: TextStyle(
-                  fontSize:
-                      AppTypographyConstants.buttonSecondaryLabelFontSize,
+                  fontSize: AppTypographyConstants.buttonSecondaryLabelFontSize,
                 ),
               ),
               style: OutlinedButton.styleFrom(
@@ -128,7 +130,9 @@ class BackupListItem extends StatelessWidget {
                   vertical: ScreenUtil().setHeight(10),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ScreenUtil().setWidth(14)),
+                  borderRadius: BorderRadius.circular(
+                    ScreenUtil().setWidth(14),
+                  ),
                 ),
               ),
             ),

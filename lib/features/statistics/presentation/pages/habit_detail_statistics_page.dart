@@ -50,6 +50,16 @@ class _HabitDetailStatisticsView extends StatelessWidget {
 
     if (!hasTarget) return Container();
 
+    final remainingColor = ThemeHelper.outline(context);
+    final completedForeground = ThemeHelper.getOptimalTextColor(
+      context,
+      habit.color,
+    );
+    final remainingForeground = ThemeHelper.getOptimalTextColor(
+      context,
+      remainingColor,
+    );
+
     return Container(
       margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
       decoration: ThemeHelper.panelDecoration(
@@ -117,6 +127,9 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                             completedDays,
                             remainingDays,
                             habit.color,
+                            remainingColor: remainingColor,
+                            completedForeground: completedForeground,
+                            remainingForeground: remainingForeground,
                           ),
                           centerSpaceRadius: 40.r,
                           sectionsSpace: 0,
@@ -144,7 +157,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                       ),
                       _buildMetricRow(
                         context,
-                        color: Colors.grey.shade400,
+                        color: remainingColor,
                         label: '剩余',
                         value: '$remainingDays 天',
                       ),
@@ -604,11 +617,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -640,11 +649,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     ).heroSecondaryForeground;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
+      decoration: ThemeHelper.heroControlDecoration(context, radius: 18.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -92,19 +92,21 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       return _createLineChartBarData(data, habit.color, index);
     }).toList();
 
-    final List<LineChartBarData> completionData = widget.habits.asMap().entries.map((
-      entry,
-    ) {
-      final index = entry.key;
-      final habit = entry.value;
-      final data = chartAdapter.generateRollingCompletionRateSpots(
-        habit,
-        widget.selectedPeriod,
-        range: widget.rollingRange,
-        weekStartDay: widget.weekStartDay,
-      );
-      return _createLineChartBarData(data, habit.color, index);
-    }).toList();
+    final List<LineChartBarData> completionData = widget.habits
+        .asMap()
+        .entries
+        .map((entry) {
+          final index = entry.key;
+          final habit = entry.value;
+          final data = chartAdapter.generateRollingCompletionRateSpots(
+            habit,
+            widget.selectedPeriod,
+            range: widget.rollingRange,
+            weekStartDay: widget.weekStartDay,
+          );
+          return _createLineChartBarData(data, habit.color, index);
+        })
+        .toList();
 
     final bool hasTrackTime = widget.habits.any((h) => h.trackTime);
 
@@ -247,7 +249,9 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                 Icon(
                   Icons.info_outline,
                   size: StatisticsChartWidgetConstants.helperIconSize,
-                  color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
+                  color: ThemeHelper.onBackground(
+                    context,
+                  ).withValues(alpha: 0.7),
                 ),
                 SizedBox(
                   width: StatisticsChartWidgetConstants.helperIconTextSpacing,
@@ -305,10 +309,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         show: true,
         color: color.withValues(alpha: 0.1), // 半透明背景色
         gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha: 0.2),
-            color.withValues(alpha: 0),
-          ],
+          colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -347,8 +348,8 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     final leftInterval = chartType == 'count'
         ? 1.0
         : chartType == 'completionRate'
-            ? 25.0
-            : maxY / 5;
+        ? 25.0
+        : maxY / 5;
 
     return LineChartData(
       // 启用交互功能
@@ -361,7 +362,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                   FlLine(
                     color: barData.color != null
                         ? barData.color!.withValues(alpha: 0.3)
-                        : Colors.grey.shade300,
+                        : ThemeHelper.outline(context),
                     strokeWidth: ScreenUtil().setWidth(2),
                   ),
                   FlDotData(show: false),
@@ -460,8 +461,8 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                   chartType == 'count'
                       ? value.toInt().toString()
                       : chartType == 'completionRate'
-                          ? '${value.toInt()}%'
-                          : value.toStringAsFixed(0),
+                      ? '${value.toInt()}%'
+                      : value.toStringAsFixed(0),
                   style: TextStyle(
                     fontSize: MediaQuery.textScalerOf(context).scale(12),
                     color: ThemeHelper.onSurfaceVariant(context),

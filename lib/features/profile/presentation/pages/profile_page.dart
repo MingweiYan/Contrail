@@ -449,6 +449,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildClearDataCard() {
+    final destructiveColor = ThemeHelper.destructive(context);
+
     return Container(
       margin: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
       decoration: ThemeHelper.panelDecoration(
@@ -457,19 +459,31 @@ class _ProfilePageState extends State<ProfilePage> {
         radius: 24.w,
       ),
       child: ListTile(
+        leading: Container(
+          width: 44.w,
+          height: 44.w,
+          decoration: BoxDecoration(
+            color: destructiveColor,
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          child: Icon(
+            Icons.delete_forever_outlined,
+            color: ThemeHelper.onDestructive(context),
+          ),
+        ),
         title: Text(
           '清空数据',
           style: TextStyle(
             fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.w500,
-            color: Colors.red,
+            color: ThemeHelper.onBackground(context),
           ),
         ),
         subtitle: Text(
           '删除所有习惯和统计数据',
           style: TextStyle(
             fontSize: AppTypographyConstants.dialogBodyFontSize,
-            color: Colors.red.withValues(alpha: 0.7),
+            color: ThemeHelper.onSurfaceVariant(context),
           ),
         ),
         onTap: () {
@@ -489,7 +503,7 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(
             fontSize: AppTypographyConstants.dialogTitleFontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: ThemeHelper.onBackground(context),
           ),
         ),
         content: Text(
@@ -523,11 +537,11 @@ class _ProfilePageState extends State<ProfilePage> {
               '确认',
               style: TextStyle(
                 fontSize: AppTypographyConstants.dialogActionFontSize,
-                color: Colors.white,
+                color: ThemeHelper.onDestructive(context),
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: ThemeHelper.destructive(context),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.w),
               ),
@@ -548,7 +562,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       '所有数据已清空',
                       style: TextStyle(
                         fontSize: AppTypographyConstants.snackbarFontSize,
-                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -560,7 +573,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       '清空数据失败: $e',
                       style: TextStyle(
                         fontSize: AppTypographyConstants.snackbarFontSize,
-                        color: Colors.white,
                       ),
                     ),
                   ),

@@ -83,7 +83,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
       }
       _trackTime = widget.habitToEdit!.trackTime;
       // 从保存的习惯中加载目标时间，如果没有则使用默认值
-      _targetTimeMinutes = widget.habitToEdit!.targetTimeMinutes ??
+      _targetTimeMinutes =
+          widget.habitToEdit!.targetTimeMinutes ??
           _habitService.calculateDefaultTargetTimeMinutes(_targetDays);
       _selectedColor = widget.habitToEdit!.color; // 从现有习惯加载颜色
     } else {
@@ -245,9 +246,12 @@ class _AddHabitPageState extends State<AddHabitPage> {
                     Navigator.of(context).pop(false);
                   },
                 ),
-                TextButton(
+                FilledButton(
                   child: const Text('删除'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ThemeHelper.destructive(context),
+                    foregroundColor: ThemeHelper.onDestructive(context),
+                  ),
                   onPressed: () {
                     Navigator.of(context).pop(true);
                   },
@@ -335,9 +339,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: '请输入 1 到 $maxDays 之间的数字',
-          ),
+          decoration: InputDecoration(hintText: '请输入 1 到 $maxDays 之间的数字'),
           autofocus: true,
         ),
         actions: [
@@ -486,8 +488,11 @@ class _AddHabitPageState extends State<AddHabitPage> {
         // 显示错误消息
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('保存失败: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text(
+              '保存失败: ${e.toString()}',
+              style: TextStyle(color: ThemeHelper.onDestructive(context)),
+            ),
+            backgroundColor: ThemeHelper.destructive(context),
           ),
         );
       }
@@ -499,8 +504,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
     final isEditing = widget.habitToEdit != null;
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary =
-        ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
 
     return Scaffold(
       body: Container(
@@ -658,7 +664,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               hintText: '习惯名称',
                               border: InputBorder.none,
                               hintStyle: TextStyle(
-                                fontSize: AddHabitPageConstants.subtitleFontSize,
+                                fontSize:
+                                    AddHabitPageConstants.subtitleFontSize,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurface.withValues(alpha: 0.5),
@@ -703,10 +710,13 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                   ),
                                 ),
                                 style: TextStyle(
-                                  fontSize: AppTypographyConstants.formInputFontSize,
+                                  fontSize:
+                                      AppTypographyConstants.formInputFontSize,
                                   height: 1.45,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                                 validator: (value) {
                                   if (value != null &&
@@ -754,10 +764,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                       document: Document.fromJson(
                                         jsonDecode(_descriptionJson!),
                                       ),
-                                      selection:
-                                          const TextSelection.collapsed(
-                                            offset: 0,
-                                          ),
+                                      selection: const TextSelection.collapsed(
+                                        offset: 0,
+                                      ),
                                     )..readOnly = true,
                                     config: const QuillEditorConfig(
                                       padding: EdgeInsets.zero,
@@ -827,14 +836,16 @@ class _AddHabitPageState extends State<AddHabitPage> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Theme.of(context).colorScheme.surface,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
                                       border: Border.all(
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onSurface
                                             .withValues(alpha: 0.24),
-                                        width:
-                                            AddHabitPageConstants.colorBorderWidth,
+                                        width: AddHabitPageConstants
+                                            .colorBorderWidth,
                                       ),
                                     ),
                                     child: Center(
@@ -852,8 +863,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
 
                               final color = _colorOptions[index];
                               final isSelected =
-                                  color.toARGB32() ==
-                                  _selectedColor.toARGB32();
+                                  color.toARGB32() == _selectedColor.toARGB32();
                               return GestureDetector(
                                 onTap: () => _selectColor(color),
                                 onLongPress: () => _deleteCustomColor(color),
@@ -1110,14 +1120,15 @@ class _AddHabitPageState extends State<AddHabitPage> {
                               context,
                               padding:
                                   AddHabitPageConstants.buttonVerticalPadding,
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.primary,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
                             ),
                             child: Text(
                               isEditing ? '更新习惯' : '添加习惯',
                               style: TextStyle(
-                                fontSize:
-                                    AppTypographyConstants.buttonPrimaryLargeFontSize,
+                                fontSize: AppTypographyConstants
+                                    .buttonPrimaryLargeFontSize,
                                 fontWeight: FontWeight.w800,
                                 color: ThemeHelper.onPrimary(context),
                               ),
@@ -1150,11 +1161,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1228,7 +1235,9 @@ class _AddHabitPageState extends State<AddHabitPage> {
               style: TextStyle(
                 fontSize: AppTypographyConstants.buttonLabelFontSize,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? scheme.primary : ThemeHelper.onBackground(context),
+                color: selected
+                    ? scheme.primary
+                    : ThemeHelper.onBackground(context),
               ),
             ),
           ),

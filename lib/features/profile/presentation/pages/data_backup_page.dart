@@ -52,7 +52,9 @@ class _DataBackupPageState extends State<DataBackupPage>
     if (message == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       onClear();
     });
   }
@@ -78,9 +80,9 @@ class _DataBackupPageState extends State<DataBackupPage>
             ).showSnackBar(const SnackBar(content: Text('从本地备份恢复成功')));
             Navigator.pop(context);
           } else if (backupProvider.errorMessage != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(backupProvider.errorMessage!)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(backupProvider.errorMessage!)),
+            );
             backupProvider.clearError();
           }
         },
@@ -161,7 +163,8 @@ class _DataBackupPageState extends State<DataBackupPage>
                                   label: '下次备份',
                                   value: _nextBackupLabel(
                                     enabled: backupProvider.autoBackupEnabled,
-                                    lastBackupTime: backupProvider.lastBackupTime,
+                                    lastBackupTime:
+                                        backupProvider.lastBackupTime,
                                     frequency: backupProvider.backupFrequency,
                                   ),
                                 ),
@@ -214,7 +217,9 @@ class _DataBackupPageState extends State<DataBackupPage>
 
   Widget _buildHeroHeader(BuildContext context) {
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
@@ -262,11 +267,7 @@ class _DataBackupPageState extends State<DataBackupPage>
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -299,7 +300,7 @@ class _DataBackupPageState extends State<DataBackupPage>
       child: TabBar(
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
-        labelColor: Colors.white,
+        labelColor: ThemeHelper.onPrimary(context),
         unselectedLabelColor: ThemeHelper.onBackground(
           context,
         ).withValues(alpha: 0.7),
@@ -347,10 +348,7 @@ class _DataBackupPageState extends State<DataBackupPage>
               label: '最近备份',
               value: _formatDateTime(backupProvider.lastBackupTime),
             ),
-            _DetailItem(
-              label: '备份目录',
-              value: backupProvider.localBackupPath,
-            ),
+            _DetailItem(label: '备份目录', value: backupProvider.localBackupPath),
           ],
           onTap: () => _openLocalConfigPage(context, backupProvider),
         ),
@@ -443,8 +441,10 @@ class _DataBackupPageState extends State<DataBackupPage>
           isLoading: webdavProvider.isLoading,
           files: webdavProvider.backupFiles,
           onRefresh: webdavProvider.refreshBackupFiles,
-          onRestore: (file) => _restoreWebDavBackup(context, webdavProvider, file),
-          onDelete: (file) => _deleteWebDavBackup(context, webdavProvider, file),
+          onRestore: (file) =>
+              _restoreWebDavBackup(context, webdavProvider, file),
+          onDelete: (file) =>
+              _deleteWebDavBackup(context, webdavProvider, file),
         ),
       ],
     );
@@ -477,7 +477,9 @@ class _DataBackupPageState extends State<DataBackupPage>
                     width: 42.w,
                     height: 42.w,
                     decoration: BoxDecoration(
-                      color: ThemeHelper.primary(context).withValues(alpha: 0.12),
+                      color: ThemeHelper.primary(
+                        context,
+                      ).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14.r),
                     ),
                     child: Icon(
@@ -503,7 +505,8 @@ class _DataBackupPageState extends State<DataBackupPage>
                         Text(
                           subtitle,
                           style: TextStyle(
-                            fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                            fontSize:
+                                AppTypographyConstants.panelSubtitleFontSize,
                             height: 1.4,
                             color: ThemeHelper.onBackground(
                               context,
@@ -576,9 +579,7 @@ class _DataBackupPageState extends State<DataBackupPage>
               text: '$label ',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: ThemeHelper.onBackground(
-                  context,
-                ).withValues(alpha: 0.6),
+                color: ThemeHelper.onBackground(context).withValues(alpha: 0.6),
               ),
             ),
             TextSpan(
@@ -608,7 +609,9 @@ class _DataBackupPageState extends State<DataBackupPage>
               style: TextStyle(
                 fontSize: AppTypographyConstants.cardSubtitleFontSize,
                 fontWeight: FontWeight.w600,
-                color: ThemeHelper.onBackground(context).withValues(alpha: 0.58),
+                color: ThemeHelper.onBackground(
+                  context,
+                ).withValues(alpha: 0.58),
               ),
             ),
           ),
@@ -619,7 +622,9 @@ class _DataBackupPageState extends State<DataBackupPage>
               style: TextStyle(
                 fontSize: AppTypographyConstants.cardSubtitleFontSize,
                 height: 1.4,
-                color: ThemeHelper.onBackground(context).withValues(alpha: 0.84),
+                color: ThemeHelper.onBackground(
+                  context,
+                ).withValues(alpha: 0.84),
               ),
             ),
           ),
@@ -677,7 +682,8 @@ class _DataBackupPageState extends State<DataBackupPage>
     BuildContext context,
     BackupFileInfo backupFile,
   ) async {
-    final shouldDelete = await showDialog<bool>(
+    final shouldDelete =
+        await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('确认删除'),
@@ -687,9 +693,13 @@ class _DataBackupPageState extends State<DataBackupPage>
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text('取消'),
               ),
-              TextButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('删除', style: TextStyle(color: Colors.red)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ThemeHelper.destructive(context),
+                  foregroundColor: ThemeHelper.onDestructive(context),
+                ),
+                child: const Text('删除'),
               ),
             ],
           ),
@@ -719,7 +729,8 @@ class _DataBackupPageState extends State<DataBackupPage>
     WebDavBackupProvider webdavProvider,
     BackupFileInfo file,
   ) async {
-    final shouldRestore = await showDialog<bool>(
+    final shouldRestore =
+        await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: Theme.of(context).cardColor,
@@ -730,9 +741,13 @@ class _DataBackupPageState extends State<DataBackupPage>
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text('取消'),
               ),
-              TextButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('确认'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ThemeHelper.warning(context),
+                  foregroundColor: ThemeHelper.onWarning(context),
+                ),
+                child: const Text('确认恢复'),
               ),
             ],
           ),
@@ -753,7 +768,8 @@ class _DataBackupPageState extends State<DataBackupPage>
     WebDavBackupProvider webdavProvider,
     BackupFileInfo file,
   ) async {
-    final shouldDelete = await showDialog<bool>(
+    final shouldDelete =
+        await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: Theme.of(context).cardColor,
@@ -764,9 +780,13 @@ class _DataBackupPageState extends State<DataBackupPage>
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text('取消'),
               ),
-              TextButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('确认'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ThemeHelper.destructive(context),
+                  foregroundColor: ThemeHelper.onDestructive(context),
+                ),
+                child: const Text('确认删除'),
               ),
             ],
           ),

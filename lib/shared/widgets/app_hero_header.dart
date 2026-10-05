@@ -7,10 +7,7 @@ class AppHeroHeaderBadgeData {
   final IconData icon;
   final String label;
 
-  const AppHeroHeaderBadgeData({
-    required this.icon,
-    required this.label,
-  });
+  const AppHeroHeaderBadgeData({required this.icon, required this.label});
 }
 
 class AppHeroHeaderActionData {
@@ -51,8 +48,9 @@ class AppHeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondaryForeground =
-        ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondaryForeground = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
 
     Widget titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,26 +121,18 @@ class _HeaderBadge extends StatelessWidget {
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
+      decoration: ThemeHelper.heroControlDecoration(context, radius: 999.r),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            data.icon,
-            size: 14.sp,
-            color: heroForeground.withValues(alpha: 0.92),
-          ),
+          Icon(data.icon, size: 14.sp, color: heroForeground),
           SizedBox(width: 6.w),
           Text(
             data.label,
             style: TextStyle(
               fontSize: AppTypographyConstants.primaryHeroBadgeFontSize,
               fontWeight: FontWeight.w700,
-              color: heroForeground.withValues(alpha: 0.92),
+              color: heroForeground,
             ),
           ),
         ],
@@ -158,7 +148,8 @@ class _HeaderAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
+    final visualTheme = ThemeHelper.visualTheme(context);
+    final heroForeground = visualTheme.heroForeground;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -166,11 +157,7 @@ class _HeaderAction extends StatelessWidget {
         borderRadius: BorderRadius.circular(18.r),
         child: Ink(
           padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 18.r),
           child: Column(
             children: [
               Icon(data.icon, size: 20.sp, color: heroForeground),
@@ -179,7 +166,8 @@ class _HeaderAction extends StatelessWidget {
                 data.title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: AppTypographyConstants.primaryHeroActionTitleFontSize,
+                  fontSize:
+                      AppTypographyConstants.primaryHeroActionTitleFontSize,
                   fontWeight: FontWeight.w700,
                   color: heroForeground,
                 ),
@@ -192,7 +180,7 @@ class _HeaderAction extends StatelessWidget {
                   fontSize:
                       AppTypographyConstants.primaryHeroActionSubtitleFontSize,
                   fontWeight: FontWeight.w500,
-                  color: heroForeground.withValues(alpha: 0.72),
+                  color: visualTheme.heroSecondaryForeground,
                 ),
               ),
             ],

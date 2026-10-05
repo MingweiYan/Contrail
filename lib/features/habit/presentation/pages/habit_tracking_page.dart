@@ -448,7 +448,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 Icon(
                   icon,
                   size: HabitTrackingPageConstants.iconSize,
-                  color: isSelected ? scheme.primary : ThemeHelper.onSurface(context),
+                  color: isSelected
+                      ? scheme.primary
+                      : ThemeHelper.onSurface(context),
                 ),
                 SizedBox(width: HabitTrackingPageConstants.extraSmallSpacing),
                 Flexible(
@@ -458,7 +460,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: HabitTrackingPageConstants.buttonFontSize,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       color: isSelected
                           ? scheme.primary
                           : ThemeHelper.onSurface(context),
@@ -590,8 +594,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                             backgroundColor: Theme.of(
                               context,
                             ).colorScheme.primary.withValues(alpha: 0.10),
-                            padding:
-                                HabitTrackingPageConstants.settingsButtonPadding,
+                            padding: HabitTrackingPageConstants
+                                .settingsButtonPadding,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
                                 HabitTrackingPageConstants.buttonBorderRadius,
@@ -625,11 +629,10 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                             _showSettings = false;
                             if (_selectedMode == TrackingMode.stopwatch) {
                               _elapsedTime = Duration.zero;
-                            } else if (_selectedMode == TrackingMode.countdown ||
+                            } else if (_selectedMode ==
+                                    TrackingMode.countdown ||
                                 _selectedMode == TrackingMode.pomodoro) {
-                              _elapsedTime = Duration(
-                                minutes: _timerDuration,
-                              );
+                              _elapsedTime = Duration(minutes: _timerDuration);
                             }
 
                             if (_selectedMode == TrackingMode.pomodoro &&
@@ -654,8 +657,11 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                         },
                         style: ThemeHelper.elevatedButtonStyle(
                           context,
-                          padding: HabitTrackingPageConstants.startButtonPadding,
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          padding:
+                              HabitTrackingPageConstants.startButtonPadding,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                         ),
                         child: Text(
                           '开始计时',
@@ -766,8 +772,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                           child: Text(
                             '${_elapsedTime.inHours}h',
                             style: TextStyle(
-                              fontSize:
-                                  AppTypographyConstants.formSectionTitleFontSize,
+                              fontSize: AppTypographyConstants
+                                  .formSectionTitleFontSize,
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -841,7 +847,10 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   vertical: HabitTrackingPageConstants.maxLargeSpacing,
                 ),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 14.h,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -893,7 +902,9 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
 
     final decoration = ThemeHelper.generateBackgroundDecoration(context);
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
 
     return Scaffold(
       body: Container(
@@ -973,11 +984,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1005,11 +1012,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
         : (_focusStatus == FocusStatus.run ? '进行中' : '已暂停');
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
+      decoration: ThemeHelper.heroControlDecoration(context, radius: 999.r),
       child: Text(
         label,
         style: TextStyle(
@@ -1030,14 +1033,16 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final backgroundColor = destructive
-        ? const Color(0xFFD84D5C)
+        ? ThemeHelper.destructive(context)
         : accent
         ? scheme.primary
         : active
         ? scheme.secondary
         : ThemeHelper.visualTheme(context).panelSecondaryColor;
-    final foregroundColor = destructive || accent
-        ? Colors.white
+    final foregroundColor = destructive
+        ? ThemeHelper.onDestructive(context)
+        : accent
+        ? ThemeHelper.onPrimary(context)
         : active
         ? ThemeHelper.onSecondary(context)
         : ThemeHelper.onSurface(context);

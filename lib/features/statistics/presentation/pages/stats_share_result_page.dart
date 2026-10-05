@@ -152,7 +152,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
               ),
               backDrawRodData: BackgroundBarChartRodData(
                 toY: maxValue,
-                color: Colors.grey[200],
+                color: ThemeHelper.surfaceVariant(context),
               ),
             ),
           ],
@@ -242,7 +242,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     drawVerticalLine: false,
                     horizontalInterval: 0.25,
                     getDrawingHorizontalLine: (value) => FlLine(
-                      color: Colors.black.withValues(alpha: 0.06),
+                      color: ThemeHelper.outline(
+                        context,
+                      ).withValues(alpha: 0.35),
                       strokeWidth: ScreenUtil().setWidth(1),
                     ),
                   ),
@@ -492,6 +494,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     final index = entry.key;
                     final data = entry.value;
                     final isTouched = index == touchedIndex;
+                    final titleColor = ThemeHelper.getOptimalTextColor(
+                      context,
+                      data.color,
+                    );
                     // 增加缩放效果的差异，使变化更明显
                     final radius = isTouched
                         ? StatsShareResultPageConstants.activePieChartRadius
@@ -511,12 +517,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         fontWeight: isTouched
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isTouched ? Colors.white : Colors.black,
+                        color: titleColor,
                       ),
                       // 增加更明显的边框效果
                       borderSide: isTouched
                           ? BorderSide(
-                              color: Colors.black,
+                              color: titleColor,
                               width: StatsShareResultPageConstants
                                   .pieChartBorderWidth,
                             )
@@ -669,6 +675,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     final index = entry.key;
                     final data = entry.value;
                     final isTouched = index == touchedIndex;
+                    final titleColor = ThemeHelper.getOptimalTextColor(
+                      context,
+                      data.color,
+                    );
                     // 增加缩放效果的差异，使变化更明显
                     final radius = isTouched
                         ? ScreenUtil().setWidth(100)
@@ -686,12 +696,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         fontWeight: isTouched
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isTouched ? Colors.white : Colors.black,
+                        color: titleColor,
                       ),
                       // 增加更明显的边框效果
                       borderSide: isTouched
                           ? BorderSide(
-                              color: Colors.black,
+                              color: titleColor,
                               width: ScreenUtil().setWidth(3),
                             )
                           : BorderSide.none,
@@ -968,10 +978,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
             horizontal: ScreenUtil().setWidth(14),
             vertical: ScreenUtil().setHeight(11),
           ),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          decoration: ThemeHelper.heroControlDecoration(
+            context,
+            radius: ScreenUtil().setWidth(16),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1003,10 +1012,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
         horizontal: ScreenUtil().setWidth(12),
         vertical: ScreenUtil().setHeight(12),
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      decoration: ThemeHelper.heroControlDecoration(
+        context,
+        radius: ScreenUtil().setWidth(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

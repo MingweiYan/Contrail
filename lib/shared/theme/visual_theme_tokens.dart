@@ -23,6 +23,16 @@ class VisualThemeTokens extends ThemeExtension<VisualThemeTokens> {
   final List<BoxShadow> panelShadow;
   final bool useGlass;
 
+  bool get usesLightHeroForeground => heroForeground.computeLuminance() >= 0.5;
+
+  Color get heroControlBackground =>
+      (usesLightHeroForeground ? Colors.black : Colors.white).withValues(
+        alpha: usesLightHeroForeground ? 0.12 : 0.18,
+      );
+
+  Color get heroControlBorder =>
+      heroForeground.withValues(alpha: usesLightHeroForeground ? 0.24 : 0.20);
+
   const VisualThemeTokens({
     required this.backgroundGradient,
     required this.heroGradient,
@@ -109,7 +119,11 @@ class VisualThemeTokens extends ThemeExtension<VisualThemeTokens> {
 
     return VisualThemeTokens(
       backgroundGradient:
-          LinearGradient.lerp(backgroundGradient, other.backgroundGradient, t) ??
+          LinearGradient.lerp(
+            backgroundGradient,
+            other.backgroundGradient,
+            t,
+          ) ??
           backgroundGradient,
       heroGradient:
           LinearGradient.lerp(heroGradient, other.heroGradient, t) ??
@@ -136,18 +150,10 @@ class VisualThemeTokens extends ThemeExtension<VisualThemeTokens> {
       navBackground:
           Color.lerp(navBackground, other.navBackground, t) ?? navBackground,
       navSelectedBackground:
-          Color.lerp(
-            navSelectedBackground,
-            other.navSelectedBackground,
-            t,
-          ) ??
+          Color.lerp(navSelectedBackground, other.navSelectedBackground, t) ??
           navSelectedBackground,
       navSelectedForeground:
-          Color.lerp(
-            navSelectedForeground,
-            other.navSelectedForeground,
-            t,
-          ) ??
+          Color.lerp(navSelectedForeground, other.navSelectedForeground, t) ??
           navSelectedForeground,
       navUnselectedForeground:
           Color.lerp(
@@ -171,11 +177,7 @@ class VisualThemeTokens extends ThemeExtension<VisualThemeTokens> {
           Color.lerp(destructiveColor, other.destructiveColor, t) ??
           destructiveColor,
       destructiveForeground:
-          Color.lerp(
-            destructiveForeground,
-            other.destructiveForeground,
-            t,
-          ) ??
+          Color.lerp(destructiveForeground, other.destructiveForeground, t) ??
           destructiveForeground,
       panelShadow: t < 0.5 ? panelShadow : other.panelShadow,
       useGlass: t < 0.5 ? useGlass : other.useGlass,

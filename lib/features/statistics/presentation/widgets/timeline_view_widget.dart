@@ -97,7 +97,9 @@ class TimelineViewWidget extends StatelessWidget {
             itemCount: focusSessions.length,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.only(bottom: TimelineViewWidgetConstants.itemSpacing),
+            padding: EdgeInsets.only(
+              bottom: TimelineViewWidgetConstants.itemSpacing,
+            ),
             itemBuilder: (context, index) {
               final session = focusSessions[index];
               final startTime = DateFormat(
@@ -105,8 +107,7 @@ class TimelineViewWidget extends StatelessWidget {
               ).format(session['startTime']);
               final endTime = DateFormat('HH:mm').format(session['endTime']);
               final date = DateFormat('MM月dd日').format(session['startTime']);
-              final weekday =
-                  getWeekdayText(session['startTime'] as DateTime);
+              final weekday = getWeekdayText(session['startTime'] as DateTime);
               final duration = session['duration'] as Duration;
               final durationStr =
                   '${duration.inHours}小时${duration.inMinutes % 60}分钟';
@@ -131,8 +132,12 @@ class TimelineViewWidget extends StatelessWidget {
                               onPressed: () => Navigator.of(ctx).pop(false),
                               child: const Text('取消'),
                             ),
-                            TextButton(
+                            FilledButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: ThemeHelper.destructive(ctx),
+                                foregroundColor: ThemeHelper.onDestructive(ctx),
+                              ),
                               child: const Text('删除'),
                             ),
                           ],
@@ -155,8 +160,11 @@ class TimelineViewWidget extends StatelessWidget {
                 background: Container(
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  color: Colors.redAccent,
-                  child: const Icon(Icons.delete, color: Colors.white),
+                  color: ThemeHelper.destructive(context),
+                  child: Icon(
+                    Icons.delete,
+                    color: ThemeHelper.onDestructive(context),
+                  ),
                 ),
                 child: Container(
                   margin: EdgeInsets.only(
@@ -254,7 +262,9 @@ class TimelineViewWidget extends StatelessWidget {
                                       Text(
                                         date,
                                         style: TextStyle(
-                                          color: Colors.grey.shade700,
+                                          color: ThemeHelper.onSurfaceVariant(
+                                            context,
+                                          ),
                                           fontSize: TimelineViewWidgetConstants
                                               .timeFontSize,
                                         ),
@@ -262,8 +272,11 @@ class TimelineViewWidget extends StatelessWidget {
                                       Text(
                                         weekday,
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: TimelineViewWidgetConstants
+                                          color: ThemeHelper.onSurfaceVariant(
+                                            context,
+                                          ),
+                                          fontSize:
+                                              TimelineViewWidgetConstants
                                                   .timeFontSize -
                                               2,
                                         ),
@@ -281,7 +294,9 @@ class TimelineViewWidget extends StatelessWidget {
                                 child: Text(
                                   '$startTime - $endTime',
                                   style: TextStyle(
-                                    color: Colors.grey.shade700,
+                                    color: ThemeHelper.onSurfaceVariant(
+                                      context,
+                                    ),
                                     fontSize: TimelineViewWidgetConstants
                                         .timeFontSize,
                                   ),

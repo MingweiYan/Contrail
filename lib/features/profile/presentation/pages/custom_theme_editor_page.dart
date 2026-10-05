@@ -827,10 +827,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         onTap: onTap,
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          decoration: ThemeHelper.heroControlDecoration(
+            context,
+            radius: 18.r,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
