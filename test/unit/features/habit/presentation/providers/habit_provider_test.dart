@@ -13,11 +13,18 @@ import 'package:contrail/features/habit/domain/use_cases/stop_tracking_use_case.
 import 'package:contrail/features/habit/domain/use_cases/remove_tracking_record_use_case.dart';
 
 class MockGetHabitsUseCase extends Mock implements GetHabitsUseCase {}
+
 class MockAddHabitUseCase extends Mock implements AddHabitUseCase {}
+
 class MockUpdateHabitUseCase extends Mock implements UpdateHabitUseCase {}
+
 class MockDeleteHabitUseCase extends Mock implements DeleteHabitUseCase {}
+
 class MockStopTrackingUseCase extends Mock implements StopTrackingUseCase {}
-class MockRemoveTrackingRecordUseCase extends Mock implements RemoveTrackingRecordUseCase {}
+
+class MockRemoveTrackingRecordUseCase extends Mock
+    implements RemoveTrackingRecordUseCase {}
+
 class MockHabitColorRegistry extends Mock implements HabitColorRegistry {}
 
 void main() {
@@ -90,7 +97,9 @@ void main() {
       habitColorRegistry: mockHabitColorRegistry,
     );
 
-    when(() => mockGetHabitsUseCase.execute()).thenAnswer((_) async => testHabits);
+    when(
+      () => mockGetHabitsUseCase.execute(),
+    ).thenAnswer((_) async => testHabits);
     when(() => mockHabitColorRegistry.buildFromHabits(any())).thenReturn(null);
   });
 
@@ -102,7 +111,9 @@ void main() {
       expect(habitProvider.isLoading, false);
       expect(habitProvider.errorMessage, null);
       verify(() => mockGetHabitsUseCase.execute()).called(1);
-      verify(() => mockHabitColorRegistry.buildFromHabits(testHabits)).called(1);
+      verify(
+        () => mockHabitColorRegistry.buildFromHabits(testHabits),
+      ).called(1);
     });
 
     test(
@@ -138,7 +149,9 @@ void main() {
       await habitProvider.addHabit(newHabit);
 
       verify(() => mockAddHabitUseCase.execute(newHabit)).called(1);
-      verify(() => mockHabitColorRegistry.buildFromHabits(any())).called(greaterThan(1));
+      verify(
+        () => mockHabitColorRegistry.buildFromHabits(any()),
+      ).called(greaterThan(1));
     });
 
     test('updateHabit should update habit in repository', () async {
@@ -161,41 +174,39 @@ void main() {
       await habitProvider.updateHabit(updatedHabit);
 
       verify(() => mockUpdateHabitUseCase.execute(updatedHabit)).called(1);
-      verify(() => mockHabitColorRegistry.buildFromHabits(any())).called(greaterThan(1));
+      verify(
+        () => mockHabitColorRegistry.buildFromHabits(any()),
+      ).called(greaterThan(1));
     });
 
-    test(
-      'deleteHabit should delete habit from repository',
-      () async {
-        await habitProvider.loadHabits();
+    test('deleteHabit should delete habit from repository', () async {
+      await habitProvider.loadHabits();
 
-        const habitId = '1';
-        when(
-          () => mockDeleteHabitUseCase.execute(habitId),
-        ).thenAnswer((_) async {});
+      const habitId = '1';
+      when(
+        () => mockDeleteHabitUseCase.execute(habitId),
+      ).thenAnswer((_) async {});
 
-        await habitProvider.deleteHabit(habitId);
+      await habitProvider.deleteHabit(habitId);
 
-        verify(() => mockDeleteHabitUseCase.execute(habitId)).called(1);
-      },
-    );
+      verify(() => mockDeleteHabitUseCase.execute(habitId)).called(1);
+    });
 
-    test(
-      'stopTracking should update habit in repository',
-      () async {
-        await habitProvider.loadHabits();
+    test('stopTracking should update habit in repository', () async {
+      await habitProvider.loadHabits();
 
-        const habitId = '1';
-        final duration = Duration(minutes: 20);
-        when(
-          () => mockStopTrackingUseCase.execute(any(), any(), any()),
-        ).thenAnswer((_) async {});
+      const habitId = '1';
+      final duration = Duration(minutes: 20);
+      when(
+        () => mockStopTrackingUseCase.execute(any(), any()),
+      ).thenAnswer((_) async {});
 
-        await habitProvider.stopTracking(habitId, duration);
+      await habitProvider.stopTracking(habitId, duration);
 
-        verify(() => mockStopTrackingUseCase.execute(any(), any(), any())).called(1);
-      },
-    );
+      verify(
+        () => mockStopTrackingUseCase.execute(habitId, duration),
+      ).called(1);
+    });
 
     test(
       'stopTracking should set error message when use case throws',
@@ -206,12 +217,15 @@ void main() {
         final duration = Duration(minutes: 20);
         final exception = Exception('停止追踪失败');
         when(
-          () => mockStopTrackingUseCase.execute(any(), any(), any()),
+          () => mockStopTrackingUseCase.execute(any(), any()),
         ).thenThrow(exception);
 
-        await habitProvider.stopTracking(habitId, duration);
+        await expectLater(
+          habitProvider.stopTracking(habitId, duration),
+          throwsA(same(exception)),
+        );
 
-        expect(habitProvider.errorMessage, '停止追踪失败: $exception');
+        expect(habitProvider.errorMessage, '停止追踪失败：$exception');
         expect(habitProvider.isLoading, false);
       },
     );
@@ -225,13 +239,21 @@ void main() {
         final startTime = DateTime.now();
         final duration = Duration(minutes: 30);
         when(
-          () => mockRemoveTrackingRecordUseCase.execute(any(), any(), any(), any()),
+          () => mockRemoveTrackingRecordUseCase.execute(any(), any(), any()),
         ).thenAnswer((_) async {});
 
         await habitProvider.removeTrackingRecord(habitId, startTime, duration);
 
-        verify(() => mockRemoveTrackingRecordUseCase.execute(any(), any(), any(), any())).called(1);
-        verify(() => mockHabitColorRegistry.buildFromHabits(any())).called(greaterThan(1));
+        verify(
+          () => mockRemoveTrackingRecordUseCase.execute(
+            habitId,
+            startTime,
+            duration,
+          ),
+        ).called(1);
+        verify(
+          () => mockHabitColorRegistry.buildFromHabits(any()),
+        ).called(greaterThan(1));
       },
     );
 
@@ -245,104 +267,97 @@ void main() {
         final duration = Duration(minutes: 30);
         final exception = Exception('删除记录失败');
         when(
-          () => mockRemoveTrackingRecordUseCase.execute(any(), any(), any(), any()),
+          () => mockRemoveTrackingRecordUseCase.execute(any(), any(), any()),
         ).thenThrow(exception);
 
-        await habitProvider.removeTrackingRecord(habitId, startTime, duration);
-
-        expect(habitProvider.errorMessage, '删除追踪记录失败: $exception');
-        expect(habitProvider.isLoading, false);
-      },
-    );
-
-    test(
-      'addHabit should set error message when use case throws',
-      () async {
-        await habitProvider.loadHabits();
-
-        final newHabit = Habit(
-          id: '3',
-          name: '冥想',
-          trackTime: true,
-          totalDuration: Duration.zero,
-          currentDays: 0,
-          targetDays: 14,
-          goalType: GoalType.positive,
-          cycleType: CycleType.daily,
+        await expectLater(
+          habitProvider.removeTrackingRecord(habitId, startTime, duration),
+          throwsA(same(exception)),
         );
-        final exception = Exception('添加失败');
-        when(() => mockAddHabitUseCase.execute(any())).thenThrow(exception);
 
-        await habitProvider.addHabit(newHabit);
-
-        expect(habitProvider.errorMessage, '添加习惯失败: $exception');
+        expect(habitProvider.errorMessage, '删除追踪记录失败：$exception');
         expect(habitProvider.isLoading, false);
       },
     );
 
-    test(
-      'updateHabit should set error message when use case throws',
-      () async {
-        await habitProvider.loadHabits();
+    test('addHabit should set error message when use case throws', () async {
+      await habitProvider.loadHabits();
 
-        final updatedHabit = Habit(
-          id: '1',
-          name: '晨跑更新',
-          trackTime: true,
-          totalDuration: Duration(minutes: 30),
-          currentDays: 7,
-          targetDays: 30,
-          goalType: GoalType.positive,
-          cycleType: CycleType.daily,
-        );
-        final exception = Exception('更新失败');
-        when(() => mockUpdateHabitUseCase.execute(any())).thenThrow(exception);
+      final newHabit = Habit(
+        id: '3',
+        name: '冥想',
+        trackTime: true,
+        totalDuration: Duration.zero,
+        currentDays: 0,
+        targetDays: 14,
+        goalType: GoalType.positive,
+        cycleType: CycleType.daily,
+      );
+      final exception = Exception('添加失败');
+      when(() => mockAddHabitUseCase.execute(any())).thenThrow(exception);
 
-        await habitProvider.updateHabit(updatedHabit);
+      await habitProvider.addHabit(newHabit);
 
-        expect(habitProvider.errorMessage, '更新习惯失败: $exception');
-        expect(habitProvider.isLoading, false);
-      },
-    );
+      expect(habitProvider.errorMessage, '添加习惯失败: $exception');
+      expect(habitProvider.isLoading, false);
+    });
 
-    test(
-      'deleteHabit should set error message when use case throws',
-      () async {
-        await habitProvider.loadHabits();
+    test('updateHabit should set error message when use case throws', () async {
+      await habitProvider.loadHabits();
 
-        const habitId = '1';
-        final exception = Exception('删除失败');
-        when(() => mockDeleteHabitUseCase.execute(habitId)).thenThrow(exception);
+      final updatedHabit = Habit(
+        id: '1',
+        name: '晨跑更新',
+        trackTime: true,
+        totalDuration: Duration(minutes: 30),
+        currentDays: 7,
+        targetDays: 30,
+        goalType: GoalType.positive,
+        cycleType: CycleType.daily,
+      );
+      final exception = Exception('更新失败');
+      when(() => mockUpdateHabitUseCase.execute(any())).thenThrow(exception);
 
-        await habitProvider.deleteHabit(habitId);
+      await habitProvider.updateHabit(updatedHabit);
 
-        expect(habitProvider.errorMessage, '删除习惯失败: $exception');
-        expect(habitProvider.isLoading, false);
-      },
-    );
+      expect(habitProvider.errorMessage, '更新习惯失败: $exception');
+      expect(habitProvider.isLoading, false);
+    });
 
-    test(
-      'updateHabit should handle non-existent habit gracefully',
-      () async {
-        await habitProvider.loadHabits();
+    test('deleteHabit should set error message when use case throws', () async {
+      await habitProvider.loadHabits();
 
-        final nonExistentHabit = Habit(
-          id: '999',
-          name: '不存在的习惯',
-          trackTime: false,
-          totalDuration: Duration.zero,
-          currentDays: 0,
-          targetDays: 10,
-          goalType: GoalType.positive,
-          cycleType: CycleType.daily,
-        );
-        when(() => mockUpdateHabitUseCase.execute(any())).thenAnswer((_) async {});
+      const habitId = '1';
+      final exception = Exception('删除失败');
+      when(() => mockDeleteHabitUseCase.execute(habitId)).thenThrow(exception);
 
-        await habitProvider.updateHabit(nonExistentHabit);
+      await habitProvider.deleteHabit(habitId);
 
-        verify(() => mockUpdateHabitUseCase.execute(nonExistentHabit)).called(1);
-        expect(habitProvider.habits, equals(testHabits));
-      },
-    );
+      expect(habitProvider.errorMessage, '删除习惯失败: $exception');
+      expect(habitProvider.isLoading, false);
+    });
+
+    test('updateHabit should handle non-existent habit gracefully', () async {
+      await habitProvider.loadHabits();
+
+      final nonExistentHabit = Habit(
+        id: '999',
+        name: '不存在的习惯',
+        trackTime: false,
+        totalDuration: Duration.zero,
+        currentDays: 0,
+        targetDays: 10,
+        goalType: GoalType.positive,
+        cycleType: CycleType.daily,
+      );
+      when(
+        () => mockUpdateHabitUseCase.execute(any()),
+      ).thenAnswer((_) async {});
+
+      await habitProvider.updateHabit(nonExistentHabit);
+
+      verify(() => mockUpdateHabitUseCase.execute(nonExistentHabit)).called(1);
+      expect(habitProvider.habits, equals(testHabits));
+    });
   });
 }
