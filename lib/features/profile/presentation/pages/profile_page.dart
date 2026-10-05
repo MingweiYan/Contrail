@@ -12,6 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/features/profile/presentation/providers/profile_view_model.dart';
 import 'package:contrail/shared/widgets/app_hero_header.dart';
+import 'package:contrail/shared/widgets/scroll_to_top_fab.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,12 +22,20 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BackupProvider>().initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,20 +48,14 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Consumer<ProfileViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
+            floatingActionButton: ScrollToTopFab(controller: _scrollController),
             body: Container(
               decoration:
                   ThemeHelper.generateBackgroundDecoration(context) ??
                   BoxDecoration(
                     color: Theme.of(context).scaffoldBackgroundColor,
                   ),
-              padding: PageLayoutConstants.getPageContainerPadding(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(viewModel),
-                  _buildProfileContent(viewModel),
-                ],
-              ),
+              child: _buildProfileContent(viewModel),
             ),
           );
         },
@@ -95,15 +98,15 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileContent(ProfileViewModel viewModel) {
-    return Expanded(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _buildWeeklyOverviewCard(topMargin: 16.h),
-          _buildSystemStatusCard(viewModel),
-          _buildClearDataCard(),
-        ],
-      ),
+    return ListView(
+      controller: _scrollController,
+      padding: HeroHeaderPageConstants.mainPagePadding,
+      children: [
+        _buildHeader(viewModel),
+        _buildWeeklyOverviewCard(topMargin: 16.h),
+        _buildSystemStatusCard(viewModel),
+        _buildClearDataCard(),
+      ],
     );
   }
 
@@ -211,7 +214,9 @@ class _ProfilePageState extends State<ProfilePage> {
             width: 40.w,
             height: 40.w,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14.r),
             ),
             child: Icon(icon, color: ThemeHelper.primary(context), size: 20.sp),
@@ -235,7 +240,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: TextStyle(
                     fontSize: AppTypographyConstants.cardSubtitleFontSize,
                     height: 1.35,
-                    color: ThemeHelper.onBackground(context).withValues(alpha: 0.62),
+                    color: ThemeHelper.onBackground(
+                      context,
+                    ).withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -245,7 +252,9 @@ class _ProfilePageState extends State<ProfilePage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(999.r),
             ),
             child: Text(
@@ -364,10 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               SizedBox(width: 10.w),
               Expanded(
-                child: _buildWeeklyMetric(
-                  label: '专注时长',
-                  value: minutesText,
-                ),
+                child: _buildWeeklyMetric(label: '专注时长', value: minutesText),
               ),
             ],
           ),
@@ -407,10 +413,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildWeeklyMetric({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildWeeklyMetric({required String label, required String value}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
       decoration: BoxDecoration(
@@ -446,6 +449,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildClearDataCard() {
+    final destructiveColor = ThemeHelper.destructive(context);
+
     return Container(
       margin: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
       decoration: ThemeHelper.panelDecoration(
@@ -454,19 +459,31 @@ class _ProfilePageState extends State<ProfilePage> {
         radius: 24.w,
       ),
       child: ListTile(
+        leading: Container(
+          width: 44.w,
+          height: 44.w,
+          decoration: BoxDecoration(
+            color: destructiveColor,
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          child: Icon(
+            Icons.delete_forever_outlined,
+            color: ThemeHelper.onDestructive(context),
+          ),
+        ),
         title: Text(
           '清空数据',
           style: TextStyle(
             fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.w500,
-            color: Colors.red,
+            color: ThemeHelper.onBackground(context),
           ),
         ),
         subtitle: Text(
           '删除所有习惯和统计数据',
           style: TextStyle(
             fontSize: AppTypographyConstants.dialogBodyFontSize,
-            color: Colors.red.withValues(alpha: 0.7),
+            color: ThemeHelper.onSurfaceVariant(context),
           ),
         ),
         onTap: () {
@@ -486,7 +503,7 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(
             fontSize: AppTypographyConstants.dialogTitleFontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: ThemeHelper.onBackground(context),
           ),
         ),
         content: Text(
@@ -520,11 +537,11 @@ class _ProfilePageState extends State<ProfilePage> {
               '确认',
               style: TextStyle(
                 fontSize: AppTypographyConstants.dialogActionFontSize,
-                color: Colors.white,
+                color: ThemeHelper.onDestructive(context),
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: ThemeHelper.destructive(context),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.w),
               ),
@@ -545,7 +562,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       '所有数据已清空',
                       style: TextStyle(
                         fontSize: AppTypographyConstants.snackbarFontSize,
-                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -557,7 +573,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       '清空数据失败: $e',
                       style: TextStyle(
                         fontSize: AppTypographyConstants.snackbarFontSize,
-                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -615,5 +630,4 @@ class _ProfilePageState extends State<ProfilePage> {
     final minute = dateTime.minute.toString().padLeft(2, '0');
     return '$month-$day $hour:$minute';
   }
-
 }

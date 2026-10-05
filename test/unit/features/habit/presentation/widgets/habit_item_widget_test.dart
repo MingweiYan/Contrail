@@ -5,6 +5,7 @@ import 'package:contrail/features/habit/presentation/widgets/habit_item_widget.d
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:contrail/shared/theme/visual_theme_definitions.dart';
 
 void main() {
   setUpAll(() {
@@ -15,7 +16,8 @@ void main() {
     testWidgets('应该正确显示习惯信息', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1440, 2560);
       tester.view.devicePixelRatio = 1.0;
-      
+      addTearDown(tester.view.reset);
+
       final testHabit = Habit(
         id: '1',
         name: '测试习惯',
@@ -25,13 +27,14 @@ void main() {
         targetDays: 30,
         goalType: GoalType.positive,
         cycleType: CycleType.daily,
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
       );
 
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
           builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: HabitItemWidget(
                 habit: testHabit,
@@ -49,18 +52,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('测试习惯'), findsOneWidget);
-      expect(find.text('50%'), findsOneWidget);
-      
-      tester.view.reset();
+      expect(find.text('0/30'), findsOneWidget);
+      expect(find.text('未完成'), findsOneWidget);
     });
 
-    testWidgets('应该显示今日已完成标签', (WidgetTester tester) async {
+    testWidgets('应该显示已完成状态', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1440, 2560);
       tester.view.devicePixelRatio = 1.0;
-      
+      addTearDown(tester.view.reset);
+
       final today = DateTime.now();
       final todayOnly = DateTime(today.year, today.month, today.day);
-      
+
       final testHabit = Habit(
         id: '1',
         name: '测试习惯',
@@ -70,7 +73,7 @@ void main() {
         targetDays: 30,
         goalType: GoalType.positive,
         cycleType: CycleType.daily,
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
         dailyCompletionStatus: {todayOnly: true},
       );
 
@@ -78,6 +81,7 @@ void main() {
         ScreenUtilInit(
           designSize: const Size(375, 812),
           builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: HabitItemWidget(
                 habit: testHabit,
@@ -94,15 +98,14 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('今日已完成'), findsOneWidget);
-      
-      tester.view.reset();
+      expect(find.text('已完成'), findsOneWidget);
     });
 
     testWidgets('应该有播放按钮', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1440, 2560);
       tester.view.devicePixelRatio = 1.0;
-      
+      addTearDown(tester.view.reset);
+
       final testHabit = Habit(
         id: '1',
         name: '测试习惯',
@@ -112,13 +115,14 @@ void main() {
         targetDays: 30,
         goalType: GoalType.positive,
         cycleType: CycleType.daily,
-        colorValue: Colors.blue.value,
+        colorValue: Colors.blue.toARGB32(),
       );
 
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
           builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: HabitItemWidget(
                 habit: testHabit,
@@ -135,9 +139,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-      
-      tester.view.reset();
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
   });
 }

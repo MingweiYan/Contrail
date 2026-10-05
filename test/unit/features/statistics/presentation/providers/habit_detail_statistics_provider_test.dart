@@ -27,35 +27,40 @@ void main() {
 
     test('应该能获取当前周期范围', () {
       final range = provider.getCurrentPeriodRange();
-      
+
       expect(range.start, isNotNull);
       expect(range.end, isNotNull);
-      expect(range.start.isBefore(range.end) || range.start.isAtSameMomentAs(range.end), true);
+      expect(
+        range.start.isBefore(range.end) ||
+            range.start.isAtSameMomentAs(range.end),
+        true,
+      );
     });
 
     test('应该能获取自定义周期标签', () {
       final label = provider.getCustomPeriodLabel();
-      
+
       expect(label.isNotEmpty, true);
     });
 
     test('应该能切换到上一个周期', () {
       final initialOffset = provider.periodOffset;
       provider.previousPeriod();
-      
+
       expect(provider.periodOffset, initialOffset - 1);
     });
 
-    test('应该能切换到下一个周期', () {
-      final initialOffset = provider.periodOffset;
+    test('当前周期向后切换时应该进入滚动窗口', () {
       provider.nextPeriod();
-      
-      expect(provider.periodOffset, initialOffset + 1);
+
+      expect(provider.periodOffset, 0);
+      expect(provider.isCompletionRollingWindow, true);
+      expect(provider.canGoNextPeriod, false);
     });
 
     test('应该能计算习惯统计数据', () {
       final stats = provider.calculateHabitStats();
-      
+
       expect(stats.containsKey('completedDays'), true);
       expect(stats.containsKey('remainingDays'), true);
       expect(stats.containsKey('completionRate'), true);
@@ -64,35 +69,35 @@ void main() {
 
     test('应该能生成次数趋势数据', () {
       final data = provider.generateCountTrendData();
-      
+
       expect(data, isNotNull);
       expect(data.spots, isNotNull);
     });
 
     test('应该能生成时间趋势数据', () {
       final data = provider.generateTimeTrendData();
-      
+
       expect(data, isNotNull);
       expect(data.spots, isNotNull);
     });
 
     test('应该能切换到日历视图的上个月', () {
       provider.previousCalendarMonth();
-      
+
       expect(provider.calendarSelectedYear, isNotNull);
       expect(provider.calendarSelectedMonth, isNotNull);
     });
 
     test('应该能切换到日历视图的下个月', () {
       provider.nextCalendarMonth();
-      
+
       expect(provider.calendarSelectedYear, isNotNull);
       expect(provider.calendarSelectedMonth, isNotNull);
     });
 
     test('应该能设置时间范围', () {
       provider.setTimeRange('month');
-      
+
       expect(provider.timeRange, 'month');
     });
 
@@ -100,7 +105,7 @@ void main() {
       provider.setTimeRange('week');
       provider.navigateToPreviousTimeUnit();
       expect(provider.timeOffset, 0);
-      
+
       provider.setTimeRange('month');
       expect(provider.timeOffset, 0);
     });
@@ -109,7 +114,7 @@ void main() {
       final color = Colors.blue;
       final opacity = 0.5;
       final result = provider.getColorWithOpacity(color, opacity);
-      
+
       expect(result, isNotNull);
     });
 
@@ -122,10 +127,10 @@ void main() {
         cycleType: CycleType.weekly,
       );
       final weeklyProvider = HabitDetailStatisticsProvider(weeklyHabit);
-      
+
       final range = weeklyProvider.getCurrentPeriodRange();
       final days = range.end.difference(range.start).inDays + 1;
-      
+
       expect(days, 7);
     });
 
@@ -138,10 +143,10 @@ void main() {
         cycleType: CycleType.monthly,
       );
       final monthlyProvider = HabitDetailStatisticsProvider(monthlyHabit);
-      
+
       final range = monthlyProvider.getCurrentPeriodRange();
       final days = range.end.difference(range.start).inDays + 1;
-      
+
       expect(days, greaterThan(27));
       expect(days, lessThan(32));
     });

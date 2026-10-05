@@ -37,39 +37,35 @@ class HabitItemWidget extends StatelessWidget {
     final hsl = HSLColor.fromColor(primaryColor);
     final secondaryColor = hsl.withLightness(hsl.lightness * 0.8).toColor();
     final gradientColors = [primaryColor, secondaryColor];
-    final timelineColor = hsl.withLightness((hsl.lightness * 0.55).clamp(0.22, 0.5)).toColor();
+    final timelineColor = hsl
+        .withLightness((hsl.lightness * 0.55).clamp(0.22, 0.5))
+        .toColor();
     final visualTheme = ThemeHelper.visualTheme(context);
     final today = DateTime.now();
     final todayOnly = DateTime(today.year, today.month, today.day);
     final isCompletedToday =
         habit.dailyCompletionStatus.containsKey(todayOnly) &&
         habit.dailyCompletionStatus[todayOnly] == true;
-    final completedInCycle =
-        habit.cycleType != null && habit.targetDays != null
+    final completedInCycle = habit.cycleType != null && habit.targetDays != null
         ? habitManagementService.getCompletedDaysInCurrentCycle(habit)
         : (isCompletedToday ? 1 : 0);
     final targetInCycle = habit.targetDays ?? 1;
     final countProgress = habit.cycleType != null && habit.targetDays != null
-        ? habitManagementService.getCompletionRateInCurrentCycle(habit).clamp(
-            0.0,
-            1.0,
-          )
+        ? habitManagementService
+              .getCompletionRateInCurrentCycle(habit)
+              .clamp(0.0, 1.0)
         : (isCompletedToday ? 1.0 : 0.0);
     final timeProgress =
-        habit.trackTime &&
-            habit.cycleType != null &&
-            habit.targetDays != null
-        ? habitManagementService.getTimeCompletionRateInCurrentCycle(habit)
+        habit.trackTime && habit.cycleType != null && habit.targetDays != null
+        ? habitManagementService
+              .getTimeCompletionRateInCurrentCycle(habit)
               .clamp(0.0, 1.0)
         : 0.0;
     final completedMinutes =
-        habit.trackTime &&
-            habit.cycleType != null &&
-            habit.targetDays != null
+        habit.trackTime && habit.cycleType != null && habit.targetDays != null
         ? habitManagementService.getTotalMinutesInCurrentCycle(habit)
         : 0;
-    final targetMinutes =
-        habit.trackTime && habit.targetDays != null
+    final targetMinutes = habit.trackTime && habit.targetDays != null
         ? (habit.targetTimeMinutes ?? habit.targetDays! * 30)
         : 0;
     final displayProgress = habit.trackTime ? timeProgress : countProgress;
@@ -114,12 +110,12 @@ class HabitItemWidget extends StatelessWidget {
             Text(
               '删除',
               style: TextStyle(
-                color: Colors.white,
+                color: ThemeHelper.onDestructive(context),
                 fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(width: HabitItemWidgetConstants.deleteIconSpacing),
-            Icon(Icons.delete, color: Colors.white),
+            Icon(Icons.delete, color: ThemeHelper.onDestructive(context)),
             SizedBox(width: HabitItemWidgetConstants.deleteTextIconSpacing),
           ],
         ),
@@ -139,16 +135,13 @@ class HabitItemWidget extends StatelessWidget {
                       onPressed: () => Navigator.pop(context, false),
                       child: const Text('取消'),
                     ),
-                    TextButton(
+                    FilledButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: Text(
-                        '删除',
-                        style: TextStyle(
-                          color: ThemeHelper.visualTheme(
-                            context,
-                          ).destructiveColor,
-                        ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ThemeHelper.destructive(context),
+                        foregroundColor: ThemeHelper.onDestructive(context),
                       ),
+                      child: const Text('删除'),
                     ),
                   ],
                 );
@@ -268,18 +261,18 @@ class HabitItemWidget extends StatelessWidget {
                                     habit.name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontSize: AppTypographyConstants
-                                                  .cardPrimaryTitleFontSize,
-                                              fontWeight: FontWeight.w900,
-                                              height: 0.95,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                            ) ??
+                                    style:
+                                        Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium?.copyWith(
+                                          fontSize: AppTypographyConstants
+                                              .cardPrimaryTitleFontSize,
+                                          fontWeight: FontWeight.w900,
+                                          height: 0.95,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ) ??
                                         ThemeHelper.textStyleWithTheme(
                                           context,
                                           fontSize: AppTypographyConstants
@@ -375,10 +368,9 @@ class HabitItemWidget extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999.r),
                               child: LinearProgressIndicator(
                                 value: displayProgress,
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .outline
-                                    .withValues(alpha: 0.24),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.24),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   timelineColor,
                                 ),
@@ -411,9 +403,7 @@ class HabitItemWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.36),
-        ),
+        border: Border.all(color: accentColor.withValues(alpha: 0.36)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -428,11 +418,7 @@ class HabitItemWidget extends StatelessWidget {
             ),
           ),
           SizedBox(width: 6.w),
-          Icon(
-            icon,
-            size: 12.sp,
-            color: accentColor.withValues(alpha: 0.92),
-          ),
+          Icon(icon, size: 12.sp, color: accentColor.withValues(alpha: 0.92)),
         ],
       ),
     );
@@ -451,9 +437,7 @@ class HabitItemWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: ThemeHelper.visualTheme(context).panelSecondaryColor,
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.55),
-        ),
+        border: Border.all(color: accentColor.withValues(alpha: 0.55)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -467,10 +451,9 @@ class HabitItemWidget extends StatelessWidget {
               fontSize: AppTypographyConstants.cardChipFontSize,
               fontWeight: FontWeight.w700,
               height: 1,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.66),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.66),
             ),
           ),
           SizedBox(width: 8.w),
@@ -484,11 +467,7 @@ class HabitItemWidget extends StatelessWidget {
             ),
           ),
           SizedBox(width: 8.w),
-          Icon(
-            icon,
-            size: 11.sp,
-            color: accentColor.withValues(alpha: 0.92),
-          ),
+          Icon(icon, size: 11.sp, color: accentColor.withValues(alpha: 0.92)),
         ],
       ),
     );
@@ -505,15 +484,9 @@ class HabitItemWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(9.r),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.34),
-        ),
+        border: Border.all(color: accentColor.withValues(alpha: 0.34)),
       ),
-      child: Icon(
-        icon,
-        size: 16.sp,
-        color: accentColor,
-      ),
+      child: Icon(icon, size: 16.sp, color: accentColor),
     );
   }
 
@@ -522,6 +495,11 @@ class HabitItemWidget extends StatelessWidget {
     List<Color> gradientColors, {
     required String label,
   }) {
+    final foreground = ThemeHelper.getOptimalTextColor(
+      context,
+      gradientColors[0],
+    );
+
     return Container(
       width: 72.w,
       height: 72.w,
@@ -544,11 +522,7 @@ class HabitItemWidget extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.play_arrow_rounded,
-                size: 21.sp,
-                color: Colors.white,
-              ),
+              Icon(Icons.play_arrow_rounded, size: 21.sp, color: foreground),
               SizedBox(height: 2.h),
               Text(
                 label,
@@ -557,7 +531,7 @@ class HabitItemWidget extends StatelessWidget {
                   fontSize: AppTypographyConstants.cardChipActionFontSize,
                   fontWeight: FontWeight.w700,
                   height: 1,
-                  color: Colors.white,
+                  color: foreground,
                 ),
               ),
             ],
@@ -593,5 +567,4 @@ class HabitItemWidget extends StatelessWidget {
       ),
     );
   }
-
 }

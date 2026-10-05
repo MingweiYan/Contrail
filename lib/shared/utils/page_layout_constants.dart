@@ -134,6 +134,17 @@ class AppDimensionConstants extends BaseLayoutConstants {
   }
 }
 
+/// 带 Hero Header 页面的公共布局参数
+class HeroHeaderPageConstants extends BaseLayoutConstants {
+  // 使用宽度缩放，避免横屏时顶部间距随高度比例被过度压缩。
+  static double get topSpacing => AppDimensionConstants.w(12);
+
+  static EdgeInsets get mainPagePadding =>
+      PageLayoutConstants.getPageContainerPadding().copyWith(top: topSpacing);
+
+  static const double scrollToTopThreshold = 280;
+}
+
 /// 数据备份页面专用常量
 class DataBackupPageConstants extends BaseLayoutConstants {
   // Container内边距
@@ -876,7 +887,9 @@ class ThemeSelectionPageConstants extends BaseLayoutConstants {
   static final EdgeInsets containerPadding = EdgeInsets.all(
     ScreenUtil().setWidth(20),
   );
-  static final EdgeInsets cardPadding = EdgeInsets.all(ScreenUtil().setWidth(20));
+  static final EdgeInsets cardPadding = EdgeInsets.all(
+    ScreenUtil().setWidth(20),
+  );
   static final double themeNameFontSize = ScreenUtil().setSp(20);
   static final double themeDescriptionFontSize = ScreenUtil().setSp(14);
   static final double previewStripHeight = ScreenUtil().setHeight(10);

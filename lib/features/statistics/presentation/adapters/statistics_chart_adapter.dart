@@ -287,8 +287,8 @@ class StatisticsChartAdapter {
   List<FlSpot> generateRollingTrendSpots(
     Habit habit,
     String chartType, // 'count' | 'time'
-    String timeRange, // 'week' | 'month' | 'year'
-    {DateTime? endDate,
+    String timeRange, { // 'week' | 'month' | 'year'
+    DateTime? endDate,
   }) {
     final now = DateTime.now();
     final today = endDate ?? DateTime(now.year, now.month, now.day);
@@ -301,8 +301,8 @@ class StatisticsChartAdapter {
       final int n = timeRange == 'week'
           ? 7
           : timeRange == 'month'
-              ? 30
-              : 12;
+          ? 30
+          : 12;
       for (int i = 0; i < n; i++) {
         spots.add(FlSpot(i.toDouble(), 0.0));
       }
@@ -332,16 +332,18 @@ class StatisticsChartAdapter {
       for (int i = 0; i < 7; i++) {
         final date = today.subtract(Duration(days: 6 - i));
         final dayKey = DateTime(date.year, date.month, date.day);
-        final value =
-            chartType == 'count' ? countFor(dayKey) : timeMinutesFor(dayKey);
+        final value = chartType == 'count'
+            ? countFor(dayKey)
+            : timeMinutesFor(dayKey);
         spots.add(FlSpot(i.toDouble(), value));
       }
     } else if (timeRange == 'month') {
       for (int i = 0; i < 30; i++) {
         final date = today.subtract(Duration(days: 29 - i));
         final dayKey = DateTime(date.year, date.month, date.day);
-        final value =
-            chartType == 'count' ? countFor(dayKey) : timeMinutesFor(dayKey);
+        final value = chartType == 'count'
+            ? countFor(dayKey)
+            : timeMinutesFor(dayKey);
         spots.add(FlSpot(i.toDouble(), value));
       }
     } else {
@@ -399,8 +401,8 @@ class StatisticsChartAdapter {
     String chartType,
     int x,
     double value,
-    String timeRange,
-    {DateTime? endDate,
+    String timeRange, {
+    DateTime? endDate,
   }) {
     final unit = chartType == 'count' ? '次' : '分钟';
     final showCompletion = chartType == 'count';
@@ -466,7 +468,10 @@ class StatisticsChartAdapter {
         DateTime baseDate = now.subtract(Duration(days: timeOffset * 7));
         // 调整到用户设置的周起始日
         WeekStartDay weekStartDay = WeekStartDay.monday;
-        baseDate = TimeManagementUtil.getWeekStartDate(baseDate, weekStartDay: weekStartDay);
+        baseDate = TimeManagementUtil.getWeekStartDate(
+          baseDate,
+          weekStartDay: weekStartDay,
+        );
 
         // 生成该周的7天数据
         for (int i = 6; i >= 0; i--) {
@@ -492,7 +497,10 @@ class StatisticsChartAdapter {
         final monthStart = DateTime(targetYear, targetMonth, 1);
         final monthEnd = DateTime(targetYear, targetMonth + 1, 0);
         WeekStartDay weekStartDay = WeekStartDay.monday;
-        DateTime currentWeekStart = TimeManagementUtil.getWeekStartDate(monthStart, weekStartDay: weekStartDay);
+        DateTime currentWeekStart = TimeManagementUtil.getWeekStartDate(
+          monthStart,
+          weekStartDay: weekStartDay,
+        );
         int index = 0;
         while (currentWeekStart.isBefore(
           monthEnd.add(const Duration(days: 1)),
@@ -629,7 +637,10 @@ class StatisticsChartAdapter {
         final monthStart = DateTime(targetYear, targetMonth, 1);
         final monthEnd = DateTime(targetYear, targetMonth + 1, 0);
         WeekStartDay weekStartDay = WeekStartDay.monday;
-        DateTime currentWeekStart = TimeManagementUtil.getWeekStartDate(monthStart, weekStartDay: weekStartDay);
+        DateTime currentWeekStart = TimeManagementUtil.getWeekStartDate(
+          monthStart,
+          weekStartDay: weekStartDay,
+        );
         int index = 0;
         while (currentWeekStart.isBefore(
           monthEnd.add(const Duration(days: 1)),
@@ -760,7 +771,11 @@ class StatisticsChartAdapter {
   }) {
     final target = habit.targetDays ?? 0;
     if (target <= 0) return 0.0;
-    final weeks = _getMonthWeeks(monthBucket.start, monthBucket.end, weekStartDay);
+    final weeks = _getMonthWeeks(
+      monthBucket.start,
+      monthBucket.end,
+      weekStartDay,
+    );
     if (weeks.isEmpty) return 0.0;
 
     double totalRate = 0.0;
@@ -785,8 +800,16 @@ class StatisticsChartAdapter {
   }) {
     final target = habit.targetDays ?? 0;
     if (target <= 0) return 0.0;
-    final selectedMonthStart = DateTime(selectedRange.end.year, selectedRange.end.month, 1);
-    final selectedMonthEnd = DateTime(selectedRange.end.year, selectedRange.end.month + 1, 0);
+    final selectedMonthStart = DateTime(
+      selectedRange.end.year,
+      selectedRange.end.month,
+      1,
+    );
+    final selectedMonthEnd = DateTime(
+      selectedRange.end.year,
+      selectedRange.end.month + 1,
+      0,
+    );
     final effectiveEnd = _minDate(bucket.end, selectedMonthEnd);
     if (effectiveEnd.isBefore(selectedMonthStart)) return 0.0;
     final completed = _completedDaysInRange(
@@ -820,7 +843,10 @@ class StatisticsChartAdapter {
     return _capCompletionRate(completed / target * _maxCompletionRate);
   }
 
-  double _annualCumulativeRateForMonthBucket(Habit habit, DateTimeRange monthBucket) {
+  double _annualCumulativeRateForMonthBucket(
+    Habit habit,
+    DateTimeRange monthBucket,
+  ) {
     final target = habit.targetDays ?? 0;
     if (target <= 0) return 0.0;
     final yearStart = DateTime(monthBucket.end.year, 1, 1);
@@ -917,8 +943,11 @@ class StatisticsChartAdapter {
   List<PieChartSectionData> generatePieData(
     int completedDays,
     int remainingDays,
-    Color habitColor,
-  ) {
+    Color habitColor, {
+    required Color remainingColor,
+    required Color completedForeground,
+    required Color remainingForeground,
+  }) {
     if (remainingDays <= 0) {
       // 如果没有剩余天数，只显示完成部分
       return [
@@ -930,7 +959,7 @@ class StatisticsChartAdapter {
           titleStyle: TextStyle(
             fontSize: AppTypographyConstants.sectionTitleFontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: completedForeground,
           ),
         ),
       ];
@@ -945,24 +974,22 @@ class StatisticsChartAdapter {
         titleStyle: TextStyle(
           fontSize: AppTypographyConstants.sectionTitleFontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: completedForeground,
         ),
       ),
       PieChartSectionData(
         value: remainingDays.toDouble(),
-        color: Colors.grey.shade400,
+        color: remainingColor,
         title: '$remainingDays',
         radius: AppDimensionConstants.r(60),
         titleStyle: TextStyle(
           fontSize: AppTypographyConstants.sectionTitleFontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.black54,
+          color: remainingForeground,
         ),
       ),
     ];
   }
-
-
 
   /// 计算月份包含的所有周范围（根据用户设置的周起始日）
   List<Map<String, dynamic>> _getMonthWeeks(

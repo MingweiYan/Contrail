@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -115,5 +116,6 @@ class AutoBackupScheduler {
     }
   }
 
-  bool get _platformSupported => Platform.isAndroid || Platform.isIOS;
+  bool get _platformSupported =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 }

@@ -152,7 +152,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
               ),
               backDrawRodData: BackgroundBarChartRodData(
                 toY: maxValue,
-                color: Colors.grey[200],
+                color: ThemeHelper.surfaceVariant(context),
               ),
             ),
           ],
@@ -242,7 +242,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     drawVerticalLine: false,
                     horizontalInterval: 0.25,
                     getDrawingHorizontalLine: (value) => FlLine(
-                      color: Colors.black.withValues(alpha: 0.06),
+                      color: ThemeHelper.outline(
+                        context,
+                      ).withValues(alpha: 0.35),
                       strokeWidth: ScreenUtil().setWidth(1),
                     ),
                   ),
@@ -257,7 +259,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
                           '$name\n$pct%',
                           TextStyle(
                             color: ThemeHelper.onBackground(context),
-                            fontSize: AppTypographyConstants.chartLegendFontSize,
+                            fontSize:
+                                AppTypographyConstants.chartLegendFontSize,
                             fontWeight: FontWeight.bold,
                           ),
                         );
@@ -491,6 +494,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     final index = entry.key;
                     final data = entry.value;
                     final isTouched = index == touchedIndex;
+                    final titleColor = ThemeHelper.getOptimalTextColor(
+                      context,
+                      data.color,
+                    );
                     // 增加缩放效果的差异，使变化更明显
                     final radius = isTouched
                         ? StatsShareResultPageConstants.activePieChartRadius
@@ -510,12 +517,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         fontWeight: isTouched
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isTouched ? Colors.white : Colors.black,
+                        color: titleColor,
                       ),
                       // 增加更明显的边框效果
                       borderSide: isTouched
                           ? BorderSide(
-                              color: Colors.black,
+                              color: titleColor,
                               width: StatsShareResultPageConstants
                                   .pieChartBorderWidth,
                             )
@@ -668,6 +675,10 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     final index = entry.key;
                     final data = entry.value;
                     final isTouched = index == touchedIndex;
+                    final titleColor = ThemeHelper.getOptimalTextColor(
+                      context,
+                      data.color,
+                    );
                     // 增加缩放效果的差异，使变化更明显
                     final radius = isTouched
                         ? ScreenUtil().setWidth(100)
@@ -685,12 +696,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
                         fontWeight: isTouched
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isTouched ? Colors.white : Colors.black,
+                        color: titleColor,
                       ),
                       // 增加更明显的边框效果
                       borderSide: isTouched
                           ? BorderSide(
-                              color: Colors.black,
+                              color: titleColor,
                               width: ScreenUtil().setWidth(3),
                             )
                           : BorderSide.none,
@@ -767,11 +778,14 @@ class _StatsResultPageState extends State<StatsResultPage> {
                   BoxDecoration(
                     color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
                   ),
-              child: provider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : provider.errorMessage != null
-                  ? Center(child: Text(provider.errorMessage!))
-                  : _buildContent(),
+              child: SafeArea(
+                bottom: false,
+                child: provider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : provider.errorMessage != null
+                    ? Center(child: Text(provider.errorMessage!))
+                    : _buildContent(),
+              ),
             ),
           );
         },
@@ -782,10 +796,15 @@ class _StatsResultPageState extends State<StatsResultPage> {
   Widget _buildContent() {
     final goalCompletionData = _getHabitGoalCompletionData();
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
     final completionCounts = _getMonthlyHabitCompletionCounts();
     final completionMinutes = _getMonthlyHabitCompletionMinutes();
-    final totalCount = completionCounts.values.fold(0, (sum, count) => sum + count);
+    final totalCount = completionCounts.values.fold(
+      0,
+      (sum, count) => sum + count,
+    );
     final totalMinutes = completionMinutes.values.fold(
       0,
       (sum, minutes) => sum + minutes,
@@ -795,7 +814,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
         : '$totalMinutes 分';
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(ScreenUtil().setWidth(20)),
+      padding: EdgeInsets.fromLTRB(
+        ScreenUtil().setWidth(20),
+        HeroHeaderPageConstants.topSpacing,
+        ScreenUtil().setWidth(20),
+        ScreenUtil().setWidth(20),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -838,8 +862,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
                           Text(
                             '聚合查看当前时间范围内的次数、时长与目标完成情况',
                             style: TextStyle(
-                              fontSize:
-                                  AppTypographyConstants.sectionSubtitleFontSize,
+                              fontSize: AppTypographyConstants
+                                  .sectionSubtitleFontSize,
                               color: heroSecondary,
                             ),
                           ),
@@ -859,10 +883,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                     ),
                     SizedBox(width: ScreenUtil().setWidth(10)),
                     Expanded(
-                      child: _buildHeroStat(
-                        label: '专注时长',
-                        value: minutesText,
-                      ),
+                      child: _buildHeroStat(label: '专注时长', value: minutesText),
                     ),
                     SizedBox(width: ScreenUtil().setWidth(10)),
                     Expanded(
@@ -957,10 +978,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
             horizontal: ScreenUtil().setWidth(14),
             vertical: ScreenUtil().setHeight(11),
           ),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          decoration: ThemeHelper.heroControlDecoration(
+            context,
+            radius: ScreenUtil().setWidth(16),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -982,21 +1002,19 @@ class _StatsResultPageState extends State<StatsResultPage> {
     );
   }
 
-  Widget _buildHeroStat({
-    required String label,
-    required String value,
-  }) {
+  Widget _buildHeroStat({required String label, required String value}) {
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: ScreenUtil().setWidth(12),
         vertical: ScreenUtil().setHeight(12),
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      decoration: ThemeHelper.heroControlDecoration(
+        context,
+        radius: ScreenUtil().setWidth(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1056,7 +1074,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
               style: TextStyle(
                 fontSize: AppTypographyConstants.cardTitleFontSize,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? scheme.primary : ThemeHelper.onBackground(context),
+                color: selected
+                    ? scheme.primary
+                    : ThemeHelper.onBackground(context),
               ),
             ),
           ),

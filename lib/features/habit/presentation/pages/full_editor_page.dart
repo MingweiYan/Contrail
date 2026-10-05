@@ -118,10 +118,7 @@ class _FullEditorPageState extends State<FullEditorPage> {
                     secondary: true,
                     radius: 22.r,
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 8.w,
-                    vertical: 6.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
                   child: QuillSimpleToolbar(
                     controller: _controller,
                     config: const QuillSimpleToolbarConfig(),
@@ -170,11 +167,7 @@ class _FullEditorPageState extends State<FullEditorPage> {
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -221,8 +214,11 @@ class _FullEditorPageState extends State<FullEditorPage> {
       // 显示错误消息
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('保存失败: ${e.toString()}'),
-          backgroundColor: ThemeHelper.visualTheme(context).destructiveColor,
+          content: Text(
+            '保存失败: ${e.toString()}',
+            style: TextStyle(color: ThemeHelper.onDestructive(context)),
+          ),
+          backgroundColor: ThemeHelper.destructive(context),
         ),
       );
     }

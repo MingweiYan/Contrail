@@ -50,6 +50,16 @@ class _HabitDetailStatisticsView extends StatelessWidget {
 
     if (!hasTarget) return Container();
 
+    final remainingColor = ThemeHelper.outline(context);
+    final completedForeground = ThemeHelper.getOptimalTextColor(
+      context,
+      habit.color,
+    );
+    final remainingForeground = ThemeHelper.getOptimalTextColor(
+      context,
+      remainingColor,
+    );
+
     return Container(
       margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
       decoration: ThemeHelper.panelDecoration(
@@ -106,7 +116,8 @@ class _HabitDetailStatisticsView extends StatelessWidget {
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: HabitDetailStatisticsPageConstants.chartContainerHeight,
+                    height:
+                        HabitDetailStatisticsPageConstants.chartContainerHeight,
                     child: Padding(
                       padding:
                           HabitDetailStatisticsPageConstants.pieChartPadding,
@@ -116,6 +127,9 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                             completedDays,
                             remainingDays,
                             habit.color,
+                            remainingColor: remainingColor,
+                            completedForeground: completedForeground,
+                            remainingForeground: remainingForeground,
                           ),
                           centerSpaceRadius: 40.r,
                           sectionsSpace: 0,
@@ -143,7 +157,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                       ),
                       _buildMetricRow(
                         context,
-                        color: Colors.grey.shade400,
+                        color: remainingColor,
                         label: '剩余',
                         value: '$remainingDays 天',
                       ),
@@ -397,7 +411,9 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     final completedDays = stats['completedDays'] as int;
     final completionRate = (stats['completionRate'] as double) * 100;
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -405,112 +421,117 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
             BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-        child: SingleChildScrollView(
-          padding: HabitDetailStatisticsPageConstants.bodyPadding,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
-                padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        _buildTopAction(
-                          context,
-                          icon: Icons.arrow_back_rounded,
-                          label: '返回',
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        SizedBox(width: 14.w),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                habit.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: AppTypographyConstants
-                                      .secondaryHeroTitleFontSize,
-                                  fontWeight: FontWeight.w800,
-                                  color: heroForeground,
+        child: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            padding: HabitDetailStatisticsPageConstants.bodyPadding.copyWith(
+              top: HeroHeaderPageConstants.topSpacing,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: ThemeHelper.heroDecoration(context, radius: 28.r),
+                  padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 18.h),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          _buildTopAction(
+                            context,
+                            icon: Icons.arrow_back_rounded,
+                            label: '返回',
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          SizedBox(width: 14.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  habit.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: AppTypographyConstants
+                                        .secondaryHeroTitleFontSize,
+                                    fontWeight: FontWeight.w800,
+                                    color: heroForeground,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 6.h),
-                              Text(
-                                '习惯详情统计面板',
-                                style: TextStyle(
-                                  fontSize: AppTypographyConstants
-                                      .secondaryHeroSubtitleFontSize,
-                                  color: heroSecondary,
+                                SizedBox(height: 6.h),
+                                Text(
+                                  '习惯详情统计面板',
+                                  style: TextStyle(
+                                    fontSize: AppTypographyConstants
+                                        .secondaryHeroSubtitleFontSize,
+                                    color: heroSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Container(
-                          width: 14.w,
-                          height: 14.w,
-                          decoration: BoxDecoration(
-                            color: habit.color,
-                            shape: BoxShape.circle,
+                          Container(
+                            width: 14.w,
+                            height: 14.w,
+                            decoration: BoxDecoration(
+                              color: habit.color,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 18.h),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildHeroStat(
-                            context,
-                            label: '已完成',
-                            value: '$completedDays 天',
+                        ],
+                      ),
+                      SizedBox(height: 18.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildHeroStat(
+                              context,
+                              label: '已完成',
+                              value: '$completedDays 天',
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: _buildHeroStat(
-                            context,
-                            label: '完成率',
-                            value: '${completionRate.toStringAsFixed(1)}%',
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: _buildHeroStat(
+                              context,
+                              label: '完成率',
+                              value: '${completionRate.toStringAsFixed(1)}%',
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: _buildHeroStat(
-                            context,
-                            label: '目标',
-                            value: '${habit.targetDays ?? 0} 天',
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: _buildHeroStat(
+                              context,
+                              label: '目标',
+                              value: '${habit.targetDays ?? 0} 天',
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              _buildCompletionStatusModule(context),
-              _buildCalendarModule(context, singleHabitList, habitColors),
-              _buildTimeRangeSelector(context),
-              _buildPeriodSelector(context),
-              StatisticsChartWidget(
-                habits: [habit],
-                selectedPeriod: provider.selectedPeriod,
-                rollingRange: provider.getRollingDateRange(),
-                isHabitVisible: const [true],
-                weekStartDay: Provider.of<PersonalizationProvider>(
-                  context,
-                  listen: false,
-                ).weekStartDay,
-              ),
-              SizedBox(
-                height: HabitDetailStatisticsPageConstants.bottomSpacing,
-              ),
-            ],
+                _buildCompletionStatusModule(context),
+                _buildCalendarModule(context, singleHabitList, habitColors),
+                _buildTimeRangeSelector(context),
+                _buildPeriodSelector(context),
+                StatisticsChartWidget(
+                  habits: [habit],
+                  selectedPeriod: provider.selectedPeriod,
+                  rollingRange: provider.getRollingDateRange(),
+                  isHabitVisible: const [true],
+                  weekStartDay: Provider.of<PersonalizationProvider>(
+                    context,
+                    listen: false,
+                  ).weekStartDay,
+                ),
+                SizedBox(
+                  height: HabitDetailStatisticsPageConstants.bottomSpacing,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -596,11 +617,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -627,14 +644,12 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     required String value,
   }) {
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
-    final heroSecondary = ThemeHelper.visualTheme(context).heroSecondaryForeground;
+    final heroSecondary = ThemeHelper.visualTheme(
+      context,
+    ).heroSecondaryForeground;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
+      decoration: ThemeHelper.heroControlDecoration(context, radius: 18.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -209,22 +209,30 @@ void main() {
         expect(result, 0);
       });
 
-      test('should return total minutes when tracking durations exist for today', () {
-        final today = DateTime.now();
-        final todayOnly = DateTime(today.year, today.month, today.day);
-        final habit = Habit(
-          id: '1',
-          name: '晨跑',
-          trackTime: true,
-          totalDuration: Duration.zero,
-          currentDays: 0,
-          goalType: GoalType.positive,
-        )..trackingDurations[todayOnly] = [const Duration(minutes: 30), const Duration(minutes: 20)];
+      test(
+        'should return total minutes when tracking durations exist for today',
+        () {
+          final today = DateTime.now();
+          final todayOnly = DateTime(today.year, today.month, today.day);
+          final habit =
+              Habit(
+                  id: '1',
+                  name: '晨跑',
+                  trackTime: true,
+                  totalDuration: Duration.zero,
+                  currentDays: 0,
+                  goalType: GoalType.positive,
+                )
+                ..trackingDurations[todayOnly] = [
+                  const Duration(minutes: 30),
+                  const Duration(minutes: 20),
+                ];
 
-        final result = habitManagementService.getTodayMinutes(habit);
+          final result = habitManagementService.getTodayMinutes(habit);
 
-        expect(result, 50);
-      });
+          expect(result, 50);
+        },
+      );
 
       test('should ignore tracking durations from other days', () {
         final today = DateTime.now();
@@ -331,18 +339,19 @@ void main() {
       test('should use count progress when higher than time progress', () {
         final today = DateTime.now();
         final todayOnly = DateTime(today.year, today.month, today.day);
-        final habit = Habit(
-          id: '1',
-          name: '晨跑',
-          trackTime: true,
-          totalDuration: Duration.zero,
-          currentDays: 0,
-          goalType: GoalType.positive,
-          cycleType: CycleType.daily,
-          targetDays: 1,
-        )
-          ..dailyCompletionStatus[todayOnly] = true
-          ..trackingDurations[todayOnly] = [const Duration(minutes: 15)];
+        final habit =
+            Habit(
+                id: '1',
+                name: '晨跑',
+                trackTime: true,
+                totalDuration: Duration.zero,
+                currentDays: 0,
+                goalType: GoalType.positive,
+                cycleType: CycleType.daily,
+                targetDays: 1,
+              )
+              ..dailyCompletionStatus[todayOnly] = true
+              ..trackingDurations[todayOnly] = [const Duration(minutes: 15)];
 
         final result = habitManagementService.getFinalProgress(habit);
 
@@ -382,7 +391,9 @@ void main() {
           cycleType: CycleType.daily,
         );
 
-        final result = habitManagementService.getCompletedDaysInCurrentCycle(habit);
+        final result = habitManagementService.getCompletedDaysInCurrentCycle(
+          habit,
+        );
 
         expect(result, 0);
       });
@@ -401,13 +412,19 @@ void main() {
           cycleType: CycleType.daily,
         )..dailyCompletionStatus[todayOnly] = true;
 
-        final result = habitManagementService.getCompletedDaysInCurrentCycle(habit);
+        final result = habitManagementService.getCompletedDaysInCurrentCycle(
+          habit,
+        );
 
         expect(result, 1);
       });
 
       test('should count completed days in weekly cycle', () {
         final today = DateTime.now();
+        final todayOnly = DateTime(today.year, today.month, today.day);
+        final weekStart = todayOnly.subtract(
+          Duration(days: today.weekday - DateTime.monday),
+        );
         final habit = Habit(
           id: '1',
           name: '晨跑',
@@ -419,19 +436,20 @@ void main() {
           cycleType: CycleType.weekly,
         );
 
-        for (int i = 0; i < 3; i++) {
-          final date = today.subtract(Duration(days: i));
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          habit.dailyCompletionStatus[dateOnly] = true;
+        for (int i = 0; i < today.weekday; i++) {
+          habit.dailyCompletionStatus[weekStart.add(Duration(days: i))] = true;
         }
 
-        final result = habitManagementService.getCompletedDaysInCurrentCycle(habit);
+        final result = habitManagementService.getCompletedDaysInCurrentCycle(
+          habit,
+        );
 
-        expect(result, 3);
+        expect(result, today.weekday);
       });
 
       test('should count completed days in monthly cycle', () {
         final today = DateTime.now();
+        final recordCount = today.day < 5 ? today.day : 5;
         final habit = Habit(
           id: '1',
           name: '晨跑',
@@ -443,15 +461,17 @@ void main() {
           cycleType: CycleType.monthly,
         );
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < recordCount; i++) {
           final date = today.subtract(Duration(days: i));
           final dateOnly = DateTime(date.year, date.month, date.day);
           habit.dailyCompletionStatus[dateOnly] = true;
         }
 
-        final result = habitManagementService.getCompletedDaysInCurrentCycle(habit);
+        final result = habitManagementService.getCompletedDaysInCurrentCycle(
+          habit,
+        );
 
-        expect(result, 5);
+        expect(result, recordCount);
       });
     });
 
@@ -468,7 +488,9 @@ void main() {
           cycleType: CycleType.daily,
         );
 
-        final result = habitManagementService.getTotalMinutesInCurrentCycle(habit);
+        final result = habitManagementService.getTotalMinutesInCurrentCycle(
+          habit,
+        );
 
         expect(result, 0);
       });
@@ -476,24 +498,35 @@ void main() {
       test('should sum minutes in daily cycle', () {
         final today = DateTime.now();
         final todayOnly = DateTime(today.year, today.month, today.day);
-        final habit = Habit(
-          id: '1',
-          name: '晨跑',
-          trackTime: true,
-          totalDuration: Duration.zero,
-          currentDays: 0,
-          targetDays: 1,
-          goalType: GoalType.positive,
-          cycleType: CycleType.daily,
-        )..trackingDurations[todayOnly] = [const Duration(minutes: 30), const Duration(minutes: 45)];
+        final habit =
+            Habit(
+                id: '1',
+                name: '晨跑',
+                trackTime: true,
+                totalDuration: Duration.zero,
+                currentDays: 0,
+                targetDays: 1,
+                goalType: GoalType.positive,
+                cycleType: CycleType.daily,
+              )
+              ..trackingDurations[todayOnly] = [
+                const Duration(minutes: 30),
+                const Duration(minutes: 45),
+              ];
 
-        final result = habitManagementService.getTotalMinutesInCurrentCycle(habit);
+        final result = habitManagementService.getTotalMinutesInCurrentCycle(
+          habit,
+        );
 
         expect(result, 75);
       });
 
       test('should sum minutes in weekly cycle', () {
         final today = DateTime.now();
+        final todayOnly = DateTime(today.year, today.month, today.day);
+        final weekStart = todayOnly.subtract(
+          Duration(days: today.weekday - DateTime.monday),
+        );
         final habit = Habit(
           id: '1',
           name: '晨跑',
@@ -505,15 +538,17 @@ void main() {
           cycleType: CycleType.weekly,
         );
 
-        for (int i = 0; i < 3; i++) {
-          final date = today.subtract(Duration(days: i));
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          habit.trackingDurations[dateOnly] = [const Duration(minutes: 30)];
+        for (int i = 0; i < today.weekday; i++) {
+          habit.trackingDurations[weekStart.add(Duration(days: i))] = [
+            const Duration(minutes: 30),
+          ];
         }
 
-        final result = habitManagementService.getTotalMinutesInCurrentCycle(habit);
+        final result = habitManagementService.getTotalMinutesInCurrentCycle(
+          habit,
+        );
 
-        expect(result, 90);
+        expect(result, today.weekday * 30);
       });
     });
 
@@ -530,7 +565,9 @@ void main() {
           cycleType: CycleType.daily,
         );
 
-        final result = habitManagementService.getCompletionRateInCurrentCycle(habit);
+        final result = habitManagementService.getCompletionRateInCurrentCycle(
+          habit,
+        );
 
         expect(result, 0.0);
       });
@@ -549,31 +586,30 @@ void main() {
           cycleType: CycleType.daily,
         )..dailyCompletionStatus[todayOnly] = true;
 
-        final result = habitManagementService.getCompletionRateInCurrentCycle(habit);
+        final result = habitManagementService.getCompletionRateInCurrentCycle(
+          habit,
+        );
 
         expect(result, 0.2);
       });
 
       test('should handle 100% completion rate', () {
         final today = DateTime.now();
+        final todayOnly = DateTime(today.year, today.month, today.day);
         final habit = Habit(
           id: '1',
           name: '晨跑',
           trackTime: false,
           totalDuration: Duration.zero,
           currentDays: 0,
-          targetDays: 3,
+          targetDays: 1,
           goalType: GoalType.positive,
           cycleType: CycleType.weekly,
+        )..dailyCompletionStatus[todayOnly] = true;
+
+        final result = habitManagementService.getCompletionRateInCurrentCycle(
+          habit,
         );
-
-        for (int i = 0; i < 3; i++) {
-          final date = today.subtract(Duration(days: i));
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          habit.dailyCompletionStatus[dateOnly] = true;
-        }
-
-        final result = habitManagementService.getCompletionRateInCurrentCycle(habit);
 
         expect(result, 1.0);
       });
@@ -592,7 +628,8 @@ void main() {
           cycleType: CycleType.daily,
         );
 
-        final result = habitManagementService.getTimeCompletionRateInCurrentCycle(habit);
+        final result = habitManagementService
+            .getTimeCompletionRateInCurrentCycle(habit);
 
         expect(result, 0.0);
       });
@@ -607,11 +644,13 @@ void main() {
           totalDuration: Duration.zero,
           currentDays: 0,
           targetDays: 1,
+          targetTimeMinutes: 60,
           goalType: GoalType.positive,
           cycleType: CycleType.daily,
         )..trackingDurations[todayOnly] = [const Duration(minutes: 30)];
 
-        final result = habitManagementService.getTimeCompletionRateInCurrentCycle(habit);
+        final result = habitManagementService
+            .getTimeCompletionRateInCurrentCycle(habit);
 
         expect(result, 0.5);
       });
@@ -630,7 +669,8 @@ void main() {
           cycleType: CycleType.daily,
         )..trackingDurations[todayOnly] = [const Duration(minutes: 60)];
 
-        final result = habitManagementService.getTimeCompletionRateInCurrentCycle(habit);
+        final result = habitManagementService
+            .getTimeCompletionRateInCurrentCycle(habit);
 
         expect(result, 1.0);
       });

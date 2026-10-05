@@ -32,9 +32,7 @@ void main() {
           designSize: const Size(375, 812),
           builder: (_, child) => ChangeNotifierProvider(
             create: (_) => ThemeProvider(),
-            child: MaterialApp(
-              home: child,
-            ),
+            child: MaterialApp(home: child),
           ),
           child: const ThemeSelectionPage(),
         ),
@@ -43,10 +41,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('主题设置'), findsOneWidget);
-      expect(find.text('完整视觉主题'), findsOneWidget);
-      expect(find.text('方案 3 · 银雾玻璃白'), findsOneWidget);
-      expect(find.text('方案 1 · 冷静科技蓝'), findsOneWidget);
-      expect(find.text('方案 2 · 夜幕数据舱'), findsOneWidget);
+      expect(find.text('主题库'), findsOneWidget);
+      expect(find.text('银雾'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('深海蓝'),
+        500,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('深海蓝'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('极夜紫舱'),
+        500,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('极夜紫舱'), findsOneWidget);
 
       tester.view.reset();
     });
@@ -62,9 +72,7 @@ void main() {
           designSize: const Size(375, 812),
           builder: (_, child) => ChangeNotifierProvider(
             create: (_) => ThemeProvider(),
-            child: MaterialApp(
-              home: child,
-            ),
+            child: MaterialApp(home: child),
           ),
           child: const ThemeSelectionPage(),
         ),
@@ -72,7 +80,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('方案 2 · 夜幕数据舱'));
+      await tester.scrollUntilVisible(
+        find.text('极夜紫舱'),
+        500,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text('极夜紫舱'));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.check), findsOneWidget);

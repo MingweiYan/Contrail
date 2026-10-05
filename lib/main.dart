@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
@@ -50,9 +51,11 @@ void main() async {
           overlays: [SystemUiOverlay.bottom],
         );
 
-        final directory = await getApplicationDocumentsDirectory();
-        final logsPath = '${directory.path}/logs';
-        logger.enableFileLogging(logsPath, maxBytes: 4 * 1024 * 1024);
+        if (!kIsWeb) {
+          final directory = await getApplicationDocumentsDirectory();
+          final logsPath = '${directory.path}/logs';
+          logger.enableFileLogging(logsPath, maxBytes: 4 * 1024 * 1024);
+        }
         logger.debug('初始化依赖注入...');
         await init();
         logger.debug('依赖注入初始化成功');

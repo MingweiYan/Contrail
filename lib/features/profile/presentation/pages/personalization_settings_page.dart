@@ -197,10 +197,9 @@ class _PersonalizationSettingsPageState
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          decoration: ThemeHelper.heroControlDecoration(
+            context,
+            radius: 16.r,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

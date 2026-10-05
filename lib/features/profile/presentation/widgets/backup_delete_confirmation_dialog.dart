@@ -18,6 +18,9 @@ class BackupDeleteConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final destructiveColor = ThemeHelper.destructive(context);
+    final destructiveForeground = ThemeHelper.onDestructive(context);
+
     return AlertDialog(
       backgroundColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
@@ -31,7 +34,7 @@ class BackupDeleteConfirmationDialog extends StatelessWidget {
         style: TextStyle(
           fontSize: BackupDeleteConfirmationDialogConstants.titleFontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.red,
+          color: ThemeHelper.onBackground(context),
         ),
       ),
       content: Text(
@@ -51,7 +54,9 @@ class BackupDeleteConfirmationDialog extends StatelessWidget {
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: ThemeHelper.primary(context).withOpacity(0.8),
+            backgroundColor: ThemeHelper.primary(
+              context,
+            ).withValues(alpha: 0.8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                 BackupDeleteConfirmationDialogConstants.buttonBorderRadius,
@@ -65,11 +70,11 @@ class BackupDeleteConfirmationDialog extends StatelessWidget {
             '确认删除',
             style: TextStyle(
               fontSize: BackupDeleteConfirmationDialogConstants.buttonFontSize,
-              color: Colors.white,
+              color: destructiveForeground,
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
+            backgroundColor: destructiveColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                 BackupDeleteConfirmationDialogConstants.buttonBorderRadius,

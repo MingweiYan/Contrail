@@ -51,8 +51,7 @@ class CalendarViewWidget extends StatelessWidget {
     // 计算需要显示的行数：
     // firstDayOfMonthWeekday 是本月第一天前需要补的空格数（0-6），
     // 加上本月天数后向上取整得到实际周数。
-    final weeksInMonth =
-        ((daysInMonth + firstDayOfMonthWeekday) / 7).ceil();
+    final weeksInMonth = ((daysInMonth + firstDayOfMonthWeekday) / 7).ceil();
     final daysToDisplay = weeksInMonth * 7;
 
     // 动态调整单元格宽高比，增加高度以便显示更多习惯
@@ -156,9 +155,9 @@ class CalendarViewWidget extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: isToday
-                ? ThemeHelper.primary(
-                    context,
-                  ).withValues(alpha: 0.1) // 今天的特殊背景色
+                ? ThemeHelper.primary(context).withValues(
+                    alpha: 0.1,
+                  ) // 今天的特殊背景色
                 : isCurrentMonthDate
                 ? ThemeHelper.surface(context)
                 : Colors.transparent, // 非当前月份不显示背景
@@ -226,7 +225,8 @@ class CalendarViewWidget extends StatelessWidget {
                     itemBuilder: (context, i) {
                       final habitIndex = completedHabitIndices[i];
                       final color =
-                          habitColors[habits[habitIndex].name] ?? Colors.grey;
+                          habitColors[habits[habitIndex].name] ??
+                          ThemeHelper.outline(context);
                       return Container(
                         width: ScreenUtil().setWidth(12),
                         height: ScreenUtil().setHeight(12),

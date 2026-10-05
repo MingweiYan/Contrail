@@ -83,6 +83,26 @@ class ThemeHelper {
     return colorScheme(context).outline;
   }
 
+  /// 危险操作颜色，使用当前视觉主题定义的语义色。
+  static Color destructive(BuildContext context) {
+    return visualTheme(context).destructiveColor;
+  }
+
+  /// 危险操作背景上的前景色。
+  static Color onDestructive(BuildContext context) {
+    return visualTheme(context).destructiveForeground;
+  }
+
+  /// 警告操作颜色，复用 Material 配色中具备配套前景色的 tertiary 角色。
+  static Color warning(BuildContext context) {
+    return colorScheme(context).tertiary;
+  }
+
+  /// 警告操作背景上的前景色。
+  static Color onWarning(BuildContext context) {
+    return colorScheme(context).onTertiary;
+  }
+
   /// 判断当前是否为深色主题
   static bool isDarkMode(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
@@ -277,8 +297,20 @@ class ThemeHelper {
     return BoxDecoration(
       gradient: theme.heroGradient,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: theme.panelBorderColor),
+      border: Border.all(color: theme.heroControlBorder),
       boxShadow: theme.panelShadow,
+    );
+  }
+
+  static BoxDecoration heroControlDecoration(
+    BuildContext context, {
+    double radius = 18,
+  }) {
+    final theme = visualTheme(context);
+    return BoxDecoration(
+      color: theme.heroControlBackground,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: theme.heroControlBorder),
     );
   }
 
@@ -371,7 +403,7 @@ class ThemeHelper {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [defaultColor, defaultColor.withOpacity(0.7)],
+              colors: [defaultColor, defaultColor.withValues(alpha: 0.7)],
             ),
           ),
           child: Icon(
@@ -414,7 +446,7 @@ class ThemeHelper {
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: ScreenUtil().setWidth(3),
             offset: Offset(0, ScreenUtil().setHeight(2)),
           ),
@@ -556,7 +588,7 @@ class ThemeHelper {
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(shadowOpacity * elevation),
+            color: Colors.black.withValues(alpha: shadowOpacity * elevation),
             blurRadius: ScreenUtil().setWidth(4 * elevation),
             offset: Offset(0, ScreenUtil().setHeight(2 * elevation)),
           ),

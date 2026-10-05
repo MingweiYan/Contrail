@@ -8,12 +8,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:contrail/shared/theme/visual_theme_definitions.dart';
 
 class MockHabitProvider extends Mock implements HabitProvider {}
 
 void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    registerFallbackValue('');
+    registerFallbackValue(DateTime.now());
+    registerFallbackValue(Duration.zero);
   });
 
   group('TimelineViewWidget', () {
@@ -25,16 +29,16 @@ void main() {
 
     final testHabits = [
       Habit(
-        id: '1',
-        name: '晨跑',
-        trackTime: true,
-        totalDuration: const Duration(minutes: 60),
-        currentDays: 5,
-        targetDays: 30,
-        goalType: GoalType.positive,
-        cycleType: CycleType.daily,
-        colorValue: Colors.blue.value,
-      )
+          id: '1',
+          name: '晨跑',
+          trackTime: true,
+          totalDuration: const Duration(minutes: 60),
+          currentDays: 5,
+          targetDays: 30,
+          goalType: GoalType.positive,
+          cycleType: CycleType.daily,
+          colorValue: Colors.blue.toARGB32(),
+        )
         ..dailyCompletionStatus[todayOnly] = true
         ..trackingDurations[todayOnly] = [const Duration(minutes: 30)],
       Habit(
@@ -46,25 +50,23 @@ void main() {
         targetDays: 21,
         goalType: GoalType.positive,
         cycleType: CycleType.daily,
-        colorValue: Colors.green.value,
+        colorValue: Colors.green.toARGB32(),
       )..dailyCompletionStatus[yesterday] = true,
     ];
 
     setUp(() {
       mockHabitProvider = MockHabitProvider();
-      registerFallbackValue('');
-      registerFallbackValue(DateTime.now());
-      registerFallbackValue(Duration.zero);
-      when(() => mockHabitProvider.removeTrackingRecord(any(), any(), any())).thenAnswer((_) async {});
+      when(
+        () => mockHabitProvider.removeTrackingRecord(any(), any(), any()),
+      ).thenAnswer((_) async {});
     });
 
-    testWidgets('应该能正确渲染 widget 且不报错', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('应该能正确渲染 widget 且不报错', (WidgetTester tester) async {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          child: MaterialApp(
+          builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: ChangeNotifierProvider<HabitProvider>.value(
                 value: mockHabitProvider,
@@ -80,15 +82,14 @@ void main() {
       );
 
       expect(find.byType(TimelineViewWidget), findsOneWidget);
-    }, skip: 'ScreenUtil 和 Widget 测试依赖问题');
+    });
 
-    testWidgets('当没有专注记录时应该显示提示文字', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('当没有专注记录时应该显示提示文字', (WidgetTester tester) async {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          child: MaterialApp(
+          builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: ChangeNotifierProvider<HabitProvider>.value(
                 value: mockHabitProvider,
@@ -104,15 +105,14 @@ void main() {
       );
 
       expect(find.text('当月没有专注记录'), findsOneWidget);
-    }, skip: 'ScreenUtil 和 Widget 测试依赖问题');
+    });
 
-    testWidgets('当有专注记录时应该显示记录列表', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('当有专注记录时应该显示记录列表', (WidgetTester tester) async {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          child: MaterialApp(
+          builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: ChangeNotifierProvider<HabitProvider>.value(
                 value: mockHabitProvider,
@@ -128,15 +128,14 @@ void main() {
       );
 
       expect(find.text('晨跑'), findsOneWidget);
-    }, skip: 'ScreenUtil 和 Widget 测试依赖问题');
+    });
 
-    testWidgets('当习惯列表为空时应该显示提示文字', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('当习惯列表为空时应该显示提示文字', (WidgetTester tester) async {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          child: MaterialApp(
+          builder: (_, child) => MaterialApp(
+            theme: buildVisualThemes().first.lightTheme,
             home: Scaffold(
               body: ChangeNotifierProvider<HabitProvider>.value(
                 value: mockHabitProvider,
@@ -152,6 +151,6 @@ void main() {
       );
 
       expect(find.text('当月没有专注记录'), findsOneWidget);
-    }, skip: 'ScreenUtil 和 Widget 测试依赖问题');
+    });
   });
 }

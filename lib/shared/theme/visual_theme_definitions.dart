@@ -32,14 +32,15 @@ app_theme.AppTheme buildEditedVisualTheme({
     brightness: brightness,
   );
   final isDark = brightness == Brightness.dark;
-  final heroBase = _blend(palette.heroStart, palette.heroEnd, 0.45);
-  final heroForeground = _onColor(heroBase);
+  final heroColors = [
+    palette.heroStart,
+    _blend(palette.heroStart, palette.heroEnd, 0.55),
+    palette.heroEnd,
+  ];
+  final heroForeground = _bestForegroundFor(heroColors);
   final contentForeground = isDark
       ? const Color(0xFFF4F7FF)
       : const Color(0xFF18263D);
-  final secondaryForeground = contentForeground.withValues(
-    alpha: isDark ? 0.72 : 0.68,
-  );
   final panelShadow = isDark
       ? [
           BoxShadow(
@@ -69,28 +70,22 @@ app_theme.AppTheme buildEditedVisualTheme({
     heroGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [
-        palette.heroStart,
-        _blend(palette.heroStart, palette.heroEnd, 0.55),
-        palette.heroEnd,
-      ],
+      colors: heroColors,
     ),
     heroForeground: heroForeground,
-    heroSecondaryForeground: heroForeground.withValues(alpha: 0.78),
+    heroSecondaryForeground: heroForeground,
     panelColor: palette.panel.withValues(alpha: isDark ? 0.84 : 0.92),
     panelSecondaryColor: _blend(
       palette.panel,
       palette.backgroundEnd,
       isDark ? 0.18 : 0.42,
     ).withValues(alpha: isDark ? 0.80 : 0.9),
-    panelBorderColor: palette.panelBorder.withValues(
-      alpha: isDark ? 0.58 : 0.32,
-    ),
+    panelBorderColor: palette.panelBorder,
     panelHighlightColor: Colors.white.withValues(alpha: isDark ? 0.10 : 0.32),
     navBackground: palette.panel.withValues(alpha: isDark ? 0.76 : 0.88),
     navSelectedBackground: palette.navSelected,
-    navSelectedForeground: _onColor(palette.navSelected),
-    navUnselectedForeground: secondaryForeground,
+    navSelectedForeground: _bestForegroundFor([palette.navSelected]),
+    navUnselectedForeground: contentForeground,
     inputFillColor: _blend(
       palette.panel,
       palette.backgroundStart,
@@ -104,7 +99,7 @@ app_theme.AppTheme buildEditedVisualTheme({
     splashBackground: palette.backgroundStart,
     splashTitleColor: contentForeground,
     destructiveColor: palette.destructive,
-    destructiveForeground: _onColor(palette.destructive),
+    destructiveForeground: _bestForegroundFor([palette.destructive]),
     panelShadow: panelShadow,
     useGlass: palette.useGlass,
   );
@@ -126,11 +121,7 @@ app_theme.AppTheme buildEditedVisualTheme({
       tokens: tokens,
       brightness: brightness,
     ),
-    previewColors: [
-      palette.backgroundStart,
-      palette.heroEnd,
-      palette.accent,
-    ],
+    previewColors: [palette.backgroundStart, palette.heroEnd, palette.accent],
     lightTokens: tokens,
     darkTokens: tokens,
     iconStyle: iconStyle,
@@ -152,23 +143,23 @@ app_theme.AppTheme _buildSilverMistTheme() {
     heroGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFF8EA5C4), Color(0xFF6E87A9), Color(0xFF5B7392)],
+      colors: [Color(0xFFC6D5E6), Color(0xFFAABFD6), Color(0xFF8FAAC6)],
     ),
-    heroForeground: const Color(0xFFF8FBFF),
-    heroSecondaryForeground: const Color(0xFFD8E5F5),
+    heroForeground: const Color(0xFF1F3148),
+    heroSecondaryForeground: const Color(0xFF273A50),
     panelColor: const Color(0xE8FFFFFF),
     panelSecondaryColor: const Color(0xD8EEF4FB),
-    panelBorderColor: const Color(0x99C2D1E3),
+    panelBorderColor: const Color(0xFF8290A3),
     panelHighlightColor: const Color(0x55FFFFFF),
     navBackground: const Color(0xDDFBFDFF),
     navSelectedBackground: const Color(0xFFDEE9F6),
     navSelectedForeground: const Color(0xFF35537A),
-    navUnselectedForeground: const Color(0xFF6E84A1),
+    navUnselectedForeground: const Color(0xFF58708F),
     inputFillColor: const Color(0xFFEFF4FA),
     dialogBackground: const Color(0xFFF9FBFE),
     splashBackground: const Color(0xFFF4F8FD),
     splashTitleColor: const Color(0xFF18263D),
-    destructiveColor: const Color(0xFFD65C66),
+    destructiveColor: const Color(0xFFBF525B),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -227,7 +218,7 @@ app_theme.AppTheme _buildCalmTechTheme() {
     heroSecondaryForeground: const Color(0xFFB2C5E8),
     panelColor: const Color(0xB81A2B40),
     panelSecondaryColor: const Color(0xB0122238),
-    panelBorderColor: const Color(0x665C8BFF),
+    panelBorderColor: const Color(0xFF527DCC),
     panelHighlightColor: const Color(0x1FFFFFFF),
     navBackground: const Color(0xD6101E31),
     navSelectedBackground: const Color(0xFF1B355B),
@@ -237,7 +228,7 @@ app_theme.AppTheme _buildCalmTechTheme() {
     dialogBackground: const Color(0xFF101C2D),
     splashBackground: const Color(0xFF0A1627),
     splashTitleColor: const Color(0xFFEAF3FF),
-    destructiveColor: const Color(0xFFD86A74),
+    destructiveColor: const Color(0xFFB55961),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -296,7 +287,7 @@ app_theme.AppTheme _buildNightCapsuleTheme() {
     heroSecondaryForeground: const Color(0xFFC6BFEB),
     panelColor: const Color(0xCC151728),
     panelSecondaryColor: const Color(0xCC1C1E31),
-    panelBorderColor: const Color(0x55A095FF),
+    panelBorderColor: const Color(0xFF736ABF),
     panelHighlightColor: const Color(0x14FFFFFF),
     navBackground: const Color(0xE0101220),
     navSelectedBackground: const Color(0xFF2C294C),
@@ -306,7 +297,7 @@ app_theme.AppTheme _buildNightCapsuleTheme() {
     dialogBackground: const Color(0xFF121424),
     splashBackground: const Color(0xFF080A14),
     splashTitleColor: const Color(0xFFF4F1FF),
-    destructiveColor: const Color(0xFFEC7584),
+    destructiveColor: const Color(0xFFB55A65),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -365,7 +356,7 @@ app_theme.AppTheme _buildTidalTealTheme() {
     heroSecondaryForeground: const Color(0xFFA9F1E5),
     panelColor: const Color(0xC911242E),
     panelSecondaryColor: const Color(0xBF0D1F27),
-    panelBorderColor: const Color(0x6638D9C5),
+    panelBorderColor: const Color(0xFF278C82),
     panelHighlightColor: const Color(0x18FFFFFF),
     navBackground: const Color(0xE00C1B23),
     navSelectedBackground: const Color(0xFF16434B),
@@ -375,7 +366,7 @@ app_theme.AppTheme _buildTidalTealTheme() {
     dialogBackground: const Color(0xFF0F1F26),
     splashBackground: const Color(0xFF081922),
     splashTitleColor: const Color(0xFFE9FFFC),
-    destructiveColor: const Color(0xFFE47A86),
+    destructiveColor: const Color(0xFFB05E67),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -428,13 +419,13 @@ app_theme.AppTheme _buildEmberGlowTheme() {
     heroGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFF7B342A), Color(0xFFB65B3C)],
+      colors: [Color(0xFF7B342A), Color(0xFF95452F)],
     ),
     heroForeground: const Color(0xFFFFF3ED),
     heroSecondaryForeground: const Color(0xFFFFD5C2),
     panelColor: const Color(0xCC211615),
     panelSecondaryColor: const Color(0xC01A1211),
-    panelBorderColor: const Color(0x66FF8C67),
+    panelBorderColor: const Color(0xFFB65B3C),
     panelHighlightColor: const Color(0x16FFFFFF),
     navBackground: const Color(0xE018100F),
     navSelectedBackground: const Color(0xFF5A2D25),
@@ -444,7 +435,7 @@ app_theme.AppTheme _buildEmberGlowTheme() {
     dialogBackground: const Color(0xFF231615),
     splashBackground: const Color(0xFF1E1210),
     splashTitleColor: const Color(0xFFFFF3ED),
-    destructiveColor: const Color(0xFFE87075),
+    destructiveColor: const Color(0xFFB8595D),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -497,23 +488,23 @@ app_theme.AppTheme _buildForestLightTheme() {
     heroGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFF8FB17C), Color(0xFF5E8F64), Color(0xFF466D50)],
+      colors: [Color(0xFFB7CDAA), Color(0xFF9AB592), Color(0xFF839D84)],
     ),
-    heroForeground: const Color(0xFFFAFFF7),
-    heroSecondaryForeground: const Color(0xFFD6E6CE),
+    heroForeground: const Color(0xFF17301D),
+    heroSecondaryForeground: const Color(0xFF1C3422),
     panelColor: const Color(0xE8FFFFFF),
     panelSecondaryColor: const Color(0xD8EEF5EA),
-    panelBorderColor: const Color(0x99BDD4B3),
+    panelBorderColor: const Color(0xFF738A6F),
     panelHighlightColor: const Color(0x66FFFFFF),
     navBackground: const Color(0xDDFAFFFA),
     navSelectedBackground: const Color(0xFFDDECD7),
     navSelectedForeground: const Color(0xFF2D5634),
-    navUnselectedForeground: const Color(0xFF6A8A69),
+    navUnselectedForeground: const Color(0xFF527052),
     inputFillColor: const Color(0xFFF1F6EE),
     dialogBackground: const Color(0xFFF7FBF5),
     splashBackground: const Color(0xFFF2F7ED),
     splashTitleColor: const Color(0xFF1B3320),
-    destructiveColor: const Color(0xFFD66B64),
+    destructiveColor: const Color(0xFFB55B55),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -566,23 +557,23 @@ app_theme.AppTheme _buildPeachDawnTheme() {
     heroGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFF0B7A7), Color(0xFFD98D76), Color(0xFFB97A6C)],
+      colors: [Color(0xFFF2C4B8), Color(0xFFE2A794), Color(0xFFCE8E7D)],
     ),
-    heroForeground: const Color(0xFFFFFBFA),
-    heroSecondaryForeground: const Color(0xFFF7DDD5),
+    heroForeground: const Color(0xFF3F2925),
+    heroSecondaryForeground: const Color(0xFF43302C),
     panelColor: const Color(0xECFFFFFF),
     panelSecondaryColor: const Color(0xDCF9F0ED),
-    panelBorderColor: const Color(0x99E5C5BC),
+    panelBorderColor: const Color(0xFFA2766C),
     panelHighlightColor: const Color(0x66FFFFFF),
     navBackground: const Color(0xDDFEFBFA),
     navSelectedBackground: const Color(0xFFF7E0D7),
     navSelectedForeground: const Color(0xFF7F544A),
-    navUnselectedForeground: const Color(0xFF9A7065),
+    navUnselectedForeground: const Color(0xFF825B51),
     inputFillColor: const Color(0xFFF8EFEC),
     dialogBackground: const Color(0xFFFFFBFA),
     splashBackground: const Color(0xFFFBF4F2),
     splashTitleColor: const Color(0xFF2A3344),
-    destructiveColor: const Color(0xFFD96C62),
+    destructiveColor: const Color(0xFFB85B53),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -635,23 +626,23 @@ app_theme.AppTheme _buildMossDewTheme() {
     heroGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFA9C4AB), Color(0xFF6D9370), Color(0xFF56785B)],
+      colors: [Color(0xFFBFD2C0), Color(0xFFA3BCA5), Color(0xFF8AA28D)],
     ),
-    heroForeground: const Color(0xFFF9FFFA),
-    heroSecondaryForeground: const Color(0xFFDCEBDD),
+    heroForeground: const Color(0xFF1B3123),
+    heroSecondaryForeground: const Color(0xFF203628),
     panelColor: const Color(0xEBFFFFFF),
     panelSecondaryColor: const Color(0xDDF3F8F3),
-    panelBorderColor: const Color(0x99C5D8C7),
+    panelBorderColor: const Color(0xFF7A907C),
     panelHighlightColor: const Color(0x66FFFFFF),
     navBackground: const Color(0xDDFDFFFD),
     navSelectedBackground: const Color(0xFFDDEBDD),
     navSelectedForeground: const Color(0xFF445C49),
-    navUnselectedForeground: const Color(0xFF6E8671),
+    navUnselectedForeground: const Color(0xFF586F5B),
     inputFillColor: const Color(0xFFF2F7F2),
     dialogBackground: const Color(0xFFFBFDFC),
     splashBackground: const Color(0xFFF3F8F3),
     splashTitleColor: const Color(0xFF263542),
-    destructiveColor: const Color(0xFFD56D66),
+    destructiveColor: const Color(0xFFB25B55),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -704,23 +695,23 @@ app_theme.AppTheme _buildDuneGoldTheme() {
     heroGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFE1C18E), Color(0xFFC58B3F), Color(0xFFA8712F)],
+      colors: [Color(0xFFE5C998), Color(0xFFD4AA6A), Color(0xFFC39455)],
     ),
-    heroForeground: const Color(0xFFFFFCF7),
-    heroSecondaryForeground: const Color(0xFFF4E2BF),
+    heroForeground: const Color(0xFF2F281F),
+    heroSecondaryForeground: const Color(0xFF382E24),
     panelColor: const Color(0xECFFFFFF),
     panelSecondaryColor: const Color(0xDCF9F4EC),
-    panelBorderColor: const Color(0x99E5CBA3),
+    panelBorderColor: const Color(0xFFA17B4F),
     panelHighlightColor: const Color(0x66FFFFFF),
     navBackground: const Color(0xDDFEFDFC),
     navSelectedBackground: const Color(0xFFF5E5CB),
     navSelectedForeground: const Color(0xFF705230),
-    navUnselectedForeground: const Color(0xFF8D6E4A),
+    navUnselectedForeground: const Color(0xFF80613F),
     inputFillColor: const Color(0xFFF9F3EA),
     dialogBackground: const Color(0xFFFFFCF8),
     splashBackground: const Color(0xFFFCF7EF),
     splashTitleColor: const Color(0xFF2A3344),
-    destructiveColor: const Color(0xFFD36C62),
+    destructiveColor: const Color(0xFFB55D54),
     destructiveForeground: Colors.white,
     panelShadow: [
       BoxShadow(
@@ -888,8 +879,27 @@ Color _blend(Color first, Color second, double t) {
   return Color.lerp(first, second, t) ?? first;
 }
 
-Color _onColor(Color color) {
-  return ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-      ? Colors.white
-      : const Color(0xFF18263D);
+Color _bestForegroundFor(Iterable<Color> backgrounds) {
+  const candidates = [Color(0xFF18263D), Colors.white];
+  return candidates.reduce((best, candidate) {
+    final bestMinimum = backgrounds
+        .map((background) => _contrastRatio(best, background))
+        .reduce((first, second) => first < second ? first : second);
+    final candidateMinimum = backgrounds
+        .map((background) => _contrastRatio(candidate, background))
+        .reduce((first, second) => first < second ? first : second);
+    return candidateMinimum > bestMinimum ? candidate : best;
+  });
+}
+
+double _contrastRatio(Color first, Color second) {
+  final firstLuminance = first.computeLuminance();
+  final secondLuminance = second.computeLuminance();
+  final lighter = firstLuminance > secondLuminance
+      ? firstLuminance
+      : secondLuminance;
+  final darker = firstLuminance > secondLuminance
+      ? secondLuminance
+      : firstLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
 }

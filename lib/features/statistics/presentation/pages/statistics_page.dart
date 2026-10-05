@@ -10,6 +10,7 @@ import 'package:contrail/shared/services/habit_statistics_service.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/widgets/app_hero_header.dart';
+import 'package:contrail/shared/widgets/scroll_to_top_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/models/habit.dart';
 
@@ -22,6 +23,7 @@ class StatisticsPage extends StatefulWidget {
 
 class _StatisticsPageState extends State<StatisticsPage> {
   late AnimationController _fadeAnimation;
+  final ScrollController _scrollController = ScrollController();
   bool _isDetailView = true;
   // 跟踪第二个按钮当前显示的时间范围（week/month/year）
   String _statsTimeRange = 'week'; // 默认显示周统计
@@ -38,6 +40,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   void dispose() {
     _fadeAnimation.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -83,6 +86,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: ScrollToTopFab(controller: _scrollController),
       body: Container(
         decoration:
             ThemeHelper.generateBackgroundDecoration(context) ??
@@ -101,11 +105,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 if (!mounted) {
                   return;
                 }
-                context.read<StatisticsProvider>().initializeHabitVisibility(habits);
+                context.read<StatisticsProvider>().initializeHabitVisibility(
+                  habits,
+                );
               });
             }
-            final habitVisibility =
-                !needsInitialize
+            final habitVisibility = !needsInitialize
                 ? providerVisibility
                 : List<bool>.filled(habits.length, true);
             final visibleHabits = [
@@ -123,8 +128,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
             final rangeLabel = _currentRangeLabel();
 
             return SingleChildScrollView(
-              padding:
-                  PageLayoutConstants.getPageContainerPadding(), // 使用共享的页面容器边距
+              controller: _scrollController,
+              padding: HeroHeaderPageConstants.mainPagePadding,
               child: Column(
                 children: [
                   AppHeroHeader(
@@ -266,7 +271,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
             '点击某个习惯可临时隐藏或恢复它在统计中的展示',
             style: TextStyle(
               fontSize: AppTypographyConstants.panelSubtitleFontSize,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.65),
             ),
           ),
           SizedBox(height: 12.h),
@@ -279,7 +286,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   onTap: () => onToggle(i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 10.h,
+                    ),
                     decoration: BoxDecoration(
                       color: habitVisibility[i]
                           ? habits[i].color.withValues(alpha: 0.12)
@@ -288,7 +298,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       border: Border.all(
                         color: habitVisibility[i]
                             ? habits[i].color.withValues(alpha: 0.55)
-                            : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                            : Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
@@ -306,15 +318,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         Text(
                           habits[i].name,
                           style: TextStyle(
-                            fontSize: AppTypographyConstants.chartLegendFontSize,
+                            fontSize:
+                                AppTypographyConstants.chartLegendFontSize,
                             fontWeight: habitVisibility[i]
                                 ? FontWeight.w700
                                 : FontWeight.w600,
                             color: habitVisibility[i]
                                 ? Theme.of(context).colorScheme.onSurface
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withValues(alpha: 0.42),
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.42),
                             decoration: habitVisibility[i]
                                 ? TextDecoration.none
                                 : TextDecoration.lineThrough,
@@ -330,5 +342,4 @@ class _StatisticsPageState extends State<StatisticsPage> {
       ),
     );
   }
-
 }
