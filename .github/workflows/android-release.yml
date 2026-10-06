@@ -20,7 +20,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.32.8"
+          # Flutter 3.32.8 does not assign ABI-specific versionCode overrides.
+          # Keep this at or above the fix shipped in Flutter 3.35.0 (#169816).
+          flutter-version: "3.41.9"
           cache: true
       - name: Show Flutter version
         run: flutter --version
@@ -98,6 +100,46 @@ jobs:
         run: flutter build apk --release --verbose
       - name: Build Split APKs (per ABI)
         run: flutter build apk --release --split-per-abi
+      - name: Verify APK version codes
+        run: |
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*)
+              echo "::error::Invalid BUILD_NUMBER: $BUILD_NUMBER"
+              exit 1
+              ;;
+          esac
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          AAPT=$(find "$SDK_ROOT/build-tools" -type f -name aapt -print | sort -V | tail -1)
+          if [ -z "$AAPT" ]; then
+            echo "::error::Unable to find aapt under $SDK_ROOT/build-tools"
+            exit 1
+          fi
+
+          apk_version_code() {
+            "$AAPT" dump badging "$1" |
+              sed -n "s/^package:.* versionCode='\([0-9]*\)'.*/\1/p" |
+              head -1
+          }
+
+          BASE_CODE=$((10#$BUILD_NUMBER))
+          UNIVERSAL_CODE=$(apk_version_code build/app/outputs/flutter-apk/app-release.apk)
+          ARM32_CODE=$(apk_version_code build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk)
+          ARM64_CODE=$(apk_version_code build/app/outputs/flutter-apk/app-arm64-v8a-release.apk)
+          X86_64_CODE=$(apk_version_code build/app/outputs/flutter-apk/app-x86_64-release.apk)
+
+          for VERSION_SPEC in \
+            "universal:$UNIVERSAL_CODE:$BASE_CODE" \
+            "armeabi-v7a:$ARM32_CODE:$((1000 + BASE_CODE))" \
+            "arm64-v8a:$ARM64_CODE:$((2000 + BASE_CODE))" \
+            "x86_64:$X86_64_CODE:$((4000 + BASE_CODE))"; do
+            IFS=: read -r ABI ACTUAL EXPECTED <<< "$VERSION_SPEC"
+            echo "$ABI versionCode: actual=$ACTUAL expected=$EXPECTED"
+            if [ "$ACTUAL" != "$EXPECTED" ]; then
+              echo "::error::$ABI APK versionCode mismatch: expected $EXPECTED, got $ACTUAL"
+              exit 1
+            fi
+          done
       - name: Rename and prepare APKs
         run: |
           # Rename Fat APK

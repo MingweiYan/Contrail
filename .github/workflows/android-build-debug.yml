@@ -20,7 +20,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.32.8"
+          # Match the release workflow and retain ABI-specific versionCode overrides.
+          flutter-version: "3.41.9"
           cache: true
       
       - name: Show Flutter version
