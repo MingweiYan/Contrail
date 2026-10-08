@@ -7,7 +7,7 @@ import 'package:contrail/shared/models/goal_type_adapter.dart';
 import 'package:contrail/shared/models/cycle_type_adapter.dart';
 import 'package:contrail/shared/models/duration_adapter.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
-import 'package:contrail/features/profile/domain/services/local_storage_service.dart';
+import 'package:contrail/features/profile/domain/services/platform_local_storage_service.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/habit/data/repositories/hive_habit_repository.dart';
@@ -142,7 +142,9 @@ void _initHabitDomainLayer() {
 // 初始化Profile模块领域层
 void _initProfileDomainLayer() {
   // 注册存储服务
-  _registerSingletonIfAbsent<StorageServiceInterface>(LocalStorageService());
+  _registerSingletonIfAbsent<StorageServiceInterface>(
+    createPlatformLocalStorageService(),
+  );
 
   // 注册用户设置服务
   _registerSingletonIfAbsent<IUserSettingsService>(UserSettingsService());

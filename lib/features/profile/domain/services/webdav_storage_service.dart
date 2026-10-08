@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
@@ -13,11 +13,11 @@ class WebDavStorageService implements StorageServiceInterface {
   String? _password;
   String? _basePath;
 
-  final HttpClient _client;
+  final http.Client _client;
 
-  WebDavStorageService({WebDavConfigStore? configStore, HttpClient? client})
+  WebDavStorageService({WebDavConfigStore? configStore, http.Client? client})
     : _configStore = configStore ?? WebDavConfigStore(),
-      _client = client ?? HttpClient();
+      _client = client ?? http.Client();
 
   Uri _buildUri({
     required String url,
@@ -30,17 +30,35 @@ class WebDavStorageService implements StorageServiceInterface {
     return Uri.parse(joined);
   }
 
-  void _auth(HttpClientRequest req, String username, String password) {
-    final creds = base64Encode(utf8.encode('$username:$password'));
-    req.headers.set(HttpHeaders.authorizationHeader, 'Basic $creds');
+  Map<String, String> _headers({String? contentType}) {
+    final creds = base64Encode(utf8.encode('$_username:$_password'));
+    return {
+      'Authorization': 'Basic $creds',
+      if (contentType != null) 'Content-Type': contentType,
+    };
+  }
+
+  Future<http.Response> _send(
+    String method,
+    Uri uri, {
+    String? body,
+    String? contentType,
+    Map<String, String> headers = const {},
+  }) async {
+    final request = http.Request(method, uri)
+      ..headers.addAll(_headers(contentType: contentType))
+      ..headers.addAll(headers);
+    if (body != null) {
+      request.body = body;
+    }
+    final response = await _client.send(request);
+    return http.Response.fromStream(response);
   }
 
   Future<void> _ensureCollection(String baseUrl, String basePath) async {
     try {
       final uri = _buildUri(url: baseUrl, basePath: basePath);
-      final req = await _client.openUrl('MKCOL', uri);
-      _auth(req, _username!, _password!);
-      final resp = await req.close();
+      final resp = await _send('MKCOL', uri);
       if (resp.statusCode == 201 ||
           resp.statusCode == 405 ||
           resp.statusCode == 200) {
@@ -63,7 +81,9 @@ class WebDavStorageService implements StorageServiceInterface {
   @override
   Future<bool> checkPermissions() async {
     // WebDAV 不涉及系统权限，配置存在即可视为可用
-    return _url != null && _username != null && _password != null;
+    return _url?.trim().isNotEmpty == true &&
+        _username?.trim().isNotEmpty == true &&
+        _password?.isNotEmpty == true;
   }
 
   @override
@@ -101,10 +121,6 @@ class WebDavStorageService implements StorageServiceInterface {
     try {
       if (!await checkPermissions()) return [];
       final uri = _buildUri(url: _url!, basePath: _basePath ?? '/');
-      final req = await _client.openUrl('PROPFIND', uri);
-      _auth(req, _username!, _password!);
-      req.headers.set('Depth', '1');
-      req.headers.set(HttpHeaders.contentTypeHeader, 'text/xml');
       const body =
           '<?xml version="1.0" encoding="utf-8"?>\n'
           '<d:propfind xmlns:d="DAV:">\n'
@@ -114,10 +130,15 @@ class WebDavStorageService implements StorageServiceInterface {
           '    <d:getcontentlength/>\n'
           '  </d:prop>\n'
           '</d:propfind>';
-      req.add(utf8.encode(body));
-      final resp = await req.close();
+      final resp = await _send(
+        'PROPFIND',
+        uri,
+        body: body,
+        contentType: 'text/xml; charset=utf-8',
+        headers: const {'Depth': '1'},
+      );
       if (resp.statusCode < 200 || resp.statusCode >= 300) return [];
-      final content = await resp.transform(utf8.decoder).join();
+      final content = utf8.decode(resp.bodyBytes);
       final List<BackupFileInfo> files = [];
       final reResponse = RegExp(
         r'<(?:[a-zA-Z_]+:)?response[\s\S]*?<\/(?:[a-zA-Z_]+:)?response>',
@@ -174,11 +195,12 @@ class WebDavStorageService implements StorageServiceInterface {
         basePath: _basePath ?? '/',
         fileName: fileName,
       );
-      final req = await _client.putUrl(uri);
-      _auth(req, _username!, _password!);
-      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-      req.add(utf8.encode(jsonEncode(data)));
-      final resp = await req.close();
+      final resp = await _send(
+        'PUT',
+        uri,
+        body: jsonEncode(data),
+        contentType: 'application/json; charset=utf-8',
+      );
       return resp.statusCode >= 200 && resp.statusCode < 300;
     } catch (e) {
       logger.error('WebDAV 写入失败', e);
@@ -199,11 +221,9 @@ class WebDavStorageService implements StorageServiceInterface {
         final relPath = file.path.startsWith('/') ? file.path : '/${file.path}';
         uri = baseUri.replace(path: relPath);
       }
-      final req = await _client.getUrl(uri);
-      _auth(req, _username!, _password!);
-      final resp = await req.close();
+      final resp = await _send('GET', uri);
       if (resp.statusCode != 200) return null;
-      final body = await resp.transform(utf8.decoder).join();
+      final body = utf8.decode(resp.bodyBytes);
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
       logger.error('WebDAV 读取失败', e);
@@ -224,9 +244,7 @@ class WebDavStorageService implements StorageServiceInterface {
         final relPath = file.path.startsWith('/') ? file.path : '/${file.path}';
         uri = baseUri.replace(path: relPath);
       }
-      final req = await _client.deleteUrl(uri);
-      _auth(req, _username!, _password!);
-      final resp = await req.close();
+      final resp = await _send('DELETE', uri);
       return resp.statusCode >= 200 && resp.statusCode < 300;
     } catch (e) {
       logger.error('WebDAV 删除失败', e);
