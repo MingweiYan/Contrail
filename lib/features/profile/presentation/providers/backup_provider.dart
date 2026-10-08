@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,12 +6,15 @@ import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
 import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
 
-import 'package:contrail/features/profile/domain/services/local_storage_service.dart';
+import 'package:contrail/features/profile/domain/services/platform_local_storage_service.dart';
+import 'package:contrail/core/platform/platform_capabilities.dart';
+import 'package:contrail/features/profile/domain/services/unavailable_local_storage_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
 
 /// 备份Provider，管理备份页面的状态并连接UI与服务层
 class BackupProvider extends ChangeNotifier {
   final LocalBackupService _backupService;
+  final bool _supportsLocalFileBackups;
   // 自动备份服务不在Provider中常驻，仅在需要时临时调用
 
   // UI状态
@@ -33,12 +35,17 @@ class BackupProvider extends ChangeNotifier {
   String? _errorMessage;
 
   // 构造函数，支持依赖注入
-  BackupProvider([LocalBackupService? backupService])
-    : _backupService =
-          backupService ??
-          LocalBackupService(
-            storageService: LocalStorageService(), // 默认使用本地存储实现
-          );
+  BackupProvider([
+    LocalBackupService? backupService,
+    bool? supportsLocalFileBackups,
+  ]) : _supportsLocalFileBackups =
+           supportsLocalFileBackups ??
+           PlatformCapabilities.supportsLocalBackupFiles,
+       _backupService =
+           backupService ??
+           LocalBackupService(
+             storageService: createPlatformLocalStorageService(),
+           );
 
   // Getters
   bool get isLoading => _isLoading;
@@ -52,11 +59,21 @@ class BackupProvider extends ChangeNotifier {
   DateTime? get autoBackupLastErrorAt => _autoBackupLastErrorAt;
   int get retentionCount => _retentionCount;
   String? get errorMessage => _errorMessage;
+  bool get supportsLocalFileBackups => _supportsLocalFileBackups;
 
   /// 初始化
   Future<void> initialize() async {
     try {
       _setLoading(true);
+
+      // 自动备份设置也用于 WebDAV，因此所有平台都需要加载。
+      await _loadSharedSettings();
+
+      if (!_supportsLocalFileBackups) {
+        _localBackupPath = UnavailableLocalStorageService.unavailablePath;
+        _backupFiles = const [];
+        return;
+      }
 
       // 初始化服务
       await _backupService.initialize();
@@ -69,8 +86,8 @@ class BackupProvider extends ChangeNotifier {
         return;
       }
 
-      // 加载设置
-      await _loadSettings();
+      // 加载本地备份设置
+      await _loadLocalSettings();
 
       // 加载备份文件
       await _loadBackupFiles();
@@ -84,7 +101,7 @@ class BackupProvider extends ChangeNotifier {
   }
 
   /// 加载设置
-  Future<void> _loadSettings() async {
+  Future<void> _loadSharedSettings() async {
     try {
       // 加载自动备份设置（共享键）
       final settings = await AutoBackupService().loadAutoBackupSettings();
@@ -103,14 +120,14 @@ class BackupProvider extends ChangeNotifier {
       _autoBackupLastErrorAt = errAtMs != null
           ? DateTime.fromMillisecondsSinceEpoch(errAtMs)
           : null;
-
-      // 加载备份路径
-      _localBackupPath = await _backupService.loadOrCreateBackupPath();
-
-      _retentionCount = await _backupService.loadRetentionCount();
     } catch (e) {
       _setError('加载设置失败: $e');
     }
+  }
+
+  Future<void> _loadLocalSettings() async {
+    _localBackupPath = await _backupService.loadOrCreateBackupPath();
+    _retentionCount = await _backupService.loadRetentionCount();
   }
 
   /// 加载备份文件列表
@@ -125,6 +142,7 @@ class BackupProvider extends ChangeNotifier {
 
   /// 刷新备份文件列表（公开方法）
   Future<void> refreshBackupFiles() async {
+    if (!_supportsLocalFileBackups) return;
     try {
       _setLoading(true);
       await _loadBackupFiles();
@@ -135,6 +153,10 @@ class BackupProvider extends ChangeNotifier {
 
   /// 更改备份路径
   Future<void> changeBackupPath() async {
+    if (!_supportsLocalFileBackups) {
+      _setError('网页端不提供本地备份目录，请使用 WebDAV 同步或备份');
+      return;
+    }
     try {
       _setLoading(true);
 
@@ -151,6 +173,10 @@ class BackupProvider extends ChangeNotifier {
   }
 
   Future<void> resetBackupPathToDefault() async {
+    if (!_supportsLocalFileBackups) {
+      _setError('网页端不提供本地备份目录，请使用 WebDAV 同步或备份');
+      return;
+    }
     try {
       _setLoading(true);
       final path = await _backupService.resetBackupPathToDefault();
@@ -165,6 +191,10 @@ class BackupProvider extends ChangeNotifier {
 
   /// 执行本地备份
   Future<bool> performBackup() async {
+    if (!_supportsLocalFileBackups) {
+      _setError('网页端不生成本地备份文件，请使用 WebDAV');
+      return false;
+    }
     try {
       _setLoading(true);
 
@@ -172,39 +202,6 @@ class BackupProvider extends ChangeNotifier {
       final hasPermission = await _backupService.checkStoragePermission();
       if (!hasPermission) {
         _setError('没有足够的存储权限，请在系统设置中授予应用存储权限');
-        return false;
-      }
-
-      if (Platform.isAndroid &&
-          await _backupService.hasExternalAuthorizedDirectory()) {
-        final successSaf = await _backupService.performBackup(_localBackupPath);
-        if (successSaf) {
-          final settings = await AutoBackupService().loadAutoBackupSettings();
-          _lastBackupTime = settings['lastBackupTime'] as DateTime?;
-          await _loadBackupFiles();
-          return true;
-        }
-        _setError('备份失败，请检查目录授权');
-        return false;
-      }
-      // 验证备份路径是否存在且可写
-      final directory = Directory(_localBackupPath);
-      if (!await directory.exists()) {
-        try {
-          await directory.create(recursive: true);
-        } catch (dirError) {
-          _setError('无法创建备份目录: $dirError');
-          return false;
-        }
-      }
-
-      // 测试写入权限
-      try {
-        final testFile = File('$_localBackupPath/.test_write_permission');
-        await testFile.writeAsString('test', flush: true);
-        await testFile.delete();
-      } catch (testError) {
-        _setError('备份目录不可写：请更换备份路径或选择外部目录并授权访问');
         return false;
       }
 
@@ -248,12 +245,17 @@ class BackupProvider extends ChangeNotifier {
     BackupFileInfo backupFile,
     BuildContext context,
   ) async {
+    if (!_supportsLocalFileBackups) {
+      _setError('网页端不读取本地备份文件，请使用 WebDAV');
+      return false;
+    }
     try {
       _setLoading(true);
 
       final success = await _backupService.restoreFromBackup(backupFile);
 
       if (success) {
+        if (!context.mounted) return false;
         // 重新加载习惯数据
         final habitProvider = Provider.of<HabitProvider>(
           context,
@@ -275,6 +277,10 @@ class BackupProvider extends ChangeNotifier {
 
   /// 删除备份文件
   Future<bool> deleteBackupFile(BackupFileInfo backupFile) async {
+    if (!_supportsLocalFileBackups) {
+      _setError('网页端没有可删除的本地备份文件');
+      return false;
+    }
     try {
       _setLoading(true);
 

@@ -101,6 +101,16 @@ jobs:
         run: flutter build web --release --no-wasm-dry-run
       - name: Smoke test Web release
         run: bash scripts/ci/web_smoke.sh
+      - name: Build Web release for static subpath
+        run: >-
+          flutter build web --release --no-wasm-dry-run
+          --base-href /Contrail/
+      - name: Smoke test static subpath and hash routes
+        env:
+          WEB_SMOKE_BASE_PATH: /Contrail/
+          WEB_SMOKE_ARTIFACT_DIR: build/web-smoke-subpath
+          WEB_SMOKE_PORT: 4174
+        run: bash scripts/ci/web_smoke.sh
       - name: Upload Web build and smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,5 +119,6 @@ jobs:
           path: |
             build/web
             build/web-smoke
+            build/web-smoke-subpath
           if-no-files-found: error
           retention-days: 7

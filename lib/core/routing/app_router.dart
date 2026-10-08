@@ -4,10 +4,13 @@ import 'package:contrail/features/statistics/presentation/routes/statistics_rout
 import 'package:contrail/features/profile/presentation/routes/profile_routes.dart';
 import 'package:contrail/navigation/main_tab_page.dart';
 import 'package:contrail/features/splash/presentation/pages/splash_screen.dart';
+import 'package:contrail/core/routing/route_error_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/splash',
+    errorBuilder: (context, state) =>
+        RouteErrorPage(location: state.uri.toString()),
     routes: [
       // 闪屏页面路由
       GoRoute(

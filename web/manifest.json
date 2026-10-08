@@ -1,12 +1,12 @@
 {
-    "name": "app",
-    "short_name": "app",
+    "name": "Contrail",
+    "short_name": "Contrail",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "description": "A local-first habit and focus tracker.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

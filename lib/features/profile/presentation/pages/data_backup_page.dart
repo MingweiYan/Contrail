@@ -11,6 +11,7 @@ import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:contrail/core/platform/platform_capabilities.dart';
 
 class DataBackupPage extends StatefulWidget {
   const DataBackupPage({super.key});
@@ -120,8 +121,10 @@ class _DataBackupPageState extends State<DataBackupPage>
                         webdavProvider.clearError,
                       );
 
+                      final supportsLocalFiles =
+                          PlatformCapabilities.supportsLocalBackupFiles;
                       return DefaultTabController(
-                        length: 2,
+                        length: supportsLocalFiles ? 2 : 1,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -131,7 +134,9 @@ class _DataBackupPageState extends State<DataBackupPage>
                               context,
                               icon: Icons.schedule_rounded,
                               title: '自动备份策略',
-                              subtitle: '页面级公共配置，统一影响本地与 WebDAV',
+                              subtitle: supportsLocalFiles
+                                  ? '页面级公共配置，统一影响本地与 WebDAV'
+                                  : '网页端仅对当前会话已配置的 WebDAV 生效',
                               statusItems: [
                                 _StatusItem(
                                   label: '自动备份',
@@ -180,15 +185,17 @@ class _DataBackupPageState extends State<DataBackupPage>
                             Expanded(
                               child: TabBarView(
                                 children: [
-                                  SingleChildScrollView(
-                                    padding: EdgeInsets.only(
-                                      bottom: BaseLayoutConstants.spacingLarge,
+                                  if (supportsLocalFiles)
+                                    SingleChildScrollView(
+                                      padding: EdgeInsets.only(
+                                        bottom:
+                                            BaseLayoutConstants.spacingLarge,
+                                      ),
+                                      child: _buildLocalTab(
+                                        context,
+                                        backupProvider,
+                                      ),
                                     ),
-                                    child: _buildLocalTab(
-                                      context,
-                                      backupProvider,
-                                    ),
-                                  ),
                                   SingleChildScrollView(
                                     padding: EdgeInsets.only(
                                       bottom: BaseLayoutConstants.spacingLarge,
@@ -242,7 +249,9 @@ class _DataBackupPageState extends State<DataBackupPage>
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  '分别在本地与 WebDAV 子页管理配置、查看状态，并处理备份文件。',
+                  PlatformCapabilities.supportsLocalBackupFiles
+                      ? '分别在本地与 WebDAV 子页管理配置、查看状态，并处理备份文件。'
+                      : '网页端运行数据保存在浏览器中，远端备份由你配置的 WebDAV 直接承载。',
                   style: TextStyle(
                     fontSize:
                         AppTypographyConstants.secondaryHeroSubtitleFontSize,
@@ -316,9 +325,10 @@ class _DataBackupPageState extends State<DataBackupPage>
           color: primary,
           borderRadius: BorderRadius.circular(16.r),
         ),
-        tabs: const [
-          Tab(text: '本地'),
-          Tab(text: 'WebDAV'),
+        tabs: [
+          if (PlatformCapabilities.supportsLocalBackupFiles)
+            const Tab(text: '本地'),
+          const Tab(text: 'WebDAV'),
         ],
       ),
     );
@@ -328,6 +338,10 @@ class _DataBackupPageState extends State<DataBackupPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (PlatformCapabilities.webDavRequiresCors) ...[
+          _buildBrowserWebDavNotice(context),
+          SizedBox(height: BaseLayoutConstants.spacingLarge),
+        ],
         _buildConfigStatusCard(
           context,
           icon: Icons.folder_open_rounded,
@@ -360,7 +374,7 @@ class _DataBackupPageState extends State<DataBackupPage>
           primaryActionIcon: Icons.save_alt_rounded,
           onPrimaryAction: () async {
             final success = await backupProvider.performBackup();
-            if (!mounted || !success) return;
+            if (!context.mounted || !success) return;
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(const SnackBar(content: Text('本地备份成功')));
@@ -375,6 +389,51 @@ class _DataBackupPageState extends State<DataBackupPage>
           onDelete: (file) => _deleteLocalBackupFile(context, file),
         ),
       ],
+    );
+  }
+
+  Widget _buildBrowserWebDavNotice(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: ThemeHelper.panelDecoration(context, radius: 20.r),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.security_rounded,
+            color: ThemeHelper.primary(context),
+            size: 22.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '浏览器直连 WebDAV',
+                  style: TextStyle(
+                    fontSize: AppTypographyConstants.cardTitleFontSize,
+                    fontWeight: FontWeight.w800,
+                    color: ThemeHelper.onBackground(context),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  '服务端必须允许当前站点的 CORS 请求，并放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth 请求头。HTTPS 页面不能连接 HTTP 地址。密码只保留在当前网页会话，刷新后需重新输入。',
+                  style: TextStyle(
+                    fontSize: AppTypographyConstants.formHelperFontSize,
+                    height: 1.45,
+                    color: ThemeHelper.onBackground(
+                      context,
+                    ).withValues(alpha: 0.72),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -430,7 +489,7 @@ class _DataBackupPageState extends State<DataBackupPage>
           primaryActionIcon: Icons.cloud_upload_outlined,
           onPrimaryAction: () async {
             final success = await webdavProvider.performBackup();
-            if (!mounted || !success) return;
+            if (!context.mounted || !success) return;
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(const SnackBar(content: Text('网络备份成功')));
@@ -706,10 +765,10 @@ class _DataBackupPageState extends State<DataBackupPage>
         ) ??
         false;
 
-    if (!shouldDelete) return false;
+    if (!shouldDelete || !context.mounted) return false;
     final backupProvider = context.read<BackupProvider>();
     final success = await backupProvider.deleteBackupFile(backupFile);
-    if (!mounted) return false;
+    if (!context.mounted) return false;
 
     if (success) {
       ScaffoldMessenger.of(
@@ -754,9 +813,9 @@ class _DataBackupPageState extends State<DataBackupPage>
         ) ??
         false;
 
-    if (!shouldRestore) return;
+    if (!shouldRestore || !context.mounted) return;
     final success = await webdavProvider.restoreBackupFile(context, file);
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     ScaffoldMessenger.of(
       context,
@@ -793,9 +852,9 @@ class _DataBackupPageState extends State<DataBackupPage>
         ) ??
         false;
 
-    if (!shouldDelete) return false;
+    if (!shouldDelete || !context.mounted) return false;
     final success = await webdavProvider.deleteBackupFile(file);
-    if (!mounted) return false;
+    if (!context.mounted) return false;
 
     ScaffoldMessenger.of(
       context,
