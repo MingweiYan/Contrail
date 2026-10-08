@@ -121,7 +121,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             // 使用习惯的颜色属性，不再需要固定的颜色列表
             final Map<String, Color> habitColors = {};
             for (int i = 0; i < habits.length; i++) {
-              habitColors[habits[i].name] = habits[i].color;
+              habitColors[habits[i].id] = habits[i].color;
             }
 
             // 计算统计数据 - 使用服务层方法

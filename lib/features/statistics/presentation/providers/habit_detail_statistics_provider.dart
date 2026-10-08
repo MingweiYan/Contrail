@@ -59,17 +59,17 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
 
     // 「最近 N」滚动窗口模式优先：end = 今天，start 按 cycleType 向前推。
     if (_isCompletionRollingWindow) {
-      endDate = DateTime(now.year, now.month, now.day);
+      endDate = TimeManagementUtil.dateOnly(now);
       switch (cycleType) {
         case CycleType.weekly:
-          startDate = endDate.subtract(const Duration(days: 6));
+          startDate = TimeManagementUtil.addCalendarDays(endDate, -6);
           break;
         case CycleType.monthly:
         case CycleType.daily:
-          startDate = endDate.subtract(const Duration(days: 29));
+          startDate = TimeManagementUtil.addCalendarDays(endDate, -29);
           break;
         case CycleType.annual:
-          startDate = endDate.subtract(const Duration(days: 364));
+          startDate = TimeManagementUtil.addCalendarDays(endDate, -364);
           break;
       }
       return DateTimeRange(start: startDate, end: endDate);
@@ -78,15 +78,18 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     switch (cycleType) {
       case CycleType.weekly:
         // 每周习惯：显示最近一周
-        int daysFromMonday = now.weekday - 1;
-        if (daysFromMonday < 0) daysFromMonday = 6; // 调整周日的计算
-        startDate = now.subtract(Duration(days: daysFromMonday));
-        startDate = DateTime(startDate.year, startDate.month, startDate.day);
-        endDate = startDate.add(Duration(days: 6));
+        startDate = TimeManagementUtil.getWeekStartDate(now);
+        endDate = TimeManagementUtil.addCalendarDays(startDate, 6);
 
         // 应用周期偏移
-        startDate = startDate.add(Duration(days: _periodOffset * 7));
-        endDate = endDate.add(Duration(days: _periodOffset * 7));
+        startDate = TimeManagementUtil.addCalendarDays(
+          startDate,
+          _periodOffset * 7,
+        );
+        endDate = TimeManagementUtil.addCalendarDays(
+          endDate,
+          _periodOffset * 7,
+        );
         break;
 
       case CycleType.monthly:
@@ -226,16 +229,16 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     // 计算已完成的天数
     int completedDays = 0;
     _habit.dailyCompletionStatus.forEach((date, completed) {
-      final dateOnly = DateTime(date.year, date.month, date.day);
-      if (dateOnly.isAfter(range.start.subtract(Duration(days: 1))) &&
-          dateOnly.isBefore(range.end.add(Duration(days: 1))) &&
-          completed) {
+      if (completed && TimeManagementUtil.isDateInRange(date, range)) {
         completedDays++;
       }
     });
 
     // 计算周期内的总天数
-    int totalDaysInPeriod = range.end.difference(range.start).inDays + 1;
+    int totalDaysInPeriod = TimeManagementUtil.inclusiveCalendarDayCount(
+      range.start,
+      range.end,
+    );
 
     // 根据cycleType计算目标天数（按当前周期，不做乘法）
     int targetDays;
