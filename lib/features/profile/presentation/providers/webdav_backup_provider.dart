@@ -55,6 +55,11 @@ class WebDavBackupProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _service.initialize();
+      final cfg = await _service.loadWebDavConfig();
+      _webdavUrl = cfg['url'] ?? '';
+      _webdavUsername = cfg['username'] ?? '';
+      _webdavPassword = cfg['password'] ?? '';
+      _webdavPath = cfg['path'] ?? 'Contrail';
       final hasPermission = await _service.checkStoragePermission();
       if (!hasPermission) {
         _setError('请配置 WebDAV 凭据以启用网络备份');
@@ -67,11 +72,6 @@ class WebDavBackupProvider extends ChangeNotifier {
       _lastBackupTime = settings['lastBackupTime'] as DateTime?;
       _displayPath = await _service.loadOrCreateBackupPath();
       _retentionCount = await _service.loadRetentionCount();
-      final cfg = await _service.loadWebDavConfig();
-      _webdavUrl = cfg['url'] ?? '';
-      _webdavUsername = cfg['username'] ?? '';
-      _webdavPassword = cfg['password'] ?? '';
-      _webdavPath = cfg['path'] ?? 'Contrail';
       await refreshBackupFiles();
     } catch (e) {
       _setError('WebDAV 初始化失败: $e');
@@ -168,6 +168,9 @@ class WebDavBackupProvider extends ChangeNotifier {
   ) async {
     final ok = await _service.restoreFromBackup(file);
     if (ok) {
+      if (!context.mounted) {
+        return ok;
+      }
       try {
         final habitProvider = Provider.of<HabitProvider>(
           context,
