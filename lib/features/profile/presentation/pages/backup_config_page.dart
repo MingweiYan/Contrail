@@ -473,6 +473,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                 final configured =
                     provider.webdavUrl.trim().isNotEmpty &&
                     provider.webdavUsername.trim().isNotEmpty &&
+                    provider.webdavPassword.isNotEmpty &&
                     provider.webdavPath.trim().isNotEmpty;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

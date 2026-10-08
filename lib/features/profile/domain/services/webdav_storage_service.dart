@@ -1,22 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
+import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 
 class WebDavStorageService implements StorageServiceInterface {
-  static const String _keyUrl = 'webdav_url';
-  static const String _keyUser = 'webdav_username';
-  static const String _keyPass = 'webdav_password';
-  static const String _keyPath = 'webdav_path';
+  final WebDavConfigStore _configStore;
 
   String? _url;
   String? _username;
   String? _password;
   String? _basePath;
 
-  HttpClient _client = HttpClient();
+  final HttpClient _client;
+
+  WebDavStorageService({WebDavConfigStore? configStore, HttpClient? client})
+    : _configStore = configStore ?? WebDavConfigStore(),
+      _client = client ?? HttpClient();
 
   Uri _buildUri({
     required String url,
@@ -52,11 +53,11 @@ class WebDavStorageService implements StorageServiceInterface {
 
   @override
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _url = prefs.getString(_keyUrl);
-    _username = prefs.getString(_keyUser);
-    _password = prefs.getString(_keyPass);
-    _basePath = prefs.getString(_keyPath) ?? 'Contrail';
+    final config = await _configStore.load();
+    _url = config.url;
+    _username = config.username;
+    _password = config.password;
+    _basePath = config.path;
   }
 
   @override
@@ -76,8 +77,7 @@ class WebDavStorageService implements StorageServiceInterface {
 
   @override
   Future<String> setWritePath(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyPath, path);
+    await _configStore.save(path: path);
     _basePath = path;
     logger.info('WebDAV 目录设置为: $path');
     return path;

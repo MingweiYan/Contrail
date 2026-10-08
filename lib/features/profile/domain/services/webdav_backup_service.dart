@@ -9,13 +9,18 @@ import 'package:contrail/features/habit/data/repositories/habit_repository.dart'
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
-import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
+import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 
 class WebDavBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
+  final WebDavConfigStore _configStore;
 
-  WebDavBackupService({required StorageServiceInterface storageService})
-    : _storageService = storageService;
+  WebDavBackupService({
+    required StorageServiceInterface storageService,
+    WebDavConfigStore? configStore,
+  }) : _storageService = storageService,
+       _configStore = configStore ?? WebDavConfigStore();
 
   static const String _autoBackupEnabledKey = 'autoBackupEnabled';
   // 与 AutoBackupService 共用同一个新 key（int 天数）
@@ -23,11 +28,13 @@ class WebDavBackupService implements BackupChannelService {
   static const String _lastBackupTimeKey = 'webdav_lastBackupTime';
   static const String _backupRetentionPrefix = 'webdav_backupRetention_';
 
+  @override
   Future<void> initialize() async {
     tz.initializeTimeZones();
     await _storageService.initialize();
   }
 
+  @override
   Future<bool> checkStoragePermission() async {
     return await _storageService.checkPermissions();
   }
@@ -63,6 +70,7 @@ class WebDavBackupService implements BackupChannelService {
     await prefs.setInt(_backupFrequencyKey, frequency);
   }
 
+  @override
   Future<String> loadOrCreateBackupPath() async {
     return await _storageService.getReadPath();
   }
@@ -72,12 +80,7 @@ class WebDavBackupService implements BackupChannelService {
   }
 
   Future<Map<String, String?>> loadWebDavConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    final url = prefs.getString('webdav_url');
-    final user = prefs.getString('webdav_username');
-    final pass = prefs.getString('webdav_password');
-    final path = prefs.getString('webdav_path');
-    return {'url': url, 'username': user, 'password': pass, 'path': path};
+    return (await _configStore.load()).toMap();
   }
 
   Future<void> saveWebDavConfig({
@@ -86,13 +89,15 @@ class WebDavBackupService implements BackupChannelService {
     String? password,
     String? path,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (url != null) await prefs.setString('webdav_url', url);
-    if (username != null) await prefs.setString('webdav_username', username);
-    if (password != null) await prefs.setString('webdav_password', password);
-    if (path != null) await prefs.setString('webdav_path', path);
+    await _configStore.save(
+      url: url,
+      username: username,
+      password: password,
+      path: path,
+    );
   }
 
+  @override
   Future<bool> performBackup(String backupPath) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -134,15 +139,10 @@ class WebDavBackupService implements BackupChannelService {
       // 恢复设置，跳过 WebDAV 相关与自动备份相关键
       bool settingsOk = true;
       if (backupData.containsKey('settings')) {
-        final settings = backupData['settings'] as Map<String, dynamic>;
-        final skip = <String>{
-          ...AutoBackupService.restoreSkipKeys,
-          'webdav_url',
-          'webdav_username',
-          'webdav_password',
-          'webdav_path',
-        };
-        await UserSettingsService().restoreSettings(settings, skip);
+        final settings = BackupSettingsPolicy.filterForRestore(
+          backupData['settings'] as Map<String, dynamic>,
+        );
+        await UserSettingsService().restoreSettings(settings, const {});
       }
 
       return habitsOk && settingsOk;
@@ -152,6 +152,7 @@ class WebDavBackupService implements BackupChannelService {
     }
   }
 
+  @override
   Future<bool> deleteBackupFile(BackupFileInfo file) async {
     return await _storageService.deleteFile(file);
   }

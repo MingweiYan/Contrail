@@ -16,24 +16,36 @@ void main() {
 
     setUp(() {
       mockWebDavBackupService = MockWebDavBackupService();
-      
+
       when(() => mockWebDavBackupService.initialize()).thenAnswer((_) async {});
-      when(() => mockWebDavBackupService.checkStoragePermission()).thenAnswer((_) async => true);
-      when(() => mockWebDavBackupService.loadAutoBackupSettings()).thenAnswer((_) async => {
-        'autoBackupEnabled': false,
-        'backupFrequency': 1,
-        'lastBackupTime': null,
-      });
-      when(() => mockWebDavBackupService.loadOrCreateBackupPath()).thenAnswer((_) async => '/test/webdav/path');
-      when(() => mockWebDavBackupService.loadRetentionCount()).thenAnswer((_) async => 10);
-      when(() => mockWebDavBackupService.loadWebDavConfig()).thenAnswer((_) async => {
-        'url': '',
-        'username': '',
-        'password': '',
-        'path': 'Contrail',
-      });
-      when(() => mockWebDavBackupService.loadBackupFiles(any())).thenAnswer((_) async => []);
-      
+      when(
+        () => mockWebDavBackupService.checkStoragePermission(),
+      ).thenAnswer((_) async => true);
+      when(() => mockWebDavBackupService.loadAutoBackupSettings()).thenAnswer(
+        (_) async => {
+          'autoBackupEnabled': false,
+          'backupFrequency': 1,
+          'lastBackupTime': null,
+        },
+      );
+      when(
+        () => mockWebDavBackupService.loadOrCreateBackupPath(),
+      ).thenAnswer((_) async => '/test/webdav/path');
+      when(
+        () => mockWebDavBackupService.loadRetentionCount(),
+      ).thenAnswer((_) async => 10);
+      when(() => mockWebDavBackupService.loadWebDavConfig()).thenAnswer(
+        (_) async => {
+          'url': '',
+          'username': '',
+          'password': '',
+          'path': 'Contrail',
+        },
+      );
+      when(
+        () => mockWebDavBackupService.loadBackupFiles(any()),
+      ).thenAnswer((_) async => []);
+
       webDavBackupProvider = WebDavBackupProvider(mockWebDavBackupService);
     });
 
@@ -83,6 +95,28 @@ void main() {
       expect(webDavBackupProvider.displayPath, isNotNull);
       expect(webDavBackupProvider.retentionCount, isNotNull);
       expect(webDavBackupProvider.lastBackupTime, isNull);
+    });
+
+    test('凭据缺失时仍应加载非敏感配置', () async {
+      when(
+        () => mockWebDavBackupService.checkStoragePermission(),
+      ).thenAnswer((_) async => false);
+      when(() => mockWebDavBackupService.loadWebDavConfig()).thenAnswer(
+        (_) async => {
+          'url': 'https://example.com/dav',
+          'username': 'alice',
+          'password': null,
+          'path': 'Contrail',
+        },
+      );
+
+      await webDavBackupProvider.initialize();
+
+      expect(webDavBackupProvider.webdavUrl, 'https://example.com/dav');
+      expect(webDavBackupProvider.webdavUsername, 'alice');
+      expect(webDavBackupProvider.webdavPassword, isEmpty);
+      expect(webDavBackupProvider.webdavPath, 'Contrail');
+      expect(webDavBackupProvider.errorMessage, isNotNull);
     });
   });
 }
