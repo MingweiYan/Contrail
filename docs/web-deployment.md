@@ -34,3 +34,6 @@ to permit CORS for the site origin. It must allow `GET`, `PUT`, `DELETE`,
 `PROPFIND`, and `MKCOL`, plus the `Authorization`, `Content-Type`, and `Depth`
 request headers. WebDAV passwords are held only in memory on Web and must be
 entered again after a reload.
+
+See [Web data lifecycle](web-data-lifecycle.md) for the exact local storage,
+retention, and outbound traffic contract.

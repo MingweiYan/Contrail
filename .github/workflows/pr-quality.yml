@@ -97,6 +97,10 @@ jobs:
           cache: true
       - name: Install locked dependencies
         run: flutter pub get --enforce-lockfile
+      - name: Verify browser local-first storage contract
+        run: >-
+          flutter test --platform chrome --reporter compact
+          test/browser/local_first_storage_test.dart
       - name: Build Web release
         run: flutter build web --release --no-wasm-dry-run
       - name: Smoke test Web release

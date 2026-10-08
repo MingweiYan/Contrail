@@ -1,11 +1,9 @@
 import 'package:contrail/features/habit/domain/services/habit_management_service.dart';
+import 'package:contrail/core/storage/local_data_store.dart';
 import 'package:contrail/shared/services/habit_service.dart';
 import 'package:get_it/get_it.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 import 'package:contrail/shared/models/habit.dart';
-import 'package:contrail/shared/models/goal_type_adapter.dart';
-import 'package:contrail/shared/models/cycle_type_adapter.dart';
-import 'package:contrail/shared/models/duration_adapter.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/platform_local_storage_service.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
@@ -84,27 +82,7 @@ Future<void> initBackgroundBackupDependencies() async {
 
 Future<void> _initDataLayer() async {
   if (_dataLayerInitialized) return;
-  // 初始化Hive
-  await Hive.initFlutter();
-
-  // 注册适配器
-  if (!Hive.isAdapterRegistered(0)) {
-    Hive.registerAdapter(HabitAdapter());
-  }
-  if (!Hive.isAdapterRegistered(1)) {
-    Hive.registerAdapter(GoalTypeAdapter());
-  }
-  if (!Hive.isAdapterRegistered(2)) {
-    Hive.registerAdapter(CycleTypeAdapter());
-  }
-  if (!Hive.isAdapterRegistered(3)) {
-    Hive.registerAdapter(DurationAdapter());
-  }
-
-  // 打开数据库
-  final habitBox = Hive.isBoxOpen('habits')
-      ? Hive.box<Habit>('habits')
-      : await Hive.openBox<Habit>('habits');
+  final habitBox = await LocalDataStore().openHabitsBox();
   if (!sl.isRegistered<Box<Habit>>()) {
     sl.registerLazySingleton<Box<Habit>>(() => habitBox);
   }
