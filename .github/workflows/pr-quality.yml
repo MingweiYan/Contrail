@@ -100,7 +100,7 @@ jobs:
       - name: Verify browser local-first storage contract
         run: >-
           flutter test --platform chrome --reporter compact
-          browser_test/local_first_storage_test.dart
+          test/browser/local_first_storage_test.dart
       - name: Build Web release
         run: flutter build web --release --no-wasm-dry-run
       - name: Smoke test Web release
