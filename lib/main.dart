@@ -175,15 +175,17 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
           }
 
           return ScreenUtilInit(
-            designSize: const Size(540, 1200), // 设计稿尺寸
+            designSize: ResponsiveLayout.designSize,
             minTextAdapt: true,
             splitScreenMode: true,
             enableScaleWH: () => ResponsiveLayout.shouldScaleCompactDimensions(
               ScreenUtil().screenWidth,
+              isWeb: kIsWeb,
             ),
             enableScaleText: () =>
                 ResponsiveLayout.shouldScaleCompactDimensions(
                   ScreenUtil().screenWidth,
+                  isWeb: kIsWeb,
                 ),
             builder: (context, child) {
               return MaterialApp.router(
@@ -205,6 +207,14 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
                 ],
                 // 使用GoRouter的路由配置
                 routerConfig: AppRouter.router,
+                builder: (context, child) {
+                  final routedApp = child ?? const SizedBox.shrink();
+                  if (!kIsWeb) {
+                    return routedApp;
+                  }
+
+                  return ProportionalViewportFrame(child: routedApp);
+                },
               );
             },
           );

@@ -8,6 +8,8 @@ void main() {
     WidgetTester tester, {
     required Size size,
     required Widget child,
+    bool proportionalFrame = false,
+    bool isWeb = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -15,47 +17,80 @@ void main() {
 
     await tester.pumpWidget(
       ScreenUtilInit(
-        designSize: const Size(540, 1200),
+        designSize: ResponsiveLayout.designSize,
         minTextAdapt: true,
         splitScreenMode: true,
         enableScaleWH: () => ResponsiveLayout.shouldScaleCompactDimensions(
           ScreenUtil().screenWidth,
+          isWeb: isWeb,
         ),
         enableScaleText: () => ResponsiveLayout.shouldScaleCompactDimensions(
           ScreenUtil().screenWidth,
+          isWeb: isWeb,
         ),
-        builder: (context, child) => MaterialApp(home: child),
+        builder: (context, child) => MaterialApp(
+          home: proportionalFrame
+              ? ProportionalViewportFrame(child: child!)
+              : child,
+        ),
         child: child,
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('page content uses the complete browser viewport', (
+  testWidgets('wide browser viewport uses height-limited proportional frame', (
     tester,
   ) async {
     const contentKey = Key('viewport-content');
     await pumpAt(
       tester,
       size: const Size(1440, 1000),
-      child: const Scaffold(
-        body: SizedBox.expand(
-          child: ColoredBox(key: contentKey, color: Colors.blue),
-        ),
+      proportionalFrame: true,
+      isWeb: true,
+      child: const SizedBox.expand(
+        child: ColoredBox(key: contentKey, color: Colors.blue),
       ),
     );
 
-    expect(tester.getSize(find.byKey(contentKey)), const Size(1440, 1000));
+    final rect = tester.getRect(find.byKey(contentKey));
+    expect(rect.size.width, closeTo(450, 0.01));
+    expect(rect.size.height, closeTo(1000, 0.01));
+    expect(rect.left, closeTo(495, 0.01));
+    expect(rect.top, closeTo(0, 0.01));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('does not inflate ScreenUtil dimensions on desktop', (
+  testWidgets('tall browser viewport uses width-limited proportional frame', (
+    tester,
+  ) async {
+    const contentKey = Key('viewport-content');
+    await pumpAt(
+      tester,
+      size: const Size(900, 1800),
+      proportionalFrame: true,
+      isWeb: true,
+      child: const SizedBox.expand(
+        child: ColoredBox(key: contentKey, color: Colors.blue),
+      ),
+    );
+
+    final rect = tester.getRect(find.byKey(contentKey));
+    expect(rect.size.width, closeTo(810, 0.01));
+    expect(rect.size.height, closeTo(1800, 0.01));
+    expect(rect.left, closeTo(45, 0.01));
+    expect(rect.top, closeTo(0, 0.01));
+  });
+
+  testWidgets('web dimensions are scaled once by the fitted canvas', (
     tester,
   ) async {
     const markerKey = Key('screenutil-marker');
     await pumpAt(
       tester,
       size: const Size(1440, 1000),
+      proportionalFrame: true,
+      isWeb: true,
       child: Builder(
         builder: (context) => Center(
           child: SizedBox.square(
@@ -66,7 +101,9 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byKey(markerKey)), const Size.square(16));
+    final rect = tester.getRect(find.byKey(markerKey));
+    expect(rect.size.width, closeTo(16 * (1000 / 1200), 0.01));
+    expect(rect.size.height, closeTo(16 * (1000 / 1200), 0.01));
   });
 
   testWidgets('keeps compact ScreenUtil scaling on phones', (tester) async {
@@ -74,6 +111,7 @@ void main() {
     await pumpAt(
       tester,
       size: const Size(390, 844),
+      isWeb: false,
       child: Builder(
         builder: (context) => Center(
           child: SizedBox.square(
