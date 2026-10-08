@@ -7,16 +7,21 @@ import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
+import 'package:contrail/features/profile/domain/services/backup_document_codec.dart';
 import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 
 /// 本地备份服务，负责本地通道的备份/恢复/列表/保留策略与路径权限
 class LocalBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
+  final BackupDocumentCodec _backupDocumentCodec;
 
   // 构造函数接受存储服务接口，支持依赖注入
-  LocalBackupService({StorageServiceInterface? storageService})
-    : _storageService = storageService ?? sl<StorageServiceInterface>();
+  LocalBackupService({
+    StorageServiceInterface? storageService,
+    BackupDocumentCodec? backupDocumentCodec,
+  }) : _storageService = storageService ?? sl<StorageServiceInterface>(),
+       _backupDocumentCodec = backupDocumentCodec ?? BackupDocumentCodec();
   static const String _backupRetentionPrefix = 'backupRetention_';
 
   /// 初始化服务
@@ -83,17 +88,18 @@ class LocalBackupService implements BackupChannelService {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final backupFileName = 'contrail_backup_$timestamp.json';
 
-      // 收集所有需要备份的数据
-      final backupData = <String, dynamic>{};
-
       // 备份习惯数据 - 使用HabitService处理习惯数据
       final habitRepository = sl<HabitRepository>();
       final habitService = sl<HabitService>();
-      backupData['habits'] = await habitService.backupHabits(habitRepository);
+      final habits = await habitService.backupHabits(habitRepository);
 
       // 备份用户设置
       final prefs = await SharedPreferences.getInstance();
-      backupData['settings'] = BackupSettingsPolicy.exportFrom(prefs);
+      final settings = BackupSettingsPolicy.exportFrom(prefs);
+      final backupData = await _backupDocumentCodec.encode(
+        habits: habits,
+        settings: settings,
+      );
 
       // 委托给存储服务处理数据写入
       final success = await _storageService.writeData(
@@ -123,29 +129,23 @@ class LocalBackupService implements BackupChannelService {
         return false;
       }
 
-      // 恢复习惯数据 - 使用HabitService处理习惯数据
-      if (backupData.containsKey('habits')) {
-        final habitsList = backupData['habits'] as List;
-        final habitRepository = sl<HabitRepository>();
-        final habitService = sl<HabitService>();
+      final payload = _backupDocumentCodec.decodeAndVerify(backupData);
 
-        final restoreSuccess = await habitService.restoreHabits(
-          habitRepository,
-          habitsList,
-        );
-        if (!restoreSuccess) {
-          logger.error('习惯数据恢复失败');
-          return false;
-        }
+      // 恢复习惯数据 - 使用HabitService处理习惯数据
+      final habitRepository = sl<HabitRepository>();
+      final habitService = sl<HabitService>();
+      final restoreSuccess = await habitService.restoreHabits(
+        habitRepository,
+        payload.habits,
+      );
+      if (!restoreSuccess) {
+        logger.error('习惯数据恢复失败');
+        return false;
       }
 
       // 恢复用户设置
-      if (backupData.containsKey('settings')) {
-        final settings = BackupSettingsPolicy.filterForRestore(
-          backupData['settings'] as Map<String, dynamic>,
-        );
-        await UserSettingsService().restoreSettings(settings, const {});
-      }
+      final settings = BackupSettingsPolicy.filterForRestore(payload.settings);
+      await UserSettingsService().restoreSettings(settings, const {});
 
       return true;
     } catch (e) {
