@@ -225,6 +225,7 @@ class CalendarViewWidget extends StatelessWidget {
                     itemBuilder: (context, i) {
                       final habitIndex = completedHabitIndices[i];
                       final color =
+                          habitColors[habits[habitIndex].id] ??
                           habitColors[habits[habitIndex].name] ??
                           ThemeHelper.outline(context);
                       return Container(
