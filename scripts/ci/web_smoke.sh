@@ -18,6 +18,12 @@ if [[ ! -f "$web_root/index.html" ]]; then
   exit 1
 fi
 
+if grep -Eq 'id="splash"|removeSplashFromWeb|splash/img/' \
+  "$web_root/index.html" "$web_root/flutter_bootstrap.js"; then
+  echo "Legacy Web splash markup is still present in the build output." >&2
+  exit 1
+fi
+
 if [[ -n "${CHROME_EXECUTABLE:-}" ]]; then
   chrome="$CHROME_EXECUTABLE"
 else
