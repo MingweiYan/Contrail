@@ -70,6 +70,8 @@ class UserSettingsService implements IUserSettingsService {
         await prefs.setInt(key, value);
       } else if (value is double) {
         await prefs.setDouble(key, value);
+      } else if (value is List && value.every((element) => element is String)) {
+        await prefs.setStringList(key, value.cast<String>());
       }
     }
   }

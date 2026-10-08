@@ -7,7 +7,7 @@ import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
-import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 
 /// 本地备份服务，负责本地通道的备份/恢复/列表/保留策略与路径权限
@@ -17,16 +17,16 @@ class LocalBackupService implements BackupChannelService {
   // 构造函数接受存储服务接口，支持依赖注入
   LocalBackupService({StorageServiceInterface? storageService})
     : _storageService = storageService ?? sl<StorageServiceInterface>();
-  static const String _localBackupPathKey = 'localBackupPath'; // 这个键仍然用于存储相关设置
-
   static const String _backupRetentionPrefix = 'backupRetention_';
 
   /// 初始化服务
+  @override
   Future<void> initialize() async {
     // 本地备份服务无需初始化通知
   }
 
   /// 检查并申请存储权限
+  @override
   Future<bool> checkStoragePermission() async {
     // 委托给存储服务处理权限检查
     return await _storageService.checkPermissions();
@@ -43,6 +43,7 @@ class LocalBackupService implements BackupChannelService {
   }
 
   /// 加载或创建备份路径
+  @override
   Future<String> loadOrCreateBackupPath() async {
     // 委托给存储服务处理路径加载
     return await _storageService.getReadPath();
@@ -75,6 +76,7 @@ class LocalBackupService implements BackupChannelService {
   }
 
   /// 执行备份
+  @override
   Future<bool> performBackup(String backupPath) async {
     try {
       // 创建备份文件名
@@ -91,11 +93,7 @@ class LocalBackupService implements BackupChannelService {
 
       // 备份用户设置
       final prefs = await SharedPreferences.getInstance();
-      final settings = <String, dynamic>{};
-      for (final key in prefs.getKeys()) {
-        settings[key] = prefs.get(key);
-      }
-      backupData['settings'] = settings;
+      backupData['settings'] = BackupSettingsPolicy.exportFrom(prefs);
 
       // 委托给存储服务处理数据写入
       final success = await _storageService.writeData(
@@ -143,13 +141,10 @@ class LocalBackupService implements BackupChannelService {
 
       // 恢复用户设置
       if (backupData.containsKey('settings')) {
-        final settings = backupData['settings'] as Map<String, dynamic>;
-        final skip = <String>{
-          ...AutoBackupService.restoreSkipKeys,
-          _localBackupPathKey,
-          'localBackupTreeUri',
-        };
-        await UserSettingsService().restoreSettings(settings, skip);
+        final settings = BackupSettingsPolicy.filterForRestore(
+          backupData['settings'] as Map<String, dynamic>,
+        );
+        await UserSettingsService().restoreSettings(settings, const {});
       }
 
       return true;
@@ -160,6 +155,7 @@ class LocalBackupService implements BackupChannelService {
   }
 
   /// 删除备份文件
+  @override
   Future<bool> deleteBackupFile(BackupFileInfo backupFile) async {
     try {
       // 委托给存储服务处理文件删除
