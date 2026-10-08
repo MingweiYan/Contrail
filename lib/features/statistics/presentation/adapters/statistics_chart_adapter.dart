@@ -30,7 +30,7 @@ class StatisticsChartAdapter {
         weekStartDay: weekStartDay,
       );
       for (int i = 0; i < 7; i++) {
-        final date = range.start.add(Duration(days: i));
+        final date = TimeManagementUtil.addCalendarDays(range.start, i);
         titles.add('${date.month}/${date.day}');
       }
     } else if (timeRange == 'month') {
@@ -81,15 +81,15 @@ class StatisticsChartAdapter {
         week,
         weekStartDay: weekStartDay,
       );
-      final date = range.start.add(Duration(days: x));
+      final date = TimeManagementUtil.addCalendarDays(range.start, x);
       final completionText = showCompletion ? '完成' : '';
-      return '${date.month}月${date.day}日: ${completionText}${value.toInt()}$unit';
+      return '${date.month}月${date.day}日: $completionText${value.toInt()}$unit';
     } else if (timeRange == 'month') {
       final completionText = showCompletion ? '完成' : '';
-      return '第${x + 1}周: ${completionText}${value.toInt()}$unit';
+      return '第${x + 1}周: $completionText${value.toInt()}$unit';
     } else {
       final completionText = showCompletion ? '完成' : '';
-      return '${x + 1}月: ${completionText}${value.toInt()}$unit';
+      return '${x + 1}月: $completionText${value.toInt()}$unit';
     }
   }
 
@@ -130,8 +130,8 @@ class StatisticsChartAdapter {
         weekStartDay: weekStartDay,
       );
       for (int i = 0; i < 7; i++) {
-        final date = range.start.add(Duration(days: i));
-        final dayKey = DateTime(date.year, date.month, date.day);
+        final date = TimeManagementUtil.addCalendarDays(range.start, i);
+        final dayKey = TimeManagementUtil.dateOnly(date);
         double value;
         if (chartType == 'count') {
           final completed = habit.dailyCompletionStatus[dayKey] ?? false;
@@ -159,13 +159,12 @@ class StatisticsChartAdapter {
         final weekStart = weeks[i]['start'] as DateTime;
         final weekEnd = weeks[i]['end'] as DateTime;
         double sum = 0;
-        for (
-          DateTime d = weekStart;
-          d.isBefore(weekEnd.add(const Duration(days: 1)));
-          d = d.add(const Duration(days: 1))
-        ) {
-          if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
-          final dayKey = DateTime(d.year, d.month, d.day);
+        for (DateTime d = weekStart; !d.isAfter(weekEnd);) {
+          if (d.isBefore(monthStart) || d.isAfter(monthEnd)) {
+            d = TimeManagementUtil.addCalendarDays(d, 1);
+            continue;
+          }
+          final dayKey = TimeManagementUtil.dateOnly(d);
           if (chartType == 'count') {
             final completed = habit.dailyCompletionStatus[dayKey] ?? false;
             if (completed) sum += 1;
@@ -182,6 +181,7 @@ class StatisticsChartAdapter {
             });
             if (totalSeconds > 0) sum += (totalSeconds / 60.0);
           }
+          d = TimeManagementUtil.addCalendarDays(d, 1);
         }
         spots.add(FlSpot(i.toDouble(), sum));
       }
@@ -192,7 +192,7 @@ class StatisticsChartAdapter {
         final daysInMonth = DateTime(selectedYear, m + 1, 0).day;
         for (int d = 1; d <= daysInMonth; d++) {
           final date = DateTime(selectedYear, m, d);
-          final dayKey = DateTime(date.year, date.month, date.day);
+          final dayKey = TimeManagementUtil.dateOnly(date);
           if (chartType == 'count') {
             final completed = habit.dailyCompletionStatus[dayKey] ?? false;
             if (completed) sum += 1;
@@ -223,16 +223,16 @@ class StatisticsChartAdapter {
   /// - year: 12 个标签，代表 endDate 所在月向前 12 个自然月
   List<String> generateRollingTitles(String timeRange, {DateTime? endDate}) {
     final now = DateTime.now();
-    final today = endDate ?? DateTime(now.year, now.month, now.day);
+    final today = TimeManagementUtil.dateOnly(endDate ?? now);
     final List<String> titles = [];
     if (timeRange == 'week') {
       for (int i = 0; i < 7; i++) {
-        final date = today.subtract(Duration(days: 6 - i));
+        final date = TimeManagementUtil.addCalendarDays(today, -(6 - i));
         titles.add('${date.month}/${date.day}');
       }
     } else if (timeRange == 'month') {
       for (int i = 0; i < 30; i++) {
-        final date = today.subtract(Duration(days: 29 - i));
+        final date = TimeManagementUtil.addCalendarDays(today, -(29 - i));
         // 首尾及每 5 天显示一个，其余留空
         final showLabel = i == 0 || i == 29 || i % 5 == 0;
         titles.add(showLabel ? '${date.month}/${date.day}' : '');
@@ -291,9 +291,9 @@ class StatisticsChartAdapter {
     DateTime? endDate,
   }) {
     final now = DateTime.now();
-    final today = endDate ?? DateTime(now.year, now.month, now.day);
+    final today = TimeManagementUtil.dateOnly(endDate ?? now);
     // 限制未来月份不写数据：以真实今天为上限。
-    final realToday = DateTime(now.year, now.month, now.day);
+    final realToday = TimeManagementUtil.dateOnly(now);
     final List<FlSpot> spots = [];
 
     // time 类型但不追踪时间：返回等长 0 数据
@@ -330,8 +330,8 @@ class StatisticsChartAdapter {
 
     if (timeRange == 'week') {
       for (int i = 0; i < 7; i++) {
-        final date = today.subtract(Duration(days: 6 - i));
-        final dayKey = DateTime(date.year, date.month, date.day);
+        final date = TimeManagementUtil.addCalendarDays(today, -(6 - i));
+        final dayKey = TimeManagementUtil.dateOnly(date);
         final value = chartType == 'count'
             ? countFor(dayKey)
             : timeMinutesFor(dayKey);
@@ -339,8 +339,8 @@ class StatisticsChartAdapter {
       }
     } else if (timeRange == 'month') {
       for (int i = 0; i < 30; i++) {
-        final date = today.subtract(Duration(days: 29 - i));
-        final dayKey = DateTime(date.year, date.month, date.day);
+        final date = TimeManagementUtil.addCalendarDays(today, -(29 - i));
+        final dayKey = TimeManagementUtil.dateOnly(date);
         final value = chartType == 'count'
             ? countFor(dayKey)
             : timeMinutesFor(dayKey);
@@ -408,17 +408,17 @@ class StatisticsChartAdapter {
     final showCompletion = chartType == 'count';
     final completionText = showCompletion ? '完成' : '';
     final now = DateTime.now();
-    final today = endDate ?? DateTime(now.year, now.month, now.day);
+    final today = TimeManagementUtil.dateOnly(endDate ?? now);
 
     if (timeRange == 'week') {
-      final date = today.subtract(Duration(days: 6 - x));
-      return '${date.month}月${date.day}日: ${completionText}${value.toInt()}$unit';
+      final date = TimeManagementUtil.addCalendarDays(today, -(6 - x));
+      return '${date.month}月${date.day}日: $completionText${value.toInt()}$unit';
     } else if (timeRange == 'month') {
-      final date = today.subtract(Duration(days: 29 - x));
-      return '${date.month}月${date.day}日: ${completionText}${value.toInt()}$unit';
+      final date = TimeManagementUtil.addCalendarDays(today, -(29 - x));
+      return '${date.month}月${date.day}日: $completionText${value.toInt()}$unit';
     } else {
       final month = DateTime(today.year, today.month - 11 + x, 1);
-      return '${month.year}/${month.month}: ${completionText}${value.toInt()}$unit';
+      return '${month.year}/${month.month}: $completionText${value.toInt()}$unit';
     }
   }
 
@@ -465,7 +465,10 @@ class StatisticsChartAdapter {
       case 'week':
         // 周视图：根据偏移量计算对应周的7天
         // 先计算基准日期（考虑偏移量）
-        DateTime baseDate = now.subtract(Duration(days: timeOffset * 7));
+        DateTime baseDate = TimeManagementUtil.addCalendarDays(
+          now,
+          -timeOffset * 7,
+        );
         // 调整到用户设置的周起始日
         WeekStartDay weekStartDay = WeekStartDay.monday;
         baseDate = TimeManagementUtil.getWeekStartDate(
@@ -475,8 +478,8 @@ class StatisticsChartAdapter {
 
         // 生成该周的7天数据
         for (int i = 6; i >= 0; i--) {
-          final date = baseDate.add(Duration(days: i));
-          final dayKey = DateTime(date.year, date.month, date.day);
+          final date = TimeManagementUtil.addCalendarDays(baseDate, i);
+          final dayKey = TimeManagementUtil.dateOnly(date);
           final completed = habit.dailyCompletionStatus[dayKey] ?? false;
           spots.add(FlSpot((6 - i).toDouble(), completed ? 1.0 : 0.0));
         }
@@ -502,24 +505,28 @@ class StatisticsChartAdapter {
           weekStartDay: weekStartDay,
         );
         int index = 0;
-        while (currentWeekStart.isBefore(
-          monthEnd.add(const Duration(days: 1)),
-        )) {
-          final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+        while (!currentWeekStart.isAfter(monthEnd)) {
+          final currentWeekEnd = TimeManagementUtil.addCalendarDays(
+            currentWeekStart,
+            6,
+          );
           int weeklyCount = 0;
-          for (
-            DateTime d = currentWeekStart;
-            d.isBefore(currentWeekEnd.add(const Duration(days: 1)));
-            d = d.add(const Duration(days: 1))
-          ) {
-            if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
-            final dayKey = DateTime(d.year, d.month, d.day);
+          for (DateTime d = currentWeekStart; !d.isAfter(currentWeekEnd);) {
+            if (d.isBefore(monthStart) || d.isAfter(monthEnd)) {
+              d = TimeManagementUtil.addCalendarDays(d, 1);
+              continue;
+            }
+            final dayKey = TimeManagementUtil.dateOnly(d);
             final completed = habit.dailyCompletionStatus[dayKey] ?? false;
             if (completed) weeklyCount++;
+            d = TimeManagementUtil.addCalendarDays(d, 1);
           }
           spots.add(FlSpot(index.toDouble(), weeklyCount.toDouble()));
           index++;
-          currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
+          currentWeekStart = TimeManagementUtil.addCalendarDays(
+            currentWeekEnd,
+            1,
+          );
         }
         break;
 
@@ -593,16 +600,22 @@ class StatisticsChartAdapter {
       case 'week':
         // 周视图：根据偏移量计算对应周的7天
         // 先计算基准日期（考虑偏移量）
-        DateTime baseDate = now.subtract(Duration(days: timeOffset * 7));
+        DateTime baseDate = TimeManagementUtil.addCalendarDays(
+          now,
+          -timeOffset * 7,
+        );
         // 调整到周一开始
         int daysFromMonday = baseDate.weekday - 1;
         if (daysFromMonday < 0) daysFromMonday = 6;
-        baseDate = baseDate.subtract(Duration(days: daysFromMonday));
+        baseDate = TimeManagementUtil.addCalendarDays(
+          baseDate,
+          -daysFromMonday,
+        );
 
         // 生成该周的7天数据
         for (int i = 6; i >= 0; i--) {
-          final date = baseDate.add(Duration(days: i));
-          final dayKey = DateTime(date.year, date.month, date.day);
+          final date = TimeManagementUtil.addCalendarDays(baseDate, i);
+          final dayKey = TimeManagementUtil.dateOnly(date);
           int totalSeconds = 0;
           habit.trackingDurations.forEach((dt, durations) {
             if (dt.year == dayKey.year &&
@@ -642,18 +655,18 @@ class StatisticsChartAdapter {
           weekStartDay: weekStartDay,
         );
         int index = 0;
-        while (currentWeekStart.isBefore(
-          monthEnd.add(const Duration(days: 1)),
-        )) {
-          final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+        while (!currentWeekStart.isAfter(monthEnd)) {
+          final currentWeekEnd = TimeManagementUtil.addCalendarDays(
+            currentWeekStart,
+            6,
+          );
           int weeklySeconds = 0;
-          for (
-            DateTime d = currentWeekStart;
-            d.isBefore(currentWeekEnd.add(const Duration(days: 1)));
-            d = d.add(const Duration(days: 1))
-          ) {
-            if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
-            final dayKey = DateTime(d.year, d.month, d.day);
+          for (DateTime d = currentWeekStart; !d.isAfter(currentWeekEnd);) {
+            if (d.isBefore(monthStart) || d.isAfter(monthEnd)) {
+              d = TimeManagementUtil.addCalendarDays(d, 1);
+              continue;
+            }
+            final dayKey = TimeManagementUtil.dateOnly(d);
             habit.trackingDurations.forEach((dt, durations) {
               if (dt.year == dayKey.year &&
                   dt.month == dayKey.month &&
@@ -663,6 +676,7 @@ class StatisticsChartAdapter {
                 }
               }
             });
+            d = TimeManagementUtil.addCalendarDays(d, 1);
           }
           spots.add(
             FlSpot(
@@ -671,7 +685,10 @@ class StatisticsChartAdapter {
             ),
           );
           index++;
-          currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
+          currentWeekStart = TimeManagementUtil.addCalendarDays(
+            currentWeekEnd,
+            1,
+          );
         }
         break;
 
@@ -864,9 +881,13 @@ class StatisticsChartAdapter {
   }) {
     if (timeRange == 'week') {
       final buckets = <DateTimeRange>[];
-      for (int i = 0; i <= range.end.difference(range.start).inDays; i++) {
-        final day = range.start.add(Duration(days: i));
-        final date = DateTime(day.year, day.month, day.day);
+      final dayCount = TimeManagementUtil.inclusiveCalendarDayCount(
+        range.start,
+        range.end,
+      );
+      for (int i = 0; i < dayCount; i++) {
+        final day = TimeManagementUtil.addCalendarDays(range.start, i);
+        final date = TimeManagementUtil.dateOnly(day);
         buckets.add(DateTimeRange(start: date, end: date));
       }
       return buckets;
@@ -879,11 +900,11 @@ class StatisticsChartAdapter {
         weekStartDay: weekStartDay,
       );
       while (!cursor.isAfter(range.end)) {
-        final rawEnd = cursor.add(const Duration(days: 6));
+        final rawEnd = TimeManagementUtil.addCalendarDays(cursor, 6);
         final bucketStart = _maxDate(cursor, range.start);
         final bucketEnd = _minDate(rawEnd, range.end);
         buckets.add(DateTimeRange(start: bucketStart, end: bucketEnd));
-        cursor = rawEnd.add(const Duration(days: 1));
+        cursor = TimeManagementUtil.addCalendarDays(rawEnd, 1);
       }
       return buckets;
     }
@@ -897,20 +918,24 @@ class StatisticsChartAdapter {
   }
 
   bool _isCompletedOnDay(Habit habit, DateTime day) {
-    final dayKey = DateTime(day.year, day.month, day.day);
+    final dayKey = TimeManagementUtil.dateOnly(day);
     return habit.dailyCompletionStatus[dayKey] ?? false;
   }
 
   int _completedDaysInRange(Habit habit, DateTimeRange range) {
     final realToday = _today();
-    final effectiveEnd = _minDate(range.end, realToday);
-    if (effectiveEnd.isBefore(range.start)) return 0;
+    final start = TimeManagementUtil.dateOnly(range.start);
+    final effectiveEnd = _minDate(
+      TimeManagementUtil.dateOnly(range.end),
+      realToday,
+    );
+    if (effectiveEnd.isBefore(start)) return 0;
 
     int completed = 0;
     habit.dailyCompletionStatus.forEach((date, isCompleted) {
       if (!isCompleted) return;
-      final day = DateTime(date.year, date.month, date.day);
-      if (!day.isBefore(range.start) && !day.isAfter(effectiveEnd)) {
+      final day = TimeManagementUtil.dateOnly(date);
+      if (!day.isBefore(start) && !day.isAfter(effectiveEnd)) {
         completed++;
       }
     });
@@ -918,14 +943,17 @@ class StatisticsChartAdapter {
   }
 
   int _effectiveDayCount(DateTimeRange range) {
-    final effectiveEnd = _minDate(range.end, _today());
-    if (effectiveEnd.isBefore(range.start)) return 0;
-    return effectiveEnd.difference(range.start).inDays + 1;
+    final start = TimeManagementUtil.dateOnly(range.start);
+    final effectiveEnd = _minDate(
+      TimeManagementUtil.dateOnly(range.end),
+      _today(),
+    );
+    if (effectiveEnd.isBefore(start)) return 0;
+    return TimeManagementUtil.inclusiveCalendarDayCount(start, effectiveEnd);
   }
 
   DateTime _today() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
+    return TimeManagementUtil.dateOnly(DateTime.now());
   }
 
   DateTime _minDate(DateTime a, DateTime b) => a.isBefore(b) ? a : b;
@@ -1002,22 +1030,35 @@ class StatisticsChartAdapter {
     late DateTime endOfLastWeek;
     if (weekStartDay == WeekStartDay.monday) {
       final backToMonday = monthStart.weekday - 1;
-      startOfFirstWeek = monthStart.subtract(Duration(days: backToMonday));
-      final forwardToSunday = 7 - (monthEnd.weekday % 7);
-      endOfLastWeek = monthEnd.add(Duration(days: forwardToSunday));
+      startOfFirstWeek = TimeManagementUtil.addCalendarDays(
+        monthStart,
+        -backToMonday,
+      );
+      final forwardToSunday = DateTime.sunday - monthEnd.weekday;
+      endOfLastWeek = TimeManagementUtil.addCalendarDays(
+        monthEnd,
+        forwardToSunday,
+      );
     } else {
       final backToSunday = monthStart.weekday % 7;
-      startOfFirstWeek = monthStart.subtract(Duration(days: backToSunday));
+      startOfFirstWeek = TimeManagementUtil.addCalendarDays(
+        monthStart,
+        -backToSunday,
+      );
       final forwardToSaturday = (6 - (monthEnd.weekday % 7));
-      endOfLastWeek = monthEnd.add(Duration(days: forwardToSaturday));
+      endOfLastWeek = TimeManagementUtil.addCalendarDays(
+        monthEnd,
+        forwardToSaturday,
+      );
     }
     DateTime currentWeekStart = startOfFirstWeek;
-    while (currentWeekStart.isBefore(
-      endOfLastWeek.add(const Duration(days: 1)),
-    )) {
-      final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+    while (!currentWeekStart.isAfter(endOfLastWeek)) {
+      final currentWeekEnd = TimeManagementUtil.addCalendarDays(
+        currentWeekStart,
+        6,
+      );
       weeks.add({'start': currentWeekStart, 'end': currentWeekEnd});
-      currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
+      currentWeekStart = TimeManagementUtil.addCalendarDays(currentWeekEnd, 1);
     }
     return weeks;
   }
