@@ -23,6 +23,7 @@ import 'features/profile/domain/services/auto_backup_service.dart';
 import 'features/profile/domain/services/auto_backup_scheduler.dart';
 import 'features/profile/domain/services/user_settings_service.dart';
 import 'shared/utils/debug_menu_manager.dart';
+import 'shared/layout/responsive_layout.dart';
 
 void main() async {
   logger.info('开始初始化应用...');
@@ -177,6 +178,13 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
             designSize: const Size(540, 1200), // 设计稿尺寸
             minTextAdapt: true,
             splitScreenMode: true,
+            enableScaleWH: () => ResponsiveLayout.shouldScaleCompactDimensions(
+              ScreenUtil().screenWidth,
+            ),
+            enableScaleText: () =>
+                ResponsiveLayout.shouldScaleCompactDimensions(
+                  ScreenUtil().screenWidth,
+                ),
             builder: (context, child) {
               return MaterialApp.router(
                 title: 'Contrail',
