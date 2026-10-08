@@ -57,6 +57,7 @@ class BackgroundTimerService {
   final _service = FlutterBackgroundService();
   FocusTrackingManager? _focusState;
   bool _isInitialized = false;
+  Timer? _webRefreshTimer;
 
   // 初始化后台服务
   Future<void> initialize() async {
@@ -122,8 +123,16 @@ class BackgroundTimerService {
 
   // 调用开始计时
   Future<void> startTimer() async {
-    if (kIsWeb) return;
     if (_focusState != null) {
+      if (kIsWeb) {
+        _webRefreshTimer?.cancel();
+        _webRefreshTimer = Timer.periodic(
+          const Duration(seconds: 1),
+          (_) => _focusState?.tik(),
+        );
+        return;
+      }
+
       // 确保服务已初始化
       await initialize();
 
@@ -140,6 +149,8 @@ class BackgroundTimerService {
 
   // 停止后台计时器&服务
   Future<void> stop() async {
+    _webRefreshTimer?.cancel();
+    _webRefreshTimer = null;
     if (kIsWeb) return;
     try {
       // 停止后台服务&定时器
@@ -152,6 +163,8 @@ class BackgroundTimerService {
   }
 
   Future<void> stopTimer() async {
+    _webRefreshTimer?.cancel();
+    _webRefreshTimer = null;
     if (kIsWeb) return;
     try {
       // 向后台服务发送停止命令
