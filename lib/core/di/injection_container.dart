@@ -19,6 +19,12 @@ import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:contrail/shared/utils/debug_menu_manager.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:contrail/features/sync/data/backup_sync_data_source.dart';
+import 'package:contrail/features/sync/data/shared_preferences_sync_metadata_store.dart';
+import 'package:contrail/features/sync/data/webdav_sync_transport.dart';
+import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/sync_engine.dart';
+import 'package:contrail/features/sync/domain/sync_transport.dart';
 
 import '../../shared/services/habit_statistics_service.dart';
 import '../../shared/services/notification_service.dart';
@@ -126,6 +132,23 @@ void _initProfileDomainLayer() {
 
   // 注册用户设置服务
   _registerSingletonIfAbsent<IUserSettingsService>(UserSettingsService());
+
+  // 第三方直连同步：本地数据与检查点仍保存在设备/浏览器中，远端只使用
+  // 用户配置的 WebDAV，不经过 Contrail 官方服务。
+  _registerSingletonIfAbsent<SyncTransport>(WebDavSyncTransport());
+  _registerSingletonIfAbsent<SyncMetadataStore>(
+    SharedPreferencesSyncMetadataStore(),
+  );
+  _registerSingletonIfAbsent<LocalSyncDataSource>(
+    BackupSyncDataSource(
+      habitRepository: sl<HabitRepository>(),
+      habitService: sl<HabitService>(),
+    ),
+  );
+  _registerSingletonIfAbsent<SyncEngine>(SyncEngine(transport: sl()));
+  _registerSingletonIfAbsent<SyncCoordinator>(
+    SyncCoordinator(engine: sl(), localDataSource: sl(), metadataStore: sl()),
+  );
 }
 
 void _registerSingletonIfAbsent<T extends Object>(T instance) {

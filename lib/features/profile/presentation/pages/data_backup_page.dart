@@ -12,6 +12,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/core/platform/platform_capabilities.dart';
+import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/sync_models.dart';
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
+import 'package:contrail/core/state/theme_provider.dart';
 
 class DataBackupPage extends StatefulWidget {
   const DataBackupPage({super.key});
@@ -112,6 +118,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                 return ChangeNotifierProvider<WebDavBackupProvider>(
                   create: (_) => WebDavBackupProvider(
                     WebDavBackupService(storageService: WebDavStorageService()),
+                    syncCoordinator: sl<SyncCoordinator>(),
                   )..initialize(),
                   child: Consumer<WebDavBackupProvider>(
                     builder: (context, webdavProvider, _) {
@@ -338,10 +345,6 @@ class _DataBackupPageState extends State<DataBackupPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (PlatformCapabilities.webDavRequiresCors) ...[
-          _buildBrowserWebDavNotice(context),
-          SizedBox(height: BaseLayoutConstants.spacingLarge),
-        ],
         _buildConfigStatusCard(
           context,
           icon: Icons.folder_open_rounded,
@@ -420,7 +423,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                 ),
                 SizedBox(height: 6.h),
                 Text(
-                  '服务端必须允许当前站点的 CORS 请求，并放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth 请求头。HTTPS 页面不能连接 HTTP 地址。密码只保留在当前网页会话，刷新后需重新输入。',
+                  '服务端必须允许当前站点的 CORS 请求，放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth、If-Match、If-None-Match 请求头，并暴露 ETag。HTTPS 页面不能连接 HTTP 地址。密码只保留在当前网页会话，刷新后需重新输入。',
                   style: TextStyle(
                     fontSize: AppTypographyConstants.formHelperFontSize,
                     height: 1.45,
@@ -445,6 +448,10 @@ class _DataBackupPageState extends State<DataBackupPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (PlatformCapabilities.webDavRequiresCors) ...[
+          _buildBrowserWebDavNotice(context),
+          SizedBox(height: BaseLayoutConstants.spacingLarge),
+        ],
         _buildConfigStatusCard(
           context,
           icon: Icons.cloud_sync_rounded,
@@ -482,6 +489,8 @@ class _DataBackupPageState extends State<DataBackupPage>
           onTap: () => _openWebDavConfigPage(context, webdavProvider),
         ),
         SizedBox(height: BaseLayoutConstants.spacingLarge),
+        _buildSyncCard(context, webdavProvider, configured: configured),
+        SizedBox(height: BaseLayoutConstants.spacingLarge),
         BackupListSection(
           title: 'WebDAV 文件列表',
           caption: '远端文件同样支持恢复与左滑删除。',
@@ -507,6 +516,195 @@ class _DataBackupPageState extends State<DataBackupPage>
         ),
       ],
     );
+  }
+
+  Widget _buildSyncCard(
+    BuildContext context,
+    WebDavBackupProvider provider, {
+    required bool configured,
+  }) {
+    final checkpoint = provider.syncCheckpoint;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: ThemeHelper.panelDecoration(context, radius: 24.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.sync_rounded,
+                color: ThemeHelper.primary(context),
+                size: 24.sp,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  '双向数据同步',
+                  style: TextStyle(
+                    fontSize: AppTypographyConstants.panelTitleFontSize,
+                    fontWeight: FontWeight.w800,
+                    color: ThemeHelper.onBackground(context),
+                  ),
+                ),
+              ),
+              _buildStatusPill(
+                context,
+                label: '状态',
+                value: checkpoint == null ? '尚未同步' : '已建立同步',
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            '比较浏览器或设备中的当前数据与 WebDAV 上的同步文档。单边变更自动合并；双方都变更时由你选择，并先为被替换的数据保留远端快照。',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.formHelperFontSize,
+              height: 1.45,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.72),
+            ),
+          ),
+          if (checkpoint != null) ...[
+            SizedBox(height: 12.h),
+            _buildInfoRow(
+              context,
+              label: '最近同步',
+              value: _formatDateTime(checkpoint.syncedAt.toLocal()),
+            ),
+          ],
+          SizedBox(height: 14.h),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: configured && !provider.isLoading
+                  ? () => _synchronizeWebDav(context, provider)
+                  : null,
+              icon: provider.isLoading
+                  ? SizedBox.square(
+                      dimension: 18.sp,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync_rounded),
+              label: Text(configured ? '立即同步' : '请先完成 WebDAV 配置'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _synchronizeWebDav(
+    BuildContext context,
+    WebDavBackupProvider provider,
+  ) async {
+    final result = await provider.synchronize();
+    if (!context.mounted) return;
+
+    if (result.action == SyncAction.conflict) {
+      await _resolveSyncConflict(context, provider, result);
+      return;
+    }
+    await _finishSyncInteraction(context, result);
+  }
+
+  Future<void> _resolveSyncConflict(
+    BuildContext context,
+    WebDavBackupProvider provider,
+    SyncResult conflict,
+  ) async {
+    final reason = conflict.conflictReason;
+    final canChooseRemote =
+        reason == SyncConflictReason.firstSyncDiverged ||
+        reason == SyncConflictReason.bothSidesChanged;
+    final canChooseLocal =
+        canChooseRemote ||
+        reason == SyncConflictReason.remoteDeleted ||
+        reason == SyncConflictReason.changedDuringWrite;
+
+    final resolution = await showDialog<SyncConflictResolution>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('发现同步冲突'),
+        content: Text(_syncConflictMessage(reason)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('暂不处理'),
+          ),
+          if (canChooseRemote)
+            TextButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                SyncConflictResolution.remoteWins,
+              ),
+              child: const Text('使用远端数据'),
+            ),
+          if (canChooseLocal)
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                SyncConflictResolution.localWins,
+              ),
+              child: const Text('使用本地数据'),
+            ),
+        ],
+      ),
+    );
+    if (resolution == null || !context.mounted) return;
+
+    final result = await provider.synchronize(resolution: resolution);
+    if (!context.mounted) return;
+    await _finishSyncInteraction(context, result);
+  }
+
+  Future<void> _finishSyncInteraction(
+    BuildContext context,
+    SyncResult result,
+  ) async {
+    if (result.action == SyncAction.downloaded) {
+      await context.read<HabitProvider>().loadHabits();
+      if (!context.mounted) return;
+      await context.read<PersonalizationProvider>().initialize();
+      if (!context.mounted) return;
+      await context.read<ThemeProvider>().reload();
+    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(_syncResultMessage(result))));
+  }
+
+  String _syncConflictMessage(SyncConflictReason? reason) {
+    switch (reason) {
+      case SyncConflictReason.firstSyncDiverged:
+        return '这是首次同步，但本地与远端已有不同数据。请选择保留哪一份；使用本地数据前会先保存远端快照。';
+      case SyncConflictReason.bothSidesChanged:
+        return '上次同步后，本地和远端都发生了变化，无法自动判断应保留哪一份。';
+      case SyncConflictReason.remoteDeleted:
+        return '远端同步文件已被删除。你可以使用本地数据重新创建远端文件。';
+      case SyncConflictReason.changedDuringWrite:
+        return '写入前远端文件又发生了变化。重新选择使用本地数据时，会基于最新远端版本再确认并保留快照。';
+      case SyncConflictReason.localChangedDuringSync:
+        return '同步期间本地数据又发生了变化，本次没有覆盖这些新修改。请稍后重新同步。';
+      case null:
+        return '无法安全地自动合并本地与远端数据，本次没有覆盖任何一方。';
+    }
+  }
+
+  String _syncResultMessage(SyncResult result) {
+    switch (result.action) {
+      case SyncAction.uploaded:
+        return '同步完成：本地数据已安全上传';
+      case SyncAction.downloaded:
+        return '同步完成：远端数据已应用到本地';
+      case SyncAction.unchanged:
+        return '同步完成：本地与远端已经一致';
+      case SyncAction.conflict:
+        return '仍存在同步冲突，本次没有覆盖数据';
+      case SyncAction.failed:
+        return '同步失败：${result.error ?? '请检查 WebDAV 配置与网络'}';
+    }
   }
 
   Widget _buildConfigStatusCard(
