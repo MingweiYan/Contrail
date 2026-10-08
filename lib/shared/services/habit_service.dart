@@ -175,7 +175,7 @@ class HabitService {
       return result;
     } catch (e) {
       _logger.error('❌  备份习惯数据失败', e);
-      return [];
+      rethrow;
     }
   }
 
@@ -193,78 +193,280 @@ class HabitService {
     HabitRepository habitRepository,
     List<dynamic> habitsData,
   ) async {
+    late final List<Habit> restoredHabits;
     try {
       _logger.debug('🔄  开始恢复习惯数据，共 ${habitsData.length} 个习惯');
+      restoredHabits = _parseHabits(habitsData);
+    } catch (e) {
+      _logger.error('❌  备份习惯数据校验失败', e);
+      return false;
+    }
 
-      // 清空现有数据 - 通过先获取所有习惯再逐个删除
-      final existingHabits = await habitRepository.getHabits();
-      for (final habit in existingHabits) {
-        await habitRepository.deleteHabit(habit.id);
-      }
-
-      // 恢复所有习惯
-      for (final habitJson in habitsData) {
-        final habitMap = habitJson as Map<String, dynamic>;
-
-        // 反序列化trackingDurations
-        final trackingDurations = <DateTime, List<Duration>>{};
-        if (habitMap.containsKey('trackingDurations')) {
-          final trackingData =
-              habitMap['trackingDurations'] as Map<String, dynamic>;
-          trackingData.forEach((dateString, durations) {
-            final date = DateTime.parse(dateString);
-            final durationList = (durations as List)
-                .map((ms) => Duration(milliseconds: ms as int))
-                .toList();
-            trackingDurations[date] = durationList;
-          });
-        }
-
-        // 反序列化dailyCompletionStatus
-        final dailyCompletionStatus = <DateTime, bool>{};
-        if (habitMap.containsKey('dailyCompletionStatus')) {
-          final completionData =
-              habitMap['dailyCompletionStatus'] as Map<String, dynamic>;
-          completionData.forEach((dateString, completed) {
-            final date = DateTime.parse(dateString);
-            dailyCompletionStatus[date] = completed as bool;
-          });
-        }
-
-        // 创建Habit对象
-        final habit = Habit(
-          id: habitMap['id'] as String,
-          name: habitMap['name'] as String,
-          totalDuration: Duration(
-            milliseconds: habitMap['totalDuration'] as int,
-          ),
-          currentDays: habitMap['currentDays'] as int,
-          targetDays: habitMap['targetDays'] as int?,
-          goalType: GoalType.values[habitMap['goalType'] as int],
-          imagePath: habitMap['imagePath'] as String?,
-          cycleType: habitMap.containsKey('cycleType')
-              ? CycleType.values[habitMap['cycleType'] as int]
-              : null,
-          icon: habitMap['icon'] as String?,
-          trackTime: habitMap['trackTime'] as bool,
-          colorValue: habitMap['colorValue'] as int?,
-          descriptionJson: habitMap['descriptionJson'] as String?,
-          shortDescription: habitMap['shortDescription'] as String?,
-          trackingDurations: trackingDurations,
-          dailyCompletionStatus: dailyCompletionStatus,
-          targetTimeMinutes: habitMap['targetTimeMinutes'] as int?,
-        );
-
-        // 使用Repository添加习惯
-        await habitRepository.addHabit(habit);
-      }
+    List<Habit>? originalHabits;
+    try {
+      originalHabits = List<Habit>.of(await habitRepository.getHabits());
+      await _replaceHabits(
+        habitRepository,
+        currentHabits: originalHabits,
+        replacementHabits: restoredHabits,
+      );
 
       _logger.debug('✅  习惯数据恢复完成');
       return true;
     } catch (e) {
-      _logger.error('❌  习惯数据恢复失败', e);
+      _logger.error('❌  习惯数据恢复失败，正在回滚', e);
+      if (originalHabits != null) {
+        try {
+          final currentHabits = await habitRepository.getHabits();
+          await _replaceHabits(
+            habitRepository,
+            currentHabits: currentHabits,
+            replacementHabits: originalHabits,
+          );
+          _logger.debug('✅  习惯数据已回滚到恢复前状态');
+        } catch (rollbackError) {
+          _logger.error('❌  习惯数据回滚失败', rollbackError);
+        }
+      }
       return false;
     }
+  }
+
+  List<Habit> _parseHabits(List<dynamic> habitsData) {
+    final restoredHabits = <Habit>[];
+    final habitIds = <String>{};
+
+    for (var index = 0; index < habitsData.length; index++) {
+      final habitMap = _stringKeyedMap(habitsData[index], 'habits[$index]');
+      final habit = _parseHabit(habitMap, index);
+      if (!habitIds.add(habit.id)) {
+        throw FormatException('habits[$index].id is duplicated: ${habit.id}');
+      }
+      restoredHabits.add(habit);
+    }
+
+    return restoredHabits;
+  }
+
+  Habit _parseHabit(Map<String, dynamic> habitMap, int index) {
+    final fieldPrefix = 'habits[$index]';
+    final id = _requiredString(habitMap, 'id', fieldPrefix);
+    final name = _requiredString(habitMap, 'name', fieldPrefix);
+    if (id.trim().isEmpty) {
+      throw FormatException('$fieldPrefix.id must not be empty');
+    }
+    if (name.trim().isEmpty) {
+      throw FormatException('$fieldPrefix.name must not be empty');
+    }
+
+    return Habit(
+      id: id,
+      name: name,
+      totalDuration: Duration(
+        milliseconds: _nonNegativeInt(habitMap, 'totalDuration', fieldPrefix),
+      ),
+      currentDays: _nonNegativeInt(habitMap, 'currentDays', fieldPrefix),
+      targetDays: _nullableNonNegativeInt(habitMap, 'targetDays', fieldPrefix),
+      goalType: _enumValue(
+        GoalType.values,
+        habitMap['goalType'],
+        '$fieldPrefix.goalType',
+      ),
+      imagePath: _nullableString(habitMap, 'imagePath', fieldPrefix),
+      cycleType: _nullableEnumValue(
+        CycleType.values,
+        habitMap['cycleType'],
+        '$fieldPrefix.cycleType',
+      ),
+      icon: _nullableString(habitMap, 'icon', fieldPrefix),
+      trackTime: _requiredBool(habitMap, 'trackTime', fieldPrefix),
+      colorValue: _nullableInt(habitMap, 'colorValue', fieldPrefix),
+      descriptionJson: _nullableString(
+        habitMap,
+        'descriptionJson',
+        fieldPrefix,
+      ),
+      shortDescription: _nullableString(
+        habitMap,
+        'shortDescription',
+        fieldPrefix,
+      ),
+      trackingDurations: _parseTrackingDurations(
+        habitMap['trackingDurations'],
+        '$fieldPrefix.trackingDurations',
+      ),
+      dailyCompletionStatus: _parseDailyCompletionStatus(
+        habitMap['dailyCompletionStatus'],
+        '$fieldPrefix.dailyCompletionStatus',
+      ),
+      targetTimeMinutes: _nullableNonNegativeInt(
+        habitMap,
+        'targetTimeMinutes',
+        fieldPrefix,
+      ),
+    );
+  }
+
+  Map<DateTime, List<Duration>> _parseTrackingDurations(
+    Object? value,
+    String fieldName,
+  ) {
+    if (value == null) return <DateTime, List<Duration>>{};
+    final source = _stringKeyedMap(value, fieldName);
+    final result = <DateTime, List<Duration>>{};
+
+    for (final entry in source.entries) {
+      final date = DateTime.tryParse(entry.key);
+      if (date == null) {
+        throw FormatException('$fieldName contains an invalid date');
+      }
+      final durations = entry.value;
+      if (durations is! List) {
+        throw FormatException('$fieldName.${entry.key} must be a list');
+      }
+      result[date] = durations.indexed
+          .map((indexedValue) {
+            final (durationIndex, durationValue) = indexedValue;
+            if (durationValue is! int || durationValue < 0) {
+              throw FormatException(
+                '$fieldName.${entry.key}[$durationIndex] must be a non-negative integer',
+              );
+            }
+            return Duration(milliseconds: durationValue);
+          })
+          .toList(growable: false);
+    }
+    return result;
+  }
+
+  Map<DateTime, bool> _parseDailyCompletionStatus(
+    Object? value,
+    String fieldName,
+  ) {
+    if (value == null) return <DateTime, bool>{};
+    final source = _stringKeyedMap(value, fieldName);
+    final result = <DateTime, bool>{};
+
+    for (final entry in source.entries) {
+      final date = DateTime.tryParse(entry.key);
+      if (date == null) {
+        throw FormatException('$fieldName contains an invalid date');
+      }
+      if (entry.value is! bool) {
+        throw FormatException('$fieldName.${entry.key} must be a boolean');
+      }
+      result[date] = entry.value as bool;
+    }
+    return result;
+  }
+
+  Future<void> _replaceHabits(
+    HabitRepository habitRepository, {
+    required List<Habit> currentHabits,
+    required List<Habit> replacementHabits,
+  }) async {
+    for (final habit in currentHabits) {
+      await habitRepository.deleteHabit(habit.id);
+    }
+    for (final habit in replacementHabits) {
+      await habitRepository.addHabit(habit);
+    }
+  }
+
+  Map<String, dynamic> _stringKeyedMap(Object? value, String fieldName) {
+    if (value is! Map || value.keys.any((key) => key is! String)) {
+      throw FormatException('$fieldName must be an object');
+    }
+    return value.map((key, item) => MapEntry(key as String, item));
+  }
+
+  String _requiredString(
+    Map<String, dynamic> source,
+    String key,
+    String fieldPrefix,
+  ) {
+    final value = source[key];
+    if (value is! String) {
+      throw FormatException('$fieldPrefix.$key must be a string');
+    }
+    return value;
+  }
+
+  String? _nullableString(
+    Map<String, dynamic> source,
+    String key,
+    String fieldPrefix,
+  ) {
+    final value = source[key];
+    if (value == null) return null;
+    if (value is! String) {
+      throw FormatException('$fieldPrefix.$key must be a string or null');
+    }
+    return value;
+  }
+
+  bool _requiredBool(
+    Map<String, dynamic> source,
+    String key,
+    String fieldPrefix,
+  ) {
+    final value = source[key];
+    if (value is! bool) {
+      throw FormatException('$fieldPrefix.$key must be a boolean');
+    }
+    return value;
+  }
+
+  int _nonNegativeInt(
+    Map<String, dynamic> source,
+    String key,
+    String fieldPrefix,
+  ) {
+    final value = source[key];
+    if (value is! int || value < 0) {
+      throw FormatException('$fieldPrefix.$key must be a non-negative integer');
+    }
+    return value;
+  }
+
+  int? _nullableNonNegativeInt(
+    Map<String, dynamic> source,
+    String key,
+    String fieldPrefix,
+  ) {
+    final value = source[key];
+    if (value == null) return null;
+    if (value is! int || value < 0) {
+      throw FormatException(
+        '$fieldPrefix.$key must be a non-negative integer or null',
+      );
+    }
+    return value;
+  }
+
+  int? _nullableInt(
+    Map<String, dynamic> source,
+    String key,
+    String fieldPrefix,
+  ) {
+    final value = source[key];
+    if (value == null) return null;
+    if (value is! int) {
+      throw FormatException('$fieldPrefix.$key must be an integer or null');
+    }
+    return value;
+  }
+
+  T _enumValue<T>(List<T> values, Object? value, String fieldName) {
+    if (value is! int || value < 0 || value >= values.length) {
+      throw FormatException('$fieldName is out of range');
+    }
+    return values[value];
+  }
+
+  T? _nullableEnumValue<T>(List<T> values, Object? value, String fieldName) {
+    if (value == null) return null;
+    return _enumValue(values, value, fieldName);
   }
 
   /// 根据周期类型获取最大天数限制

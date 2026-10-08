@@ -9,18 +9,22 @@ import 'package:contrail/features/habit/data/repositories/habit_repository.dart'
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
+import 'package:contrail/features/profile/domain/services/backup_document_codec.dart';
 import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 
 class WebDavBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
   final WebDavConfigStore _configStore;
+  final BackupDocumentCodec _backupDocumentCodec;
 
   WebDavBackupService({
     required StorageServiceInterface storageService,
     WebDavConfigStore? configStore,
+    BackupDocumentCodec? backupDocumentCodec,
   }) : _storageService = storageService,
-       _configStore = configStore ?? WebDavConfigStore();
+       _configStore = configStore ?? WebDavConfigStore(),
+       _backupDocumentCodec = backupDocumentCodec ?? BackupDocumentCodec();
 
   static const String _autoBackupEnabledKey = 'autoBackupEnabled';
   // 与 AutoBackupService 共用同一个新 key（int 天数）
@@ -104,9 +108,13 @@ class WebDavBackupService implements BackupChannelService {
       final fileName = 'contrail_backup_$timestamp.json';
       final habitRepository = sl<HabitRepository>();
       final habitService = sl<HabitService>();
-      final backupData = <String, dynamic>{
-        'habits': await habitService.backupHabits(habitRepository),
-      };
+      final habits = await habitService.backupHabits(habitRepository);
+      final prefs = await SharedPreferences.getInstance();
+      final settings = BackupSettingsPolicy.exportFrom(prefs);
+      final backupData = await _backupDocumentCodec.encode(
+        habits: habits,
+        settings: settings,
+      );
       final success = await _storageService.writeData(fileName, backupData);
       if (success) {
         await _updateLastBackupTime();
@@ -123,29 +131,22 @@ class WebDavBackupService implements BackupChannelService {
     try {
       final backupData = await _storageService.readData(backupFile);
       if (backupData == null) return false;
+      final payload = _backupDocumentCodec.decodeAndVerify(backupData);
 
       // 恢复习惯数据
-      bool habitsOk = true;
-      if (backupData.containsKey('habits')) {
-        final habitsList = backupData['habits'] as List;
-        final habitRepository = sl<HabitRepository>();
-        final habitService = sl<HabitService>();
-        habitsOk = await habitService.restoreHabits(
-          habitRepository,
-          habitsList,
-        );
-      }
+      final habitRepository = sl<HabitRepository>();
+      final habitService = sl<HabitService>();
+      final habitsOk = await habitService.restoreHabits(
+        habitRepository,
+        payload.habits,
+      );
+      if (!habitsOk) return false;
 
       // 恢复设置，跳过 WebDAV 相关与自动备份相关键
-      bool settingsOk = true;
-      if (backupData.containsKey('settings')) {
-        final settings = BackupSettingsPolicy.filterForRestore(
-          backupData['settings'] as Map<String, dynamic>,
-        );
-        await UserSettingsService().restoreSettings(settings, const {});
-      }
+      final settings = BackupSettingsPolicy.filterForRestore(payload.settings);
+      await UserSettingsService().restoreSettings(settings, const {});
 
-      return habitsOk && settingsOk;
+      return true;
     } catch (e) {
       logger.error('WebDAV 恢复失败', e);
       return false;

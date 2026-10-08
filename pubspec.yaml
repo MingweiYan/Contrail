@@ -39,6 +39,8 @@ dependencies:
   open_filex: ^4.3.2
   workmanager: ^0.9.0+3
   flutter_secure_storage: ^10.0.0
+  crypto: ^3.0.6
+  package_info_plus: ^9.0.0
 
 
 dev_dependencies:
