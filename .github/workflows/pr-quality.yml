@@ -35,9 +35,18 @@ jobs:
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha || 'origin/main' }}
         run: bash scripts/ci/check_changed_dart.sh "$BASE_REF"
-      - name: Review dependency changes
-        if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@v4
+
+  dependency-audit:
+    name: Dependency vulnerability audit
+    if: github.event_name == 'pull_request'
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v2.6.0
+    with:
+      scan-args: |-
+        --lockfile=pubspec.lock
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
 
   tests:
     name: Flutter tests
