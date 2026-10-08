@@ -57,6 +57,9 @@ Future<void> init() async {
 
   // 数据层
   await _initDataLayer();
+  await focusState.restoreSession(
+    loadHabit: (habitId) => sl<HabitRepository>().getHabitById(habitId),
+  );
 
   // 领域层 - 按模块组织
   _initHabitDomainLayer();

@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'shared/models/theme_model.dart' as app_theme;
 import 'core/di/injection_container.dart';
+import 'core/state/focus_tracking_manager.dart';
 import 'core/state/theme_provider.dart';
 import 'features/statistics/presentation/providers/statistics_provider.dart';
 import 'core/routing/app_router.dart';
@@ -125,6 +126,7 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      unawaited(sl<FocusTrackingManager>().synchronizeTime());
       // 前台恢复时兜底触发一次自动备份检查；不 await，不阻塞 UI。
       // checkAndPerformAutoBackup 内部有窗口判断，不会重复备份。
       AutoBackupService()
