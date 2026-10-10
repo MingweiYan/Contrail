@@ -1,26 +1,32 @@
 import 'dart:convert';
 
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
 import 'package:contrail/features/sync/domain/sync_transport.dart';
 import 'package:http/http.dart' as http;
 
 /// Conditional WebDAV transport for the single current sync document.
 ///
-/// User data flows directly between the app and the configured WebDAV server.
-/// No Contrail-operated backend or proxy participates in this transport.
+/// In direct mode, user data flows from the app to the configured WebDAV
+/// server. Web builds may instead use Contrail's stateless compatibility
+/// gateway when the provider does not support browser CORS.
 class WebDavSyncTransport implements SyncTransport {
   WebDavSyncTransport({
     WebDavConfigStore? configStore,
     http.Client? client,
+    WebDavRequestClient? requestClient,
     DateTime Function()? now,
     this.currentFileName = 'contrail_sync.json',
   }) : _configStore = configStore ?? WebDavConfigStore(),
-       _client = client ?? http.Client(),
+       _requestClient =
+           requestClient ??
+           WebDavRequestClient(client: client ?? http.Client()),
        _now = now ?? DateTime.now;
 
   final WebDavConfigStore _configStore;
-  final http.Client _client;
+  final WebDavRequestClient _requestClient;
   final DateTime Function() _now;
   final String currentFileName;
 
@@ -139,6 +145,7 @@ class WebDavSyncTransport implements SyncTransport {
       path: config.path,
       authorization:
           'Basic ${base64Encode(utf8.encode('$username:$password'))}',
+      accessMode: config.accessMode,
     );
   }
 
@@ -190,7 +197,7 @@ class WebDavSyncTransport implements SyncTransport {
       request.body = body;
     }
     try {
-      return http.Response.fromStream(await _client.send(request));
+      return _requestClient.send(request, accessMode: connection.accessMode);
     } on Object catch (error) {
       throw SyncTransportException(
         'WebDAV request failed: $error',
@@ -233,9 +240,11 @@ class _WebDavConnection {
     required this.baseUrl,
     required this.path,
     required this.authorization,
+    required this.accessMode,
   });
 
   final Uri baseUrl;
   final String path;
   final String authorization;
+  final WebDavAccessMode accessMode;
 }

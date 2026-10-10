@@ -1,7 +1,10 @@
 import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
 import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -417,6 +420,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
   late TextEditingController _passwordController;
   late TextEditingController _pathController;
   late int _retentionCount;
+  late WebDavAccessMode _accessMode;
 
   @override
   void initState() {
@@ -427,6 +431,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
     _passwordController = TextEditingController(text: provider.webdavPassword);
     _pathController = TextEditingController(text: provider.webdavPath);
     _retentionCount = provider.retentionCount;
+    _accessMode = provider.webdavAccessMode;
   }
 
   @override
@@ -444,6 +449,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
     provider.setWebDavUsername(_usernameController.text.trim());
     provider.setWebDavPassword(_passwordController.text);
     provider.setWebDavPath(_pathController.text.trim());
+    provider.setWebDavAccessMode(_accessMode);
     await provider.saveRetentionCount(_retentionCount);
     await provider.saveWebDavConfig();
     if (!mounted) return;
@@ -554,6 +560,12 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (kIsWeb &&
+                                      WebDavRequestClient
+                                          .isGatewayBuildConfigured) ...[
+                                    _buildAccessModeSelector(context),
+                                    SizedBox(height: 12.h),
+                                  ],
                                   _buildFieldCard(
                                     context,
                                     icon: Icons.link_rounded,
@@ -676,6 +688,65 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAccessModeSelector(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: ThemeHelper.visualTheme(context).panelSecondaryColor,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: ThemeHelper.visualTheme(context).panelBorderColor,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '连接方式',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.cardTitleFontSize,
+              fontWeight: FontWeight.w700,
+              color: ThemeHelper.onBackground(context),
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            _accessMode == WebDavAccessMode.direct
+                ? '浏览器直接连接 WebDAV，服务端需要允许当前站点跨域访问。'
+                : '由 Contrail 无状态 Gateway 转发，适用于不支持浏览器跨域的 WebDAV。',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.formHelperFontSize,
+              height: 1.4,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.68),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          SegmentedButton<WebDavAccessMode>(
+            segments: const [
+              ButtonSegment(
+                value: WebDavAccessMode.direct,
+                icon: Icon(Icons.lock_person_outlined),
+                label: Text('隐私直连'),
+              ),
+              ButtonSegment(
+                value: WebDavAccessMode.gateway,
+                icon: Icon(Icons.hub_outlined),
+                label: Text('兼容模式'),
+              ),
+            ],
+            selected: {_accessMode},
+            onSelectionChanged: (selection) {
+              setState(() {
+                _accessMode = selection.single;
+              });
+            },
+          ),
+        ],
       ),
     );
   }

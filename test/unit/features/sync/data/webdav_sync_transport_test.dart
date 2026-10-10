@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/features/sync/data/webdav_sync_transport.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
 import 'package:contrail/features/sync/domain/sync_transport.dart';
@@ -196,5 +198,45 @@ void main() {
 
     expect(transport.readCurrent, throwsA(isA<SyncTransportException>()));
     expect(requestCount, 0);
+  });
+
+  test('gateway mode preserves the ETag conflict precondition', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      WebDavConfigStore.urlKey: 'https://storage.example/dav',
+      WebDavConfigStore.usernameKey: 'alice',
+      WebDavConfigStore.pathKey: '/Contrail',
+      WebDavConfigStore.accessModeKey: WebDavAccessMode.gateway.storageValue,
+    });
+    final requests = <http.Request>[];
+    final transport = WebDavSyncTransport(
+      configStore: configuredStore(),
+      requestClient: WebDavRequestClient(
+        gatewayUri: Uri.parse('https://app.example/api/webdav'),
+        client: MockClient((request) async {
+          requests.add(request);
+          if (request.method == 'MKCOL') return http.Response('', 405);
+          return http.Response('', 412);
+        }),
+      ),
+    );
+
+    final result = await transport.writeCurrent(
+      document('local'),
+      expectedVersion: '"v1"',
+    );
+
+    expect(result.status, SyncWriteStatus.conflict);
+    expect(requests, hasLength(2));
+    final put = requests.last;
+    expect(put.url.toString(), 'https://app.example/api/webdav');
+    expect(
+      put.headers[WebDavRequestClient.targetUrlHeader.toLowerCase()],
+      'https://storage.example/dav/Contrail/contrail_sync.json',
+    );
+    expect(put.headers['if-match'], '"v1"');
+    expect(
+      put.headers[WebDavRequestClient.authorizationHeader.toLowerCase()],
+      'Basic YWxpY2U6c2VjcmV0',
+    );
   });
 }

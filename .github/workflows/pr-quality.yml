@@ -105,6 +105,18 @@ jobs:
         run: flutter build web --release --no-wasm-dry-run
       - name: Smoke test Web release
         run: bash scripts/ci/web_smoke.sh
+      - name: Analyze and compile integrated Web service
+        run: |
+          dart analyze server
+          dart compile exe server/bin/contrail_server.dart -o build/contrail-server
+      - name: Build integrated Web service assets
+        run: >-
+          flutter build web --release --no-wasm-dry-run
+          --dart-define=WEBDAV_GATEWAY_URL=/api/webdav
+      - name: Smoke test integrated Web service
+        run: bash scripts/ci/web_server_smoke.sh
+      - name: Preserve integrated Web service artifact
+        run: cp -R build/web build/web-self-hosted
       - name: Build Web release for static subpath
         run: >-
           flutter build web --release --no-wasm-dry-run
@@ -122,6 +134,9 @@ jobs:
           name: contrail-web-${{ github.sha }}
           path: |
             build/web
+            build/web-self-hosted
+            build/contrail-server
+            build/contrail-server-smoke.log
             build/web-smoke
             build/web-smoke-subpath
           if-no-files-found: error
