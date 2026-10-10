@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 
 import '../../../../../support/in_memory_webdav_credential_store.dart';
@@ -94,4 +95,23 @@ void main() {
       expect(prefs.containsKey(WebDavConfigStore.legacyPasswordKey), isFalse);
     },
   );
+
+  test('uses direct mode for existing configurations without a mode', () async {
+    final config = await configStore.load();
+
+    expect(config.accessMode, WebDavAccessMode.direct);
+  });
+
+  test('persists and restores gateway access mode', () async {
+    await configStore.save(accessMode: WebDavAccessMode.gateway);
+
+    final config = await configStore.load();
+    final prefs = await SharedPreferences.getInstance();
+
+    expect(config.accessMode, WebDavAccessMode.gateway);
+    expect(
+      prefs.getString(WebDavConfigStore.accessModeKey),
+      WebDavAccessMode.gateway.storageValue,
+    );
+  });
 }

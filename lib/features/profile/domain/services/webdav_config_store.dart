@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_credential_store.dart';
 
 class WebDavConfig {
@@ -7,12 +8,14 @@ class WebDavConfig {
   final String? username;
   final String? password;
   final String path;
+  final WebDavAccessMode accessMode;
 
   const WebDavConfig({
     required this.url,
     required this.username,
     required this.password,
     required this.path,
+    required this.accessMode,
   });
 
   Map<String, String?> toMap() => {
@@ -20,6 +23,7 @@ class WebDavConfig {
     'username': username,
     'password': password,
     'path': path,
+    'accessMode': accessMode.storageValue,
   };
 }
 
@@ -28,6 +32,7 @@ class WebDavConfigStore {
   static const String usernameKey = 'webdav_username';
   static const String legacyPasswordKey = 'webdav_password';
   static const String pathKey = 'webdav_path';
+  static const String accessModeKey = 'webdav_access_mode';
   static const String defaultPath = 'Contrail';
 
   static const Set<String> preferenceKeys = {
@@ -35,6 +40,7 @@ class WebDavConfigStore {
     usernameKey,
     legacyPasswordKey,
     pathKey,
+    accessModeKey,
   };
 
   final WebDavCredentialStore _credentialStore;
@@ -52,6 +58,7 @@ class WebDavConfigStore {
       username: prefs.getString(usernameKey),
       password: password,
       path: prefs.getString(pathKey) ?? defaultPath,
+      accessMode: webDavAccessModeFromStorage(prefs.getString(accessModeKey)),
     );
   }
 
@@ -77,6 +84,7 @@ class WebDavConfigStore {
     String? username,
     String? password,
     String? path,
+    WebDavAccessMode? accessMode,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -94,5 +102,8 @@ class WebDavConfigStore {
     if (url != null) await prefs.setString(urlKey, url);
     if (username != null) await prefs.setString(usernameKey, username);
     if (path != null) await prefs.setString(pathKey, path);
+    if (accessMode != null) {
+      await prefs.setString(accessModeKey, accessMode.storageValue);
+    }
   }
 }

@@ -3,6 +3,8 @@ import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/sync/domain/sync_coordinator.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
@@ -31,6 +33,7 @@ class WebDavBackupProvider extends ChangeNotifier {
   String _savedWebDavUrl = '';
   String _savedWebDavUsername = '';
   String _savedWebDavPath = '';
+  WebDavAccessMode _webdavAccessMode = WebDavAccessMode.direct;
   SyncCheckpoint? _syncCheckpoint;
   SyncResult? _lastSyncResult;
 
@@ -46,6 +49,7 @@ class WebDavBackupProvider extends ChangeNotifier {
   String get webdavUsername => _webdavUsername;
   String get webdavPassword => _webdavPassword;
   String get webdavPath => _webdavPath;
+  WebDavAccessMode get webdavAccessMode => _webdavAccessMode;
   SyncCheckpoint? get syncCheckpoint => _syncCheckpoint;
   SyncResult? get lastSyncResult => _lastSyncResult;
 
@@ -73,6 +77,12 @@ class WebDavBackupProvider extends ChangeNotifier {
       _webdavUsername = cfg['username'] ?? '';
       _webdavPassword = cfg['password'] ?? '';
       _webdavPath = cfg['path'] ?? 'Contrail';
+      _webdavAccessMode = webDavAccessModeFromStorage(cfg['accessMode']);
+      if (_webdavAccessMode == WebDavAccessMode.gateway &&
+          !WebDavRequestClient.isGatewayBuildConfigured) {
+        _webdavAccessMode = WebDavAccessMode.direct;
+        await _service.saveWebDavConfig(accessMode: _webdavAccessMode);
+      }
       _savedWebDavUrl = _webdavUrl;
       _savedWebDavUsername = _webdavUsername;
       _savedWebDavPath = _webdavPath;
@@ -142,6 +152,11 @@ class WebDavBackupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setWebDavAccessMode(WebDavAccessMode value) {
+    _webdavAccessMode = value;
+    notifyListeners();
+  }
+
   Future<void> saveWebDavConfig() async {
     final endpointChanged =
         _savedWebDavUrl != _webdavUrl ||
@@ -152,6 +167,7 @@ class WebDavBackupProvider extends ChangeNotifier {
       username: _webdavUsername,
       password: _webdavPassword,
       path: _webdavPath,
+      accessMode: _webdavAccessMode,
     );
     if (endpointChanged) {
       await _syncCoordinator.resetCheckpoint();

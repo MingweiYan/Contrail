@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 
 class WebDavStorageService implements StorageServiceInterface {
   final WebDavConfigStore _configStore;
@@ -12,12 +14,18 @@ class WebDavStorageService implements StorageServiceInterface {
   String? _username;
   String? _password;
   String? _basePath;
+  WebDavAccessMode _accessMode = WebDavAccessMode.direct;
 
-  final http.Client _client;
+  final WebDavRequestClient _requestClient;
 
-  WebDavStorageService({WebDavConfigStore? configStore, http.Client? client})
-    : _configStore = configStore ?? WebDavConfigStore(),
-      _client = client ?? http.Client();
+  WebDavStorageService({
+    WebDavConfigStore? configStore,
+    http.Client? client,
+    WebDavRequestClient? requestClient,
+  }) : _configStore = configStore ?? WebDavConfigStore(),
+       _requestClient =
+           requestClient ??
+           WebDavRequestClient(client: client ?? http.Client());
 
   Uri _buildUri({
     required String url,
@@ -51,8 +59,7 @@ class WebDavStorageService implements StorageServiceInterface {
     if (body != null) {
       request.body = body;
     }
-    final response = await _client.send(request);
-    return http.Response.fromStream(response);
+    return _requestClient.send(request, accessMode: _accessMode);
   }
 
   Future<void> _ensureCollection(String baseUrl, String basePath) async {
@@ -76,6 +83,7 @@ class WebDavStorageService implements StorageServiceInterface {
     _username = config.username;
     _password = config.password;
     _basePath = config.path;
+    _accessMode = config.accessMode;
   }
 
   @override

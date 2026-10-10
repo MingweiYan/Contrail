@@ -11,6 +11,7 @@ import 'package:contrail/features/profile/domain/services/user_settings_service.
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
 import 'package:contrail/features/profile/domain/services/backup_document_codec.dart';
 import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 
 class WebDavBackupService implements BackupChannelService {
@@ -92,12 +93,14 @@ class WebDavBackupService implements BackupChannelService {
     String? username,
     String? password,
     String? path,
+    WebDavAccessMode? accessMode,
   }) async {
     await _configStore.save(
       url: url,
       username: username,
       password: password,
       path: path,
+      accessMode: accessMode,
     );
   }
 

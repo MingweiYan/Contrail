@@ -9,7 +9,7 @@ any user-operated HTTP server without adding a Contrail application backend.
 | --- | --- | --- |
 | Habits, check-ins, and tracked durations | Hive backed by IndexedDB | Never sent automatically |
 | Theme, personalization, and backup settings | Shared Preferences backed by browser storage | Never sent automatically |
-| WebDAV password | Process memory only | Sent only to the configured WebDAV origin |
+| WebDAV password | Process memory only | Direct mode sends it to WebDAV; compatibility mode relays it through the configured stateless gateway |
 | Backup documents | User-selected WebDAV provider | Uploaded only after explicit configuration and a manual or enabled automatic backup |
 
 Closing a tab does not delete IndexedDB or browser preferences. Data can still
@@ -27,7 +27,9 @@ local configuration before every list, read, write, or delete operation. CI
 runs this contract in a real browser and fails if an unconfigured service calls
 its injected HTTP transport.
 
-The official static deployment does not proxy, relay, or retain user business
-data. If a WebDAV provider cannot satisfy browser CORS and HTTPS requirements,
-the privacy-preserving option is a user-operated same-origin gateway whose data
-handling is controlled by that user.
+The static deployment does not proxy, relay, or retain user business data. An
+integrated deployment can enable the bundled compatibility gateway for WebDAV
+providers that do not satisfy browser CORS requirements. The gateway does not
+persist credentials or payloads, but it processes both in memory while the
+request is in flight. The integrated service should therefore be self-hosted or
+operated by a party the user trusts.

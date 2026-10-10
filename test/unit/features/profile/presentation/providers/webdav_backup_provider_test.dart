@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
 import 'package:contrail/features/sync/domain/sync_coordinator.dart';
@@ -17,6 +18,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue('');
+      registerFallbackValue(WebDavAccessMode.direct);
     });
 
     setUp(() {
@@ -131,6 +133,32 @@ void main() {
       expect(webDavBackupProvider.errorMessage, isNotNull);
     });
 
+    test('构建未配置 Gateway 时回退到隐私直连', () async {
+      when(() => mockWebDavBackupService.loadWebDavConfig()).thenAnswer(
+        (_) async => {
+          'url': 'https://example.com/dav',
+          'username': 'alice',
+          'password': 'secret',
+          'path': 'Contrail',
+          'accessMode': WebDavAccessMode.gateway.storageValue,
+        },
+      );
+      when(
+        () => mockWebDavBackupService.saveWebDavConfig(
+          accessMode: any(named: 'accessMode'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await webDavBackupProvider.initialize();
+
+      expect(webDavBackupProvider.webdavAccessMode, WebDavAccessMode.direct);
+      verify(
+        () => mockWebDavBackupService.saveWebDavConfig(
+          accessMode: WebDavAccessMode.direct,
+        ),
+      ).called(1);
+    });
+
     test('同步成功后刷新持久化检查点', () async {
       final checkpoint = SyncCheckpoint(
         remoteVersion: '"v1"',
@@ -172,6 +200,7 @@ void main() {
           username: any(named: 'username'),
           password: any(named: 'password'),
           path: any(named: 'path'),
+          accessMode: any(named: 'accessMode'),
         ),
       ).thenAnswer((_) async {});
       when(

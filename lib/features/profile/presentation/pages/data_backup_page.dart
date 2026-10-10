@@ -1,5 +1,7 @@
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
 import 'package:contrail/features/profile/presentation/pages/backup_config_page.dart';
 import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
@@ -395,7 +397,13 @@ class _DataBackupPageState extends State<DataBackupPage>
     );
   }
 
-  Widget _buildBrowserWebDavNotice(BuildContext context) {
+  Widget _buildBrowserWebDavNotice(
+    BuildContext context,
+    WebDavBackupProvider provider,
+  ) {
+    final usesGateway =
+        WebDavRequestClient.isGatewayBuildConfigured &&
+        provider.webdavAccessMode == WebDavAccessMode.gateway;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
@@ -414,7 +422,7 @@ class _DataBackupPageState extends State<DataBackupPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '浏览器直连 WebDAV',
+                  usesGateway ? 'WebDAV 兼容模式' : '浏览器直连 WebDAV',
                   style: TextStyle(
                     fontSize: AppTypographyConstants.cardTitleFontSize,
                     fontWeight: FontWeight.w800,
@@ -423,7 +431,9 @@ class _DataBackupPageState extends State<DataBackupPage>
                 ),
                 SizedBox(height: 6.h),
                 Text(
-                  '服务端必须允许当前站点的 CORS 请求，放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth、If-Match、If-None-Match 请求头，并暴露 ETag。HTTPS 页面不能连接 HTTP 地址。密码只保留在当前网页会话，刷新后需重新输入。',
+                  usesGateway
+                      ? '请求由 Contrail 无状态 Gateway 转发，用于兼容不开放浏览器 CORS 的 WebDAV。Gateway 不持久化凭据或业务数据；密码仍只保留在当前网页会话。'
+                      : '服务端必须允许当前站点的 CORS 请求，放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth、If-Match、If-None-Match 请求头，并暴露 ETag。HTTPS 页面不能连接 HTTP 地址。密码只保留在当前网页会话，刷新后需重新输入。',
                   style: TextStyle(
                     fontSize: AppTypographyConstants.formHelperFontSize,
                     height: 1.45,
@@ -449,7 +459,7 @@ class _DataBackupPageState extends State<DataBackupPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (PlatformCapabilities.webDavRequiresCors) ...[
-          _buildBrowserWebDavNotice(context),
+          _buildBrowserWebDavNotice(context, webdavProvider),
           SizedBox(height: BaseLayoutConstants.spacingLarge),
         ],
         _buildConfigStatusCard(
@@ -463,6 +473,14 @@ class _DataBackupPageState extends State<DataBackupPage>
               label: '远端文件',
               value: '${webdavProvider.backupFiles.length} 份',
             ),
+            if (WebDavRequestClient.isGatewayBuildConfigured)
+              _StatusItem(
+                label: '连接方式',
+                value:
+                    webdavProvider.webdavAccessMode == WebDavAccessMode.gateway
+                    ? '兼容模式'
+                    : '隐私直连',
+              ),
             _StatusItem(
               label: '保留数量',
               value: '${webdavProvider.retentionCount} 份',
