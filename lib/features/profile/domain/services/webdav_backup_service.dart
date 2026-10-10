@@ -9,13 +9,23 @@ import 'package:contrail/features/habit/data/repositories/habit_repository.dart'
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
-import 'package:contrail/features/profile/domain/services/auto_backup_service.dart';
+import 'package:contrail/features/profile/domain/services/backup_document_codec.dart';
+import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
+import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 
 class WebDavBackupService implements BackupChannelService {
   final StorageServiceInterface _storageService;
+  final WebDavConfigStore _configStore;
+  final BackupDocumentCodec _backupDocumentCodec;
 
-  WebDavBackupService({required StorageServiceInterface storageService})
-    : _storageService = storageService;
+  WebDavBackupService({
+    required StorageServiceInterface storageService,
+    WebDavConfigStore? configStore,
+    BackupDocumentCodec? backupDocumentCodec,
+  }) : _storageService = storageService,
+       _configStore = configStore ?? WebDavConfigStore(),
+       _backupDocumentCodec = backupDocumentCodec ?? BackupDocumentCodec();
 
   static const String _autoBackupEnabledKey = 'autoBackupEnabled';
   // 与 AutoBackupService 共用同一个新 key（int 天数）
@@ -23,11 +33,13 @@ class WebDavBackupService implements BackupChannelService {
   static const String _lastBackupTimeKey = 'webdav_lastBackupTime';
   static const String _backupRetentionPrefix = 'webdav_backupRetention_';
 
+  @override
   Future<void> initialize() async {
     tz.initializeTimeZones();
     await _storageService.initialize();
   }
 
+  @override
   Future<bool> checkStoragePermission() async {
     return await _storageService.checkPermissions();
   }
@@ -63,6 +75,7 @@ class WebDavBackupService implements BackupChannelService {
     await prefs.setInt(_backupFrequencyKey, frequency);
   }
 
+  @override
   Future<String> loadOrCreateBackupPath() async {
     return await _storageService.getReadPath();
   }
@@ -72,12 +85,7 @@ class WebDavBackupService implements BackupChannelService {
   }
 
   Future<Map<String, String?>> loadWebDavConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    final url = prefs.getString('webdav_url');
-    final user = prefs.getString('webdav_username');
-    final pass = prefs.getString('webdav_password');
-    final path = prefs.getString('webdav_path');
-    return {'url': url, 'username': user, 'password': pass, 'path': path};
+    return (await _configStore.load()).toMap();
   }
 
   Future<void> saveWebDavConfig({
@@ -85,23 +93,31 @@ class WebDavBackupService implements BackupChannelService {
     String? username,
     String? password,
     String? path,
+    WebDavAccessMode? accessMode,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (url != null) await prefs.setString('webdav_url', url);
-    if (username != null) await prefs.setString('webdav_username', username);
-    if (password != null) await prefs.setString('webdav_password', password);
-    if (path != null) await prefs.setString('webdav_path', path);
+    await _configStore.save(
+      url: url,
+      username: username,
+      password: password,
+      path: path,
+      accessMode: accessMode,
+    );
   }
 
+  @override
   Future<bool> performBackup(String backupPath) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'contrail_backup_$timestamp.json';
       final habitRepository = sl<HabitRepository>();
       final habitService = sl<HabitService>();
-      final backupData = <String, dynamic>{
-        'habits': await habitService.backupHabits(habitRepository),
-      };
+      final habits = await habitService.backupHabits(habitRepository);
+      final prefs = await SharedPreferences.getInstance();
+      final settings = BackupSettingsPolicy.exportFrom(prefs);
+      final backupData = await _backupDocumentCodec.encode(
+        habits: habits,
+        settings: settings,
+      );
       final success = await _storageService.writeData(fileName, backupData);
       if (success) {
         await _updateLastBackupTime();
@@ -118,40 +134,29 @@ class WebDavBackupService implements BackupChannelService {
     try {
       final backupData = await _storageService.readData(backupFile);
       if (backupData == null) return false;
+      final payload = _backupDocumentCodec.decodeAndVerify(backupData);
 
       // 恢复习惯数据
-      bool habitsOk = true;
-      if (backupData.containsKey('habits')) {
-        final habitsList = backupData['habits'] as List;
-        final habitRepository = sl<HabitRepository>();
-        final habitService = sl<HabitService>();
-        habitsOk = await habitService.restoreHabits(
-          habitRepository,
-          habitsList,
-        );
-      }
+      final habitRepository = sl<HabitRepository>();
+      final habitService = sl<HabitService>();
+      final habitsOk = await habitService.restoreHabits(
+        habitRepository,
+        payload.habits,
+      );
+      if (!habitsOk) return false;
 
       // 恢复设置，跳过 WebDAV 相关与自动备份相关键
-      bool settingsOk = true;
-      if (backupData.containsKey('settings')) {
-        final settings = backupData['settings'] as Map<String, dynamic>;
-        final skip = <String>{
-          ...AutoBackupService.restoreSkipKeys,
-          'webdav_url',
-          'webdav_username',
-          'webdav_password',
-          'webdav_path',
-        };
-        await UserSettingsService().restoreSettings(settings, skip);
-      }
+      final settings = BackupSettingsPolicy.filterForRestore(payload.settings);
+      await UserSettingsService().restoreSettings(settings, const {});
 
-      return habitsOk && settingsOk;
+      return true;
     } catch (e) {
       logger.error('WebDAV 恢复失败', e);
       return false;
     }
   }
 
+  @override
   Future<bool> deleteBackupFile(BackupFileInfo file) async {
     return await _storageService.deleteFile(file);
   }

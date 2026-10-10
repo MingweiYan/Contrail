@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'shared/models/theme_model.dart' as app_theme;
 import 'core/di/injection_container.dart';
+import 'core/state/focus_tracking_manager.dart';
 import 'core/state/theme_provider.dart';
 import 'features/statistics/presentation/providers/statistics_provider.dart';
 import 'core/routing/app_router.dart';
@@ -22,6 +23,7 @@ import 'features/profile/domain/services/auto_backup_service.dart';
 import 'features/profile/domain/services/auto_backup_scheduler.dart';
 import 'features/profile/domain/services/user_settings_service.dart';
 import 'shared/utils/debug_menu_manager.dart';
+import 'shared/layout/responsive_layout.dart';
 
 void main() async {
   logger.info('开始初始化应用...');
@@ -125,6 +127,7 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      unawaited(sl<FocusTrackingManager>().synchronizeTime());
       // 前台恢复时兜底触发一次自动备份检查；不 await，不阻塞 UI。
       // checkAndPerformAutoBackup 内部有窗口判断，不会重复备份。
       AutoBackupService()
@@ -172,9 +175,18 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
           }
 
           return ScreenUtilInit(
-            designSize: const Size(540, 1200), // 设计稿尺寸
+            designSize: ResponsiveLayout.designSize,
             minTextAdapt: true,
             splitScreenMode: true,
+            enableScaleWH: () => ResponsiveLayout.shouldScaleCompactDimensions(
+              ScreenUtil().screenWidth,
+              isWeb: kIsWeb,
+            ),
+            enableScaleText: () =>
+                ResponsiveLayout.shouldScaleCompactDimensions(
+                  ScreenUtil().screenWidth,
+                  isWeb: kIsWeb,
+                ),
             builder: (context, child) {
               return MaterialApp.router(
                 title: 'Contrail',
@@ -195,6 +207,14 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
                 ],
                 // 使用GoRouter的路由配置
                 routerConfig: AppRouter.router,
+                builder: (context, child) {
+                  final routedApp = child ?? const SizedBox.shrink();
+                  if (!kIsWeb) {
+                    return routedApp;
+                  }
+
+                  return ProportionalViewportFrame(child: routedApp);
+                },
               );
             },
           );

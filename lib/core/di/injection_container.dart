@@ -1,13 +1,11 @@
 import 'package:contrail/features/habit/domain/services/habit_management_service.dart';
+import 'package:contrail/core/storage/local_data_store.dart';
 import 'package:contrail/shared/services/habit_service.dart';
 import 'package:get_it/get_it.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 import 'package:contrail/shared/models/habit.dart';
-import 'package:contrail/shared/models/goal_type_adapter.dart';
-import 'package:contrail/shared/models/cycle_type_adapter.dart';
-import 'package:contrail/shared/models/duration_adapter.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
-import 'package:contrail/features/profile/domain/services/local_storage_service.dart';
+import 'package:contrail/features/profile/domain/services/platform_local_storage_service.dart';
 import 'package:contrail/features/profile/domain/services/user_settings_service.dart';
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/habit/data/repositories/hive_habit_repository.dart';
@@ -21,6 +19,12 @@ import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/core/state/focus_tracking_manager.dart';
 import 'package:contrail/shared/utils/debug_menu_manager.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:contrail/features/sync/data/backup_sync_data_source.dart';
+import 'package:contrail/features/sync/data/shared_preferences_sync_metadata_store.dart';
+import 'package:contrail/features/sync/data/webdav_sync_transport.dart';
+import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/sync_engine.dart';
+import 'package:contrail/features/sync/domain/sync_transport.dart';
 
 import '../../shared/services/habit_statistics_service.dart';
 import '../../shared/services/notification_service.dart';
@@ -57,6 +61,9 @@ Future<void> init() async {
 
   // 数据层
   await _initDataLayer();
+  await focusState.restoreSession(
+    loadHabit: (habitId) => sl<HabitRepository>().getHabitById(habitId),
+  );
 
   // 领域层 - 按模块组织
   _initHabitDomainLayer();
@@ -81,27 +88,7 @@ Future<void> initBackgroundBackupDependencies() async {
 
 Future<void> _initDataLayer() async {
   if (_dataLayerInitialized) return;
-  // 初始化Hive
-  await Hive.initFlutter();
-
-  // 注册适配器
-  if (!Hive.isAdapterRegistered(0)) {
-    Hive.registerAdapter(HabitAdapter());
-  }
-  if (!Hive.isAdapterRegistered(1)) {
-    Hive.registerAdapter(GoalTypeAdapter());
-  }
-  if (!Hive.isAdapterRegistered(2)) {
-    Hive.registerAdapter(CycleTypeAdapter());
-  }
-  if (!Hive.isAdapterRegistered(3)) {
-    Hive.registerAdapter(DurationAdapter());
-  }
-
-  // 打开数据库
-  final habitBox = Hive.isBoxOpen('habits')
-      ? Hive.box<Habit>('habits')
-      : await Hive.openBox<Habit>('habits');
+  final habitBox = await LocalDataStore().openHabitsBox();
   if (!sl.isRegistered<Box<Habit>>()) {
     sl.registerLazySingleton<Box<Habit>>(() => habitBox);
   }
@@ -139,10 +126,29 @@ void _initHabitDomainLayer() {
 // 初始化Profile模块领域层
 void _initProfileDomainLayer() {
   // 注册存储服务
-  _registerSingletonIfAbsent<StorageServiceInterface>(LocalStorageService());
+  _registerSingletonIfAbsent<StorageServiceInterface>(
+    createPlatformLocalStorageService(),
+  );
 
   // 注册用户设置服务
   _registerSingletonIfAbsent<IUserSettingsService>(UserSettingsService());
+
+  // 第三方直连同步：本地数据与检查点仍保存在设备/浏览器中，远端只使用
+  // 用户配置的 WebDAV，不经过 Contrail 官方服务。
+  _registerSingletonIfAbsent<SyncTransport>(WebDavSyncTransport());
+  _registerSingletonIfAbsent<SyncMetadataStore>(
+    SharedPreferencesSyncMetadataStore(),
+  );
+  _registerSingletonIfAbsent<LocalSyncDataSource>(
+    BackupSyncDataSource(
+      habitRepository: sl<HabitRepository>(),
+      habitService: sl<HabitService>(),
+    ),
+  );
+  _registerSingletonIfAbsent<SyncEngine>(SyncEngine(transport: sl()));
+  _registerSingletonIfAbsent<SyncCoordinator>(
+    SyncCoordinator(engine: sl(), localDataSource: sl(), metadataStore: sl()),
+  );
 }
 
 void _registerSingletonIfAbsent<T extends Object>(T instance) {

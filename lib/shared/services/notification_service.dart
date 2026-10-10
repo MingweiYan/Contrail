@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:contrail/core/platform/platform_capabilities.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -9,6 +10,11 @@ class NotificationService {
 
   Future<void> initialize() async {
     if (_isInitialized) return;
+    if (!PlatformCapabilities.supportsSystemNotifications) {
+      _isInitialized = true;
+      logger.info('当前平台不提供系统通知，使用应用内计时状态');
+      return;
+    }
     try {
       // Android通知设置
       const AndroidInitializationSettings initializationSettingsAndroid =
@@ -51,6 +57,7 @@ class NotificationService {
 
   // 检查通知权限
   Future<bool> checkNotificationPermission() async {
+    if (!PlatformCapabilities.supportsSystemNotifications) return false;
     try {
       // 对于Android 13及以上版本
       if (await flutterLocalNotificationsPlugin
@@ -79,6 +86,7 @@ class NotificationService {
   }
 
   Future<void> applyForPermission() async {
+    if (!PlatformCapabilities.supportsSystemNotifications) return;
     final hasPermission = await checkNotificationPermission();
 
     if (!hasPermission) {
@@ -139,6 +147,10 @@ class NotificationService {
 
   // 发送专注倒计时结束的前台通知
   Future<void> showCountdownCompleteNotification(String habitName) async {
+    if (!PlatformCapabilities.supportsSystemNotifications) {
+      logger.info('当前平台不提供系统通知，跳过专注完成通知');
+      return;
+    }
     try {
       // 检查是否有通知权限
       final hasPermission = await checkNotificationPermission();

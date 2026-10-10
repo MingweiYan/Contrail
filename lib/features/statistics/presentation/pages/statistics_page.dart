@@ -121,7 +121,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             // 使用习惯的颜色属性，不再需要固定的颜色列表
             final Map<String, Color> habitColors = {};
             for (int i = 0; i < habits.length; i++) {
-              habitColors[habits[i].name] = habits[i].color;
+              habitColors[habits[i].id] = habits[i].color;
             }
 
             // 计算统计数据 - 使用服务层方法
@@ -247,8 +247,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }) {
     final visualTheme = ThemeHelper.visualTheme(context);
     return Container(
+      key: const ValueKey('statistics-legend-filter-panel'),
       width: double.infinity,
-      margin: EdgeInsets.only(top: 12.h, bottom: 4.h),
+      margin: StatisticsPageConstants.legendFilterMargin,
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: ThemeHelper.panelDecoration(
         context,
@@ -268,7 +269,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
           SizedBox(height: 6.h),
           Text(
-            '点击某个习惯可临时隐藏或恢复它在统计中的展示',
+            '默认展示全部；点击可单独查看，也可继续添加或取消选择',
             style: TextStyle(
               fontSize: AppTypographyConstants.panelSubtitleFontSize,
               color: Theme.of(

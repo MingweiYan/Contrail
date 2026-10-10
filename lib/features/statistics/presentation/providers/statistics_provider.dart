@@ -10,6 +10,7 @@ class StatisticsProvider extends BaseStatsProvider {
   int _detailSelectedMonth = DateTime.now().month;
 
   List<bool>? _isHabitVisible;
+  bool _usesDefaultAllSelection = true;
 
   // 使用TimeManagementUtil中的getWeekNumber方法
 
@@ -54,23 +55,39 @@ class StatisticsProvider extends BaseStatsProvider {
   }
 
   void toggleHabitVisibility(int index) {
-    if (_isHabitVisible != null &&
-        index >= 0 &&
-        index < _isHabitVisible!.length) {
-      _isHabitVisible![index] = !_isHabitVisible![index];
-      notifyListeners();
+    final visibility = _isHabitVisible;
+    if (visibility == null || index < 0 || index >= visibility.length) {
+      return;
     }
+
+    // "All selected" can mean either the neutral default or an explicit
+    // selection of every legend. Keep those states separate so that tapping
+    // an explicitly selected legend removes it instead of isolating it.
+    if (_usesDefaultAllSelection) {
+      visibility.fillRange(0, visibility.length, false);
+      visibility[index] = true;
+      _usesDefaultAllSelection = false;
+    } else {
+      visibility[index] = !visibility[index];
+      if (!visibility.any((isVisible) => isVisible)) {
+        visibility.fillRange(0, visibility.length, true);
+        _usesDefaultAllSelection = true;
+      }
+    }
+    notifyListeners();
   }
 
   // 初始化习惯可见性
   void initializeHabitVisibility(List<Habit> habits) {
     _isHabitVisible = List<bool>.filled(habits.length, true);
+    _usesDefaultAllSelection = true;
     notifyListeners();
   }
 
   void ensureHabitVisibility(List<Habit> habits) {
     if (_isHabitVisible == null || _isHabitVisible!.length != habits.length) {
       _isHabitVisible = List<bool>.filled(habits.length, true);
+      _usesDefaultAllSelection = true;
       notifyListeners();
     }
   }

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/core/di/injection_container.dart';
-import 'package:contrail/features/habit/domain/use_cases/get_habits_use_case.dart';
 import 'package:contrail/features/habit/domain/use_cases/update_habit_use_case.dart';
-import 'package:contrail/features/habit/domain/use_cases/delete_habit_use_case.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/habit/presentation/pages/add_habit_page.dart';
 import 'package:contrail/features/habit/presentation/pages/habit_tracking_page.dart';
@@ -27,23 +25,15 @@ class HabitManagementPage extends StatefulWidget {
 }
 
 class _HabitManagementPageState extends State<HabitManagementPage> {
-  late final GetHabitsUseCase _getHabitsUseCase;
   late final UpdateHabitUseCase _updateHabitUseCase;
-  late final DeleteHabitUseCase _deleteHabitUseCase;
   late final HabitManagementService _habitManagementService;
-  List<Habit> _habits = [];
-  final GlobalKey<SliverAnimatedListState> _listKey =
-      GlobalKey<SliverAnimatedListState>();
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _getHabitsUseCase = sl<GetHabitsUseCase>();
     _updateHabitUseCase = sl<UpdateHabitUseCase>();
-    _deleteHabitUseCase = sl<DeleteHabitUseCase>();
     _habitManagementService = sl<HabitManagementService>();
-    _loadHabits();
   }
 
   @override
@@ -52,77 +42,34 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     super.dispose();
   }
 
-  // 加载用户使用天数 - 使用统计服务
-
-  Future<void> _loadHabits() async {
-    try {
-      final habits = await _getHabitsUseCase.execute();
-      final sorted = List<Habit>.from(habits)
-        ..sort((a, b) => _getFinalProgress(a).compareTo(_getFinalProgress(b)));
-      setState(() {
-        _habits = sorted;
-      });
-    } catch (e) {
-      logger.error('加载习惯失败', e);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('加载习惯失败: ${e.toString()}')));
-    }
-  }
-
   // 显示补充打卡对话框 - 使用独立组件
-  void _showSupplementCheckInDialog(BuildContext context) {
+  void _showSupplementCheckInDialog(BuildContext context, List<Habit> habits) {
     SupplementCheckInDialog.show(
       context: context,
-      habits: _habits,
+      habits: habits,
       updateHabitUseCase: _updateHabitUseCase,
-      onRefresh: () async {
-        await _loadHabits();
-        _resortWithAnimation();
-      },
+      onRefresh: _refreshHabits,
     );
   }
 
   // 删除习惯
   Future<void> _deleteHabit(String habitId) async {
-    try {
-      final index = _habits.indexWhere((h) => h.id == habitId);
-      if (index == -1) {
-        return;
-      }
+    final habitProvider = context.read<HabitProvider>();
+    await habitProvider.deleteHabit(habitId);
+    if (!mounted) {
+      return;
+    }
 
-      final removedHabit = _habits.removeAt(index);
-
-      if (_listKey.currentState != null) {
-        _listKey.currentState!.removeItem(
-          index,
-          (context, animation) => SizeTransition(
-            sizeFactor: animation,
-            child: HabitItemWidget(
-              key: ValueKey(removedHabit.id),
-              habit: removedHabit,
-              onDelete: _deleteHabit,
-              onRefresh: _refreshHabits,
-              onNavigateToTracking: _navigateToTrackingPage,
-              formatDescription: _formatHabitDescription,
-              getFinalProgress: _getFinalProgress,
-              isFirst: index == 0,
-            ),
-          ),
-          duration: const Duration(milliseconds: 300),
-        );
-      }
-
-      await _deleteHabitUseCase.execute(habitId);
-
+    final errorMessage = habitProvider.errorMessage;
+    if (errorMessage == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('习惯删除成功')));
-    } catch (e) {
-      logger.error('删除习惯失败', e);
+      ).showSnackBar(const SnackBar(content: Text('习惯删除成功')));
+    } else {
+      logger.error(errorMessage);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('删除习惯失败: ${e.toString()}')));
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 
@@ -177,11 +124,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('已完成 ${habit.name}')));
-      await _loadHabits();
-      if (!mounted) {
-        return;
-      }
-      _resortWithAnimation();
+      await habitProvider.loadHabits();
     } catch (e) {
       if (!mounted) {
         return;
@@ -209,22 +152,16 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
 
     // 如果习惯设置了追踪时间，则导航到专注页面
     if (habit.trackTime) {
-      // 使用async/await来等待从HabitTrackingPage返回，并刷新UI
-      Navigator.push(
+      // 等待从专注页面返回，再从统一状态源重新加载数据。
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => HabitTrackingPage(habit: habit),
         ),
-      ).then((_) {
-        // 从专注页面返回后刷新UI，但要先检查widget是否仍然存在
-        if (mounted) {
-          setState(() {
-            // 重新加载习惯列表以显示更新后的进度
-            _loadHabits();
-          });
-          _resortWithAnimation();
-        }
-      });
+      );
+      if (mounted) {
+        await context.read<HabitProvider>().loadHabits();
+      }
     } else {
       await _completeCountOnlyHabit(habit);
     }
@@ -232,6 +169,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    final habitProvider = context.watch<HabitProvider>();
+    final habits = List<Habit>.from(habitProvider.habits)
+      ..sort((a, b) => _getFinalProgress(a).compareTo(_getFinalProgress(b)));
+
     return Scaffold(
       floatingActionButton: ScrollToTopFab(controller: _scrollController),
       body: Container(
@@ -240,12 +181,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
             BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor, // 与主题颜色联动
             ),
-        child: _buildHabitList(),
+        child: _buildHabitList(habits, isLoading: habitProvider.isLoading),
       ),
     );
   }
 
-  Widget _buildHabitList() {
+  Widget _buildHabitList(List<Habit> habits, {required bool isLoading}) {
     final pagePadding = HeroHeaderPageConstants.mainPagePadding;
     final listPadding = HabitManagementPageConstants.listPadding;
 
@@ -267,7 +208,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   icon: Icons.edit_outlined,
                   title: '补充记录',
                   subtitle: 'Record',
-                  onTap: () => _showSupplementCheckInDialog(context),
+                  onTap: () => _showSupplementCheckInDialog(context, habits),
                 ),
                 AppHeroHeaderActionData(
                   icon: Icons.timer_outlined,
@@ -285,7 +226,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
             ),
           ),
         ),
-        if (_habits.isEmpty)
+        if (isLoading && habits.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (habits.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
             child: Padding(
@@ -345,25 +291,20 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
               pagePadding.right,
               listPadding.bottom,
             ),
-            sliver: SliverAnimatedList(
-              key: _listKey,
-              initialItemCount: _habits.length,
-              itemBuilder: (context, index, animation) {
-                final item = _habits[index];
-                return SizeTransition(
-                  sizeFactor: animation,
-                  child: HabitItemWidget(
-                    key: ValueKey(item.id),
-                    habit: item,
-                    onDelete: _deleteHabit,
-                    onRefresh: _refreshHabits,
-                    onNavigateToTracking: _navigateToTrackingPage,
-                    formatDescription: _formatHabitDescription,
-                    getFinalProgress: _getFinalProgress,
-                    isFirst: index == 0,
-                  ),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final item = habits[index];
+                return HabitItemWidget(
+                  key: ValueKey(item.id),
+                  habit: item,
+                  onDelete: _deleteHabit,
+                  onRefresh: _refreshHabits,
+                  onNavigateToTracking: _navigateToTrackingPage,
+                  formatDescription: _formatHabitDescription,
+                  getFinalProgress: _getFinalProgress,
+                  isFirst: index == 0,
                 );
-              },
+              }, childCount: habits.length),
             ),
           ),
       ],
@@ -372,39 +313,31 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
 
   // 刷新习惯列表
   void _refreshHabits() {
-    setState(() {
-      _loadHabits();
-    });
-    _resortWithAnimation();
+    context.read<HabitProvider>().loadHabits();
   }
 
   Future<void> _openAddHabit() async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddHabitPage()),
     );
-    if (result is Habit) {
-      await _loadHabits();
-      _resortWithAnimation();
-    }
   }
 
-  void _openCurrentFocus() {
+  Future<void> _openCurrentFocus() async {
     final focusState = sl<FocusTrackingManager>();
     if (focusState.focusStatus != FocusStatus.stop &&
         focusState.currentFocusHabit != null) {
       final currentHabit = focusState.currentFocusHabit;
       if (currentHabit != null) {
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => HabitTrackingPage(habit: currentHabit),
           ),
-        ).then((_) {
-          setState(() {
-            _loadHabits();
-          });
-        });
+        );
+        if (mounted) {
+          await context.read<HabitProvider>().loadHabits();
+        }
       } else {
         ScaffoldMessenger.of(
           context,
@@ -414,43 +347,6 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('没有正在进行中的专注')));
-    }
-  }
-
-  void _resortWithAnimation() {
-    if (_listKey.currentState == null) {
-      return;
-    }
-    final target = List<Habit>.from(_habits)
-      ..sort((a, b) => _getFinalProgress(a).compareTo(_getFinalProgress(b)));
-    for (int i = 0; i < target.length; i++) {
-      final h = target[i];
-      final currentIndex = _habits.indexWhere((e) => e.id == h.id);
-      if (currentIndex != i && currentIndex != -1) {
-        final removed = _habits.removeAt(currentIndex);
-        _listKey.currentState!.removeItem(
-          currentIndex,
-          (context, animation) => SizeTransition(
-            sizeFactor: animation,
-            child: HabitItemWidget(
-              key: ValueKey(removed.id),
-              habit: removed,
-              onDelete: _deleteHabit,
-              onRefresh: _refreshHabits,
-              onNavigateToTracking: _navigateToTrackingPage,
-              formatDescription: _formatHabitDescription,
-              getFinalProgress: _getFinalProgress,
-              isFirst: currentIndex == 0,
-            ),
-          ),
-          duration: const Duration(milliseconds: 200),
-        );
-        _habits.insert(i, removed);
-        _listKey.currentState!.insertItem(
-          i,
-          duration: const Duration(milliseconds: 200),
-        );
-      }
     }
   }
 }

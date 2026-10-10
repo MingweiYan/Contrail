@@ -19,6 +19,7 @@
         android:label="Contrail"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
         android:usesCleartextTraffic="true">
         <!-- flutter-quill 配置：支持将图像复制到剪贴板供其他应用访问 -->

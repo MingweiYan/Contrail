@@ -1,20 +1,27 @@
 import 'dart:math';
+import 'package:flutter/material.dart' show DateTimeRange;
 import '../models/habit.dart';
 import '../models/cycle_type.dart';
+import '../utils/time_management_util.dart';
 
 class HabitStatisticsService {
+  final DateTime Function() _now;
+
+  HabitStatisticsService({DateTime Function()? now})
+    : _now = now ?? DateTime.now;
+
   // 获取习惯统计报告的统一方法
   Map<String, dynamic> getHabitStatistics(
     List<Habit> habits,
     CycleType cycleType,
   ) {
-    final now = DateTime.now();
+    final now = TimeManagementUtil.dateOnly(_now());
     DateTime startDate, endDate;
 
     // 根据周期类型确定统计时间段
     if (cycleType == CycleType.weekly) {
-      startDate = now.subtract(Duration(days: now.weekday - 1));
-      endDate = startDate.add(const Duration(days: 6));
+      startDate = TimeManagementUtil.getWeekStartDate(now);
+      endDate = TimeManagementUtil.addCalendarDays(startDate, 6);
     } else if (cycleType == CycleType.annual) {
       // 年度统计 - 当前自然年
       startDate = DateTime(now.year, 1, 1);
@@ -76,6 +83,7 @@ class HabitStatisticsService {
       } else {
         // 不适合当前报告周期的习惯，完成率为0
         habitStats = {
+          'habitId': habit.id,
           'habitName': habit.name,
           'totalRequiredDays': 0,
           'completedDays': 0,
@@ -84,7 +92,7 @@ class HabitStatisticsService {
         };
       }
 
-      statistics['detailedCompletion'][habit.name] = habitStats;
+      statistics['detailedCompletion'][habit.id] = habitStats;
       totalCompletionRate += habitStats['completionRate'];
 
       if (habitStats['completionRate'] >= 1.0) {
@@ -156,13 +164,14 @@ class HabitStatisticsService {
         startDate,
         endDate,
       );
-      statistics['detailedCompletion'][habit.name] = stats;
+      statistics['detailedCompletion'][habit.id] = stats;
       totalCompletionRate += stats['completionRate'];
       if (stats['completionRate'] >= 1.0) completedCount++;
     }
     statistics['completedHabits'] = completedCount;
-    if (habits.isNotEmpty)
+    if (habits.isNotEmpty) {
       statistics['averageCompletionRate'] = totalCompletionRate / habits.length;
+    }
     final detailedCompletion =
         statistics['detailedCompletion'] as Map<String, Map<String, dynamic>>;
     final sortedHabits =
@@ -214,13 +223,14 @@ class HabitStatisticsService {
         startDate,
         endDate,
       );
-      statistics['detailedCompletion'][habit.name] = stats;
+      statistics['detailedCompletion'][habit.id] = stats;
       totalCompletionRate += stats['completionRate'];
       if (stats['completionRate'] >= 1.0) completedCount++;
     }
     statistics['completedHabits'] = completedCount;
-    if (habits.isNotEmpty)
+    if (habits.isNotEmpty) {
       statistics['averageCompletionRate'] = totalCompletionRate / habits.length;
+    }
     final detailedCompletion =
         statistics['detailedCompletion'] as Map<String, Map<String, dynamic>>;
     final sortedHabits =
@@ -244,10 +254,10 @@ class HabitStatisticsService {
 
   // 计算习惯的详细统计信息（周、月、年）
   Map<String, dynamic> getHabitDetailedStats(List<Habit> habits) {
-    final today = DateTime.now();
+    final today = TimeManagementUtil.dateOnly(_now());
 
     // 计算本周第一天（周一）
-    final firstDayOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    final firstDayOfWeek = TimeManagementUtil.getWeekStartDate(today);
 
     // 计算本月第一天
     final firstDayOfMonth = DateTime(today.year, today.month, 1);
@@ -263,15 +273,18 @@ class HabitStatisticsService {
     int totalWeekDays = 0;
     int completedMonthTasks = 0;
     int completedYearTasks = 0;
-    int totalYearTasks =
-        habits.length * (today.difference(firstDayOfYear).inDays + 1);
+    final yearDays = TimeManagementUtil.inclusiveCalendarDayCount(
+      firstDayOfYear,
+      today,
+    );
+    int totalYearTasks = habits.length * yearDays;
 
     // 计算本周、本月和本年的完成情况
     for (final habit in habits) {
       // 本周完成情况
       for (int i = 0; i < 7; i++) {
-        final date = firstDayOfWeek.add(Duration(days: i));
-        final dateOnly = DateTime(date.year, date.month, date.day);
+        final date = TimeManagementUtil.addCalendarDays(firstDayOfWeek, i);
+        final dateOnly = TimeManagementUtil.dateOnly(date);
 
         // 只计算不大于今天的日期
         if (!date.isAfter(today)) {
@@ -285,8 +298,8 @@ class HabitStatisticsService {
 
       // 本月完成情况
       for (int i = 0; i < totalMonthDays; i++) {
-        final date = firstDayOfMonth.add(Duration(days: i));
-        final dateOnly = DateTime(date.year, date.month, date.day);
+        final date = TimeManagementUtil.addCalendarDays(firstDayOfMonth, i);
+        final dateOnly = TimeManagementUtil.dateOnly(date);
 
         if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
             habit.dailyCompletionStatus[dateOnly] == true) {
@@ -295,10 +308,9 @@ class HabitStatisticsService {
       }
 
       // 本年完成情况
-      final yearDays = today.difference(firstDayOfYear).inDays + 1;
       for (int i = 0; i < yearDays; i++) {
-        final date = firstDayOfYear.add(Duration(days: i));
-        final dateOnly = DateTime(date.year, date.month, date.day);
+        final date = TimeManagementUtil.addCalendarDays(firstDayOfYear, i);
+        final dateOnly = TimeManagementUtil.dateOnly(date);
 
         if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
             habit.dailyCompletionStatus[dateOnly] == true) {
@@ -324,46 +336,56 @@ class HabitStatisticsService {
     DateTime startDate,
     DateTime endDate,
   ) {
+    startDate = TimeManagementUtil.dateOnly(startDate);
+    endDate = TimeManagementUtil.dateOnly(endDate);
     int totalRequiredDays = 0;
     int completedDays = 0;
 
     // 根据习惯的周期类型计算所需完成的天数
     if (habit.cycleType == CycleType.daily) {
       // 每日习惯，计算时间段内的天数
-      totalRequiredDays = endDate.difference(startDate).inDays + 1;
+      totalRequiredDays = TimeManagementUtil.inclusiveCalendarDayCount(
+        startDate,
+        endDate,
+      );
 
       // 计算完成的天数
       habit.dailyCompletionStatus.forEach((date, isCompleted) {
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
-            dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
-            isCompleted) {
+        if (isCompleted &&
+            TimeManagementUtil.isDateInRange(
+              date,
+              DateTimeRange(start: startDate, end: endDate),
+            )) {
           completedDays++;
         }
       });
     } else if (habit.cycleType == CycleType.weekly) {
       // 每周习惯，计算时间段内包含的周数
-      final weeksInPeriod = (endDate.difference(startDate).inDays / 7).ceil();
+      final daysInPeriod = TimeManagementUtil.inclusiveCalendarDayCount(
+        startDate,
+        endDate,
+      );
+      final weeksInPeriod = (daysInPeriod / 7).ceil();
       totalRequiredDays = weeksInPeriod * (habit.targetDays ?? 3); // 默认每周3天
 
       DateTime currentWeekStart = startDate;
 
-      while (currentWeekStart.isBefore(endDate.add(const Duration(days: 1)))) {
-        final currentWeekEnd = currentWeekStart.add(const Duration(days: 6));
+      while (!currentWeekStart.isAfter(endDate)) {
+        final currentWeekEnd = TimeManagementUtil.addCalendarDays(
+          currentWeekStart,
+          6,
+        );
         final endDateForThisWeek = currentWeekEnd.isBefore(endDate)
             ? currentWeekEnd
             : endDate;
 
         int weeklyCompleted = 0;
         habit.dailyCompletionStatus.forEach((date, isCompleted) {
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          if (dateOnly.isAfter(
-                currentWeekStart.subtract(const Duration(days: 1)),
-              ) &&
-              dateOnly.isBefore(
-                endDateForThisWeek.add(const Duration(days: 1)),
-              ) &&
-              isCompleted) {
+          if (isCompleted &&
+              TimeManagementUtil.isDateInRange(
+                date,
+                DateTimeRange(start: currentWeekStart, end: endDateForThisWeek),
+              )) {
             weeklyCompleted++;
           }
         });
@@ -373,7 +395,10 @@ class HabitStatisticsService {
             ? (habit.targetDays ?? 3)
             : weeklyCompleted;
 
-        currentWeekStart = currentWeekEnd.add(const Duration(days: 1));
+        currentWeekStart = TimeManagementUtil.addCalendarDays(
+          currentWeekEnd,
+          1,
+        );
       }
     } else if (habit.cycleType == CycleType.monthly) {
       // 每月习惯
@@ -385,28 +410,44 @@ class HabitStatisticsService {
 
       // 计算完成的天数
       habit.dailyCompletionStatus.forEach((date, isCompleted) {
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
-            dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
-            isCompleted) {
+        if (isCompleted &&
+            TimeManagementUtil.isDateInRange(
+              date,
+              DateTimeRange(start: startDate, end: endDate),
+            )) {
           completedDays++;
         }
       });
     } else if (habit.cycleType == CycleType.annual) {
       // 年度习惯
-      // 计算时间段内需要完成的目标天数
-      final totalDaysInPeriod = endDate.difference(startDate).inDays + 1;
-      final daysInYear = 365; // 简化计算，不考虑闰年
       final annualTarget = habit.targetDays ?? 12; // 默认每年12天
-      totalRequiredDays = (annualTarget * totalDaysInPeriod / daysInYear)
-          .ceil();
+      double proratedTarget = 0;
+      for (int year = startDate.year; year <= endDate.year; year++) {
+        final yearStart = DateTime(year, 1, 1);
+        final yearEnd = DateTime(year, 12, 31);
+        final segmentStart = startDate.isAfter(yearStart)
+            ? startDate
+            : yearStart;
+        final segmentEnd = endDate.isBefore(yearEnd) ? endDate : yearEnd;
+        final segmentDays = TimeManagementUtil.inclusiveCalendarDayCount(
+          segmentStart,
+          segmentEnd,
+        );
+        final daysInYear = TimeManagementUtil.inclusiveCalendarDayCount(
+          yearStart,
+          yearEnd,
+        );
+        proratedTarget += annualTarget * segmentDays / daysInYear;
+      }
+      totalRequiredDays = proratedTarget.ceil();
 
       // 计算完成的天数
       habit.dailyCompletionStatus.forEach((date, isCompleted) {
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        if (dateOnly.isAfter(startDate.subtract(const Duration(days: 1))) &&
-            dateOnly.isBefore(endDate.add(const Duration(days: 1))) &&
-            isCompleted) {
+        if (isCompleted &&
+            TimeManagementUtil.isDateInRange(
+              date,
+              DateTimeRange(start: startDate, end: endDate),
+            )) {
           completedDays++;
         }
       });
@@ -417,6 +458,7 @@ class HabitStatisticsService {
         : 0.0;
 
     return {
+      'habitId': habit.id,
       'habitName': habit.name,
       'totalRequiredDays': totalRequiredDays,
       'completedDays': completedDays,
@@ -426,165 +468,206 @@ class HabitStatisticsService {
   }
 
   /// 获取当前月的习惯完成次数数据（用于饼状图）
+  @Deprecated('Use getMonthlyHabitCompletionCountsByHabitId instead.')
   Map<String, int> getMonthlyHabitCompletionCounts(List<Habit> habits) {
-    final now = DateTime.now();
-    final currentMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0);
-
-    final Map<String, int> completionCounts = {};
-
-    for (final habit in habits) {
-      int count = 0;
-      habit.dailyCompletionStatus.forEach((date, completed) {
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        if (dateOnly.isAfter(currentMonth.subtract(const Duration(days: 1))) &&
-            dateOnly.isBefore(endOfMonth.add(const Duration(days: 1))) &&
-            completed) {
-          count++;
-        }
-      });
-      completionCounts[habit.name] = count;
-    }
-
-    return completionCounts;
+    final values = getMonthlyHabitCompletionCountsByHabitId(habits);
+    return _valuesByHabitName(habits, values);
   }
 
   /// 获取指定年月的习惯完成次数（用于饼图）
+  @Deprecated('Use getMonthlyHabitCompletionCountsForByHabitId instead.')
   Map<String, int> getMonthlyHabitCompletionCountsFor(
     List<Habit> habits, {
     required int year,
     required int month,
   }) {
-    final currentMonth = DateTime(year, month, 1);
-    final endOfMonth = DateTime(year, month + 1, 0);
-    final Map<String, int> completionCounts = {};
-    for (final habit in habits) {
-      int count = 0;
-      habit.dailyCompletionStatus.forEach((date, completed) {
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        if (dateOnly.isAfter(currentMonth.subtract(const Duration(days: 1))) &&
-            dateOnly.isBefore(endOfMonth.add(const Duration(days: 1))) &&
-            completed) {
-          count++;
-        }
-      });
-      completionCounts[habit.name] = count;
-    }
-    return completionCounts;
+    final values = getMonthlyHabitCompletionCountsForByHabitId(
+      habits,
+      year: year,
+      month: month,
+    );
+    return _valuesByHabitName(habits, values);
+  }
+
+  /// 获取当前月按稳定习惯 ID 聚合的完成次数。
+  Map<String, int> getMonthlyHabitCompletionCountsByHabitId(
+    List<Habit> habits,
+  ) {
+    final now = _now();
+    return getMonthlyHabitCompletionCountsForByHabitId(
+      habits,
+      year: now.year,
+      month: now.month,
+    );
+  }
+
+  /// 获取指定年月按稳定习惯 ID 聚合的完成次数。
+  Map<String, int> getMonthlyHabitCompletionCountsForByHabitId(
+    List<Habit> habits, {
+    required int year,
+    required int month,
+  }) {
+    return _completionCountsByHabitId(
+      habits,
+      DateTimeRange(
+        start: DateTime(year, month, 1),
+        end: DateTime(year, month + 1, 0),
+      ),
+    );
   }
 
   /// 获取当前月的习惯完成时间数据（用于饼状图）
+  @Deprecated('Use getMonthlyHabitCompletionMinutesByHabitId instead.')
   Map<String, int> getMonthlyHabitCompletionMinutes(List<Habit> habits) {
-    final now = DateTime.now();
-    final currentMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0);
-
-    final Map<String, int> completionMinutes = {};
-
-    for (final habit in habits) {
-      // 只有设置了追踪时间的习惯才会出现在时间统计的饼状图中
-      if (habit.trackTime) {
-        int totalMinutes = 0;
-        habit.trackingDurations.forEach((date, durations) {
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          if (dateOnly.isAfter(
-                currentMonth.subtract(const Duration(days: 1)),
-              ) &&
-              dateOnly.isBefore(endOfMonth.add(const Duration(days: 1)))) {
-            for (final duration in durations) {
-              totalMinutes += duration.inMinutes;
-            }
-          }
-        });
-        if (totalMinutes > 0) {
-          completionMinutes[habit.name] = totalMinutes;
-        }
-      }
-    }
-
-    return completionMinutes;
+    final values = getMonthlyHabitCompletionMinutesByHabitId(habits);
+    return _valuesByHabitName(habits, values);
   }
 
   /// 获取指定年月的习惯完成时间（分钟，饼图）
+  @Deprecated('Use getMonthlyHabitCompletionMinutesForByHabitId instead.')
   Map<String, int> getMonthlyHabitCompletionMinutesFor(
     List<Habit> habits, {
     required int year,
     required int month,
   }) {
-    final currentMonth = DateTime(year, month, 1);
-    final endOfMonth = DateTime(year, month + 1, 0);
-    final Map<String, int> completionMinutes = {};
-    for (final habit in habits) {
-      if (habit.trackTime) {
-        int totalMinutes = 0;
-        habit.trackingDurations.forEach((date, durations) {
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          if (dateOnly.isAfter(
-                currentMonth.subtract(const Duration(days: 1)),
-              ) &&
-              dateOnly.isBefore(endOfMonth.add(const Duration(days: 1)))) {
-            for (final duration in durations) {
-              totalMinutes += duration.inMinutes;
-            }
-          }
-        });
-        if (totalMinutes > 0) {
-          completionMinutes[habit.name] = totalMinutes;
-        }
-      }
-    }
-    return completionMinutes;
+    final values = getMonthlyHabitCompletionMinutesForByHabitId(
+      habits,
+      year: year,
+      month: month,
+    );
+    return _valuesByHabitName(habits, values);
+  }
+
+  /// 获取当前月按稳定习惯 ID 聚合的专注分钟数。
+  Map<String, int> getMonthlyHabitCompletionMinutesByHabitId(
+    List<Habit> habits,
+  ) {
+    final now = _now();
+    return getMonthlyHabitCompletionMinutesForByHabitId(
+      habits,
+      year: now.year,
+      month: now.month,
+    );
+  }
+
+  /// 获取指定年月按稳定习惯 ID 聚合的专注分钟数。
+  Map<String, int> getMonthlyHabitCompletionMinutesForByHabitId(
+    List<Habit> habits, {
+    required int year,
+    required int month,
+  }) {
+    return _completionMinutesByHabitId(
+      habits,
+      DateTimeRange(
+        start: DateTime(year, month, 1),
+        end: DateTime(year, month + 1, 0),
+      ),
+    );
   }
 
   /// 获取指定年份的习惯完成次数（全年聚合）
+  @Deprecated('Use getYearlyHabitCompletionCountsForByHabitId instead.')
   Map<String, int> getYearlyHabitCompletionCountsFor(
     List<Habit> habits, {
     required int year,
   }) {
-    final start = DateTime(year, 1, 1);
-    final end = DateTime(year, 12, 31);
-    final Map<String, int> completionCounts = {};
-    for (final habit in habits) {
-      int count = 0;
-      habit.dailyCompletionStatus.forEach((date, completed) {
-        final dateOnly = DateTime(date.year, date.month, date.day);
-        if (dateOnly.isAfter(start.subtract(const Duration(days: 1))) &&
-            dateOnly.isBefore(end.add(const Duration(days: 1))) &&
-            completed) {
-          count++;
-        }
-      });
-      completionCounts[habit.name] = count;
-    }
-    return completionCounts;
+    final values = getYearlyHabitCompletionCountsForByHabitId(
+      habits,
+      year: year,
+    );
+    return _valuesByHabitName(habits, values);
+  }
+
+  /// 获取指定年份按稳定习惯 ID 聚合的完成次数。
+  Map<String, int> getYearlyHabitCompletionCountsForByHabitId(
+    List<Habit> habits, {
+    required int year,
+  }) {
+    return _completionCountsByHabitId(
+      habits,
+      DateTimeRange(start: DateTime(year, 1, 1), end: DateTime(year, 12, 31)),
+    );
   }
 
   /// 获取指定年份的习惯完成时间（分钟，全年聚合）
+  @Deprecated('Use getYearlyHabitCompletionMinutesForByHabitId instead.')
   Map<String, int> getYearlyHabitCompletionMinutesFor(
     List<Habit> habits, {
     required int year,
   }) {
-    final start = DateTime(year, 1, 1);
-    final end = DateTime(year, 12, 31);
-    final Map<String, int> completionMinutes = {};
+    final values = getYearlyHabitCompletionMinutesForByHabitId(
+      habits,
+      year: year,
+    );
+    return _valuesByHabitName(habits, values);
+  }
+
+  /// 获取指定年份按稳定习惯 ID 聚合的专注分钟数。
+  Map<String, int> getYearlyHabitCompletionMinutesForByHabitId(
+    List<Habit> habits, {
+    required int year,
+  }) {
+    return _completionMinutesByHabitId(
+      habits,
+      DateTimeRange(start: DateTime(year, 1, 1), end: DateTime(year, 12, 31)),
+    );
+  }
+
+  Map<String, int> _completionCountsByHabitId(
+    List<Habit> habits,
+    DateTimeRange range,
+  ) {
+    final completionCounts = <String, int>{};
     for (final habit in habits) {
-      if (habit.trackTime) {
-        int totalMinutes = 0;
-        habit.trackingDurations.forEach((date, durations) {
-          final dateOnly = DateTime(date.year, date.month, date.day);
-          if (dateOnly.isAfter(start.subtract(const Duration(days: 1))) &&
-              dateOnly.isBefore(end.add(const Duration(days: 1)))) {
-            for (final duration in durations) {
-              totalMinutes += duration.inMinutes;
-            }
-          }
-        });
-        if (totalMinutes > 0) {
-          completionMinutes[habit.name] = totalMinutes;
+      var count = 0;
+      habit.dailyCompletionStatus.forEach((date, completed) {
+        if (completed && TimeManagementUtil.isDateInRange(date, range)) {
+          count++;
         }
+      });
+      completionCounts[habit.id] = count;
+    }
+    return completionCounts;
+  }
+
+  Map<String, int> _completionMinutesByHabitId(
+    List<Habit> habits,
+    DateTimeRange range,
+  ) {
+    final completionMinutes = <String, int>{};
+    for (final habit in habits) {
+      if (!habit.trackTime) continue;
+
+      var totalMicroseconds = 0;
+      habit.trackingDurations.forEach((date, durations) {
+        if (!TimeManagementUtil.isDateInRange(date, range)) return;
+        for (final duration in durations) {
+          totalMicroseconds += duration.inMicroseconds;
+        }
+      });
+      final totalMinutes = Duration(microseconds: totalMicroseconds).inMinutes;
+      if (totalMinutes > 0) {
+        completionMinutes[habit.id] = totalMinutes;
       }
     }
     return completionMinutes;
+  }
+
+  Map<String, int> _valuesByHabitName(
+    List<Habit> habits,
+    Map<String, int> valuesByHabitId,
+  ) {
+    final valuesByName = <String, int>{};
+    for (final habit in habits) {
+      final value = valuesByHabitId[habit.id];
+      if (value == null) continue;
+      valuesByName.update(
+        habit.name,
+        (existing) => existing + value,
+        ifAbsent: () => value,
+      );
+    }
+    return valuesByName;
   }
 
   /// 获取有目标的习惯及其完成度数据（用于柱状图）
@@ -592,7 +675,7 @@ class HabitStatisticsService {
     List<Habit> habits,
     String? periodType,
   ) {
-    final now = DateTime.now();
+    final now = TimeManagementUtil.dateOnly(_now());
     DateTime startDate, endDate;
     if (periodType == 'month') {
       startDate = DateTime(now.year, now.month, 1);
@@ -601,8 +684,8 @@ class HabitStatisticsService {
       startDate = DateTime(now.year, 1, 1);
       endDate = DateTime(now.year, 12, 31);
     } else {
-      startDate = now.subtract(Duration(days: now.weekday - 1));
-      endDate = startDate.add(const Duration(days: 6));
+      startDate = TimeManagementUtil.getWeekStartDate(now);
+      endDate = TimeManagementUtil.addCalendarDays(startDate, 6);
     }
     final res = getHabitGoalCompletionDataFor(
       habits,
@@ -628,6 +711,7 @@ class HabitStatisticsService {
           endDate,
         );
         goalCompletionData.add({
+          'habitId': habit.id,
           'name': habit.name,
           'completedDays': stats['completedDays'],
           'requiredDays': stats['totalRequiredDays'],

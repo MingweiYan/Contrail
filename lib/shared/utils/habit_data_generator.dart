@@ -148,6 +148,7 @@ class HabitDataGenerator {
   static Future<void> generateAndSaveTestData({
     required AddHabitUseCase addHabitUseCase,
     required BuildContext context,
+    required Future<void> Function() onDataSaved,
   }) async {
     try {
       // 显示加载对话框
@@ -168,6 +169,14 @@ class HabitDataGenerator {
         await addHabitUseCase.execute(habit);
       }
 
+      // Debug 数据绕过了 HabitProvider 直接写入仓库，写完后必须重新加载
+      // Provider，确保所有正在监听习惯数据的页面立即得到一致状态。
+      await onDataSaved();
+
+      if (!context.mounted) {
+        return;
+      }
+
       // 关闭加载对话框
       Navigator.pop(context);
 
@@ -176,6 +185,10 @@ class HabitDataGenerator {
         const SnackBar(content: Text('测试数据生成成功！已创建6个习惯并生成100条数据，包括对应的专注数据')),
       );
     } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+
       // 关闭加载对话框
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
