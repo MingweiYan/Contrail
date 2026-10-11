@@ -15,12 +15,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   tearDown(() async {
     if (Hive.isBoxOpen(LocalDataStore.habitsBoxName)) {
       await Hive.box<Habit>(LocalDataStore.habitsBoxName).close();
     }
     await Hive.deleteBoxFromDisk(LocalDataStore.habitsBoxName);
-    await WebDavSessionCredentialStore.instance.deletePassword();
+    await BrowserPersistentWebDavCredentialStore().deletePassword();
   });
 
   test('habit data survives an IndexedDB box close and reopen', () async {
@@ -41,7 +45,6 @@ void main() {
   });
 
   test('an unconfigured WebDAV service makes no outbound request', () async {
-    SharedPreferences.setMockInitialValues({});
     var requestCount = 0;
     final client = MockClient((request) async {
       requestCount++;
@@ -60,21 +63,28 @@ void main() {
     expect(requestCount, 0);
   });
 
-  test('WebDAV password uses memory-only storage in browsers', () async {
-    SharedPreferences.setMockInitialValues({});
+  test('WebDAV password survives credential store recreation', () async {
     final credentialStore = createPlatformWebDavCredentialStore();
     final configStore = WebDavConfigStore(credentialStore: credentialStore);
 
-    expect(credentialStore, same(WebDavSessionCredentialStore.instance));
+    expect(credentialStore, isA<BrowserPersistentWebDavCredentialStore>());
     await configStore.save(
       url: 'https://storage.example/dav',
       username: 'user',
-      password: 'session-secret',
+      password: 'persistent-secret',
       path: 'Contrail',
     );
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.containsKey(WebDavConfigStore.legacyPasswordKey), isFalse);
-    expect((await configStore.load()).password, 'session-secret');
+    expect(
+      prefs.getString(BrowserPersistentWebDavCredentialStore.passwordKey),
+      'persistent-secret',
+    );
+
+    final recreatedConfigStore = WebDavConfigStore(
+      credentialStore: BrowserPersistentWebDavCredentialStore(),
+    );
+    expect((await recreatedConfigStore.load()).password, 'persistent-secret');
   });
 }

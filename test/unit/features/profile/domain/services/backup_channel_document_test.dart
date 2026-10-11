@@ -24,6 +24,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'username': 'Alice',
       'webdav_password': 'must-not-leak',
+      'contrail.webdav.password.v1': 'persistent-secret-must-not-leak',
     });
     repository = _MemoryHabitRepository(<Habit>[_habit('habit-1')]);
     storage = _MemoryStorageService();

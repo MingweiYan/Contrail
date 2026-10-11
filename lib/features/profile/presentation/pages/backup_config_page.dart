@@ -421,6 +421,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
   late TextEditingController _pathController;
   late int _retentionCount;
   late WebDavAccessMode _accessMode;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -597,11 +598,38 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                                     icon: Icons.lock_outline_rounded,
                                     title: '密码',
                                     child: TextField(
+                                      key: const ValueKey(
+                                        'webdav_password_field',
+                                      ),
                                       controller: _passwordController,
-                                      obscureText: true,
-                                      decoration: const InputDecoration(
+                                      obscureText: _obscurePassword,
+                                      autocorrect: false,
+                                      enableSuggestions: false,
+                                      autofillHints: const [
+                                        AutofillHints.password,
+                                      ],
+                                      decoration: InputDecoration(
                                         border: InputBorder.none,
                                         hintText: '输入 WebDAV 密码',
+                                        suffixIcon: IconButton(
+                                          key: const ValueKey(
+                                            'webdav_password_visibility',
+                                          ),
+                                          tooltip: _obscurePassword
+                                              ? '显示密码'
+                                              : '隐藏密码',
+                                          onPressed: () {
+                                            setState(() {
+                                              _obscurePassword =
+                                                  !_obscurePassword;
+                                            });
+                                          },
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),

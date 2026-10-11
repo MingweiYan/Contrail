@@ -432,8 +432,8 @@ class _DataBackupPageState extends State<DataBackupPage>
                 SizedBox(height: 6.h),
                 Text(
                   usesGateway
-                      ? '请求由 Contrail 无状态 Gateway 转发，用于兼容不开放浏览器 CORS 的 WebDAV。Gateway 不持久化凭据或业务数据；密码仍只保留在当前网页会话。'
-                      : '服务端必须允许当前站点的 CORS 请求，放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth、If-Match、If-None-Match 请求头，并暴露 ETag。HTTPS 页面不能连接 HTTP 地址。密码只保留在当前网页会话，刷新后需重新输入。',
+                      ? '请求由 Contrail 无状态 Gateway 转发，用于兼容不开放浏览器 CORS 的 WebDAV。Gateway 不持久化凭据或业务数据；密码只保存在当前浏览器站点。'
+                      : '服务端必须允许当前站点的 CORS 请求，放行 GET、PUT、DELETE、PROPFIND、MKCOL 与 Authorization、Depth、If-Match、If-None-Match 请求头，并暴露 ETag。HTTPS 页面不能连接 HTTP 地址。密码只保存在当前浏览器站点。',
                   style: TextStyle(
                     fontSize: AppTypographyConstants.formHelperFontSize,
                     height: 1.45,
