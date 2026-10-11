@@ -34,6 +34,7 @@ class WebDavBackupProvider extends ChangeNotifier {
   String _savedWebDavUsername = '';
   String _savedWebDavPath = '';
   WebDavAccessMode _webdavAccessMode = WebDavAccessMode.direct;
+  bool _isConfigLoaded = false;
   SyncCheckpoint? _syncCheckpoint;
   SyncResult? _lastSyncResult;
 
@@ -50,6 +51,7 @@ class WebDavBackupProvider extends ChangeNotifier {
   String get webdavPassword => _webdavPassword;
   String get webdavPath => _webdavPath;
   WebDavAccessMode get webdavAccessMode => _webdavAccessMode;
+  bool get isConfigLoaded => _isConfigLoaded;
   SyncCheckpoint? get syncCheckpoint => _syncCheckpoint;
   SyncResult? get lastSyncResult => _lastSyncResult;
 
@@ -86,6 +88,9 @@ class WebDavBackupProvider extends ChangeNotifier {
       _savedWebDavUrl = _webdavUrl;
       _savedWebDavUsername = _webdavUsername;
       _savedWebDavPath = _webdavPath;
+      _retentionCount = await _service.loadRetentionCount();
+      _isConfigLoaded = true;
+      notifyListeners();
       _syncCheckpoint = await _syncCoordinator.loadCheckpoint();
       final hasPermission = await _service.checkStoragePermission();
       if (!hasPermission) {
@@ -98,7 +103,6 @@ class WebDavBackupProvider extends ChangeNotifier {
       _backupFrequency = settings['backupFrequency'] as int;
       _lastBackupTime = settings['lastBackupTime'] as DateTime?;
       _displayPath = await _service.loadOrCreateBackupPath();
-      _retentionCount = await _service.loadRetentionCount();
       await refreshBackupFiles();
     } catch (e) {
       _setError('WebDAV 初始化失败: $e');

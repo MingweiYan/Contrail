@@ -55,6 +55,7 @@ dev_dependencies:
   mocktail: ^1.0.3
   flutter_lints: ^5.0.0
   dart_code_metrics: ^4.19.2
+  shared_preferences_web: ^2.4.3
 
 flutter:
   uses-material-design: true

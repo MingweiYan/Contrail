@@ -11,12 +11,19 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_web/shared_preferences_web.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
+  setUpAll(() {
+    SharedPreferencesPlugin.registerWith(null);
+  });
+
+  setUp(() async {
+    SharedPreferences.resetStatic();
+    await BrowserPersistentWebDavCredentialStore().deletePassword();
+    SharedPreferences.resetStatic();
   });
 
   tearDown(() async {
@@ -25,6 +32,7 @@ void main() {
     }
     await Hive.deleteBoxFromDisk(LocalDataStore.habitsBoxName);
     await BrowserPersistentWebDavCredentialStore().deletePassword();
+    SharedPreferences.resetStatic();
   });
 
   test('habit data survives an IndexedDB box close and reopen', () async {
@@ -75,6 +83,9 @@ void main() {
       path: 'Contrail',
     );
 
+    // Drop the in-process cache so the next instance must read the value back
+    // from the browser's persistent localStorage implementation.
+    SharedPreferences.resetStatic();
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.containsKey(WebDavConfigStore.legacyPasswordKey), isFalse);
     expect(
