@@ -7,7 +7,7 @@ Contrail 的同步采用 local-first 模式。应用运行数据始终先写入�
 - 当前数据：`contrail_sync.json`
 - 冲突快照：`contrail_sync_snapshot_<UTC 毫秒>_<校验和前 12 位>.json`
 - 文档包含 schema 版本、设备 ID、单调递增 revision、更新时间、业务 payload、payload SHA-256 和整份文档 SHA-256。
-- WebDAV 密码不进入同步 payload 或备份文件。Web 端密码只在当前页面会话的内存中保留，刷新后需要重新输入。
+- WebDAV 密码不进入同步 payload 或备份文件。Web 端密码持久化在当前 Origin 的浏览器存储中，配置页默认隐藏并允许用户主动显示；清除站点数据或更换 Origin 后需要重新输入。
 - 兼容模式不会在 Gateway 持久化密码或业务数据，但 Gateway 会在单次请求期间处理凭据与请求/响应正文；部署者仍需被信任。
 
 ## 合并规则

@@ -9,12 +9,16 @@ any user-operated HTTP server without adding a Contrail application backend.
 | --- | --- | --- |
 | Habits, check-ins, and tracked durations | Hive backed by IndexedDB | Never sent automatically |
 | Theme, personalization, and backup settings | Shared Preferences backed by browser storage | Never sent automatically |
-| WebDAV password | Process memory only | Direct mode sends it to WebDAV; compatibility mode relays it through the configured stateless gateway |
+| WebDAV password | Persistent browser storage scoped to the current origin | Direct mode sends it to WebDAV; compatibility mode relays it through the configured stateless gateway |
 | Backup documents | User-selected WebDAV provider | Uploaded only after explicit configuration and a manual or enabled automatic backup |
 
 Closing a tab does not delete IndexedDB or browser preferences. Data can still
 be removed when the user clears site data, uses private browsing, the browser
 evicts origin storage under pressure, or the deployment origin changes.
+
+The password is masked by default in the configuration UI and is excluded from
+backup documents. Browser storage is not a hardware-backed secure enclave, so
+only run Contrail from an origin you trust and use HTTPS outside local testing.
 
 Contrail should never describe browser persistence as a backup. Users who need
 recovery across devices or after browser-data loss must configure WebDAV.

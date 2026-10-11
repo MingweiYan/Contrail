@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 abstract interface class WebDavCredentialStore {
   Future<String?> readPassword();
@@ -11,7 +12,7 @@ abstract interface class WebDavCredentialStore {
 
 WebDavCredentialStore createPlatformWebDavCredentialStore() {
   if (kIsWeb) {
-    return WebDavSessionCredentialStore.instance;
+    return BrowserPersistentWebDavCredentialStore();
   }
   return FlutterSecureWebDavCredentialStore();
 }
@@ -36,29 +37,29 @@ class FlutterSecureWebDavCredentialStore implements WebDavCredentialStore {
   Future<void> deletePassword() => _storage.delete(key: passwordKey);
 }
 
-/// Web credentials intentionally live only for the lifetime of the page.
+/// Persists the WebDAV application password in storage scoped to this origin.
 ///
-/// Browsers do not offer an application-owned secure enclave equivalent to
-/// Android Keystore or Apple Keychain. Persisting a reusable password in
-/// localStorage/IndexedDB would make it available to any successful XSS.
-class WebDavSessionCredentialStore implements WebDavCredentialStore {
-  WebDavSessionCredentialStore._();
-
-  static final WebDavSessionCredentialStore instance =
-      WebDavSessionCredentialStore._();
-
-  String? _password;
+/// Browser storage is not equivalent to Android Keystore or Apple Keychain:
+/// code running in the same origin can read this value. It is kept out of
+/// backup documents and never persisted by the compatibility gateway.
+class BrowserPersistentWebDavCredentialStore implements WebDavCredentialStore {
+  static const String passwordKey = 'contrail.webdav.password.v1';
 
   @override
-  Future<String?> readPassword() async => _password;
+  Future<String?> readPassword() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getString(passwordKey);
+  }
 
   @override
   Future<void> writePassword(String password) async {
-    _password = password;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(passwordKey, password);
   }
 
   @override
   Future<void> deletePassword() async {
-    _password = null;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(passwordKey);
   }
 }
