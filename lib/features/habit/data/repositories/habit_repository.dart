@@ -6,4 +6,10 @@ abstract class HabitRepository {
   Future<void> addHabit(Habit habit);
   Future<void> updateHabit(Habit habit);
   Future<void> deleteHabit(String id);
+
+  /// Replaces the complete habit dataset as one repository operation.
+  ///
+  /// Implementations must serialize this operation with normal reads and
+  /// writes, and restore the previous dataset before surfacing a write error.
+  Future<void> replaceHabits(List<Habit> habits);
 }

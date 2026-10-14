@@ -120,6 +120,13 @@ class _MemoryHabitRepository implements HabitRepository {
   }
 
   @override
+  Future<void> replaceHabits(List<Habit> replacement) async {
+    habits
+      ..clear()
+      ..addAll(replacement);
+  }
+
+  @override
   Future<Habit?> getHabitById(String id) async {
     for (final habit in habits) {
       if (habit.id == id) return habit;
