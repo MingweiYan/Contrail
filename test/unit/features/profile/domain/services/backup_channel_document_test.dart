@@ -5,6 +5,8 @@ import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:contrail/features/profile/domain/services/backup_document_codec.dart';
+import 'package:contrail/features/profile/domain/services/backup_payload_restorer.dart';
+import 'package:contrail/features/profile/domain/services/backup_settings_store.dart';
 import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
@@ -98,6 +100,44 @@ void main() {
       expect(repository.habits.single.id, 'habit-1');
     },
   );
+
+  for (final channel in <String>['local', 'webdav']) {
+    test(
+      '$channel restore rolls back habits and settings after a settings error',
+      () async {
+        storage.dataToRead = await codec.encode(
+          habits: <Map<String, dynamic>>[_habitData('restored')],
+          settings: <String, dynamic>{'username': 'Restored user'},
+        );
+        final settingsStore = _FailOnceBackupSettingsStore(<String, dynamic>{
+          'username': 'Original user',
+        });
+        final payloadRestorer = BackupPayloadRestorer(
+          habitRepository: repository,
+          habitService: sl<HabitService>(),
+          settingsStore: settingsStore,
+        );
+
+        final restored = channel == 'local'
+            ? await LocalBackupService(
+                storageService: storage,
+                backupDocumentCodec: codec,
+                backupPayloadRestorer: payloadRestorer,
+              ).restoreFromBackup(_backupFile)
+            : await WebDavBackupService(
+                storageService: storage,
+                backupDocumentCodec: codec,
+                backupPayloadRestorer: payloadRestorer,
+              ).restoreFromBackup(_backupFile);
+
+        expect(restored, isFalse);
+        expect(repository.habits.map((habit) => habit.id), <String>['habit-1']);
+        expect(settingsStore.values, <String, dynamic>{
+          'username': 'Original user',
+        });
+      },
+    );
+  }
 }
 
 final BackupFileInfo _backupFile = BackupFileInfo(
@@ -110,6 +150,25 @@ final BackupFileInfo _backupFile = BackupFileInfo(
 Habit _habit(String id) {
   return Habit(id: id, name: id, goalType: GoalType.positive, trackTime: true);
 }
+
+Map<String, dynamic> _habitData(String id) => <String, dynamic>{
+  'id': id,
+  'name': id,
+  'totalDuration': 0,
+  'currentDays': 0,
+  'targetDays': 7,
+  'goalType': GoalType.positive.index,
+  'imagePath': null,
+  'cycleType': null,
+  'icon': null,
+  'trackTime': true,
+  'colorValue': 0xff123456,
+  'descriptionJson': null,
+  'shortDescription': null,
+  'trackingDurations': <String, dynamic>{},
+  'dailyCompletionStatus': <String, dynamic>{},
+  'targetTimeMinutes': 30,
+};
 
 class _MemoryHabitRepository implements HabitRepository {
   final List<Habit> habits;
@@ -127,6 +186,13 @@ class _MemoryHabitRepository implements HabitRepository {
   Future<void> deleteHabit(String id) async {
     deleteCalls++;
     habits.removeWhere((habit) => habit.id == id);
+  }
+
+  @override
+  Future<void> replaceHabits(List<Habit> replacement) async {
+    habits
+      ..clear()
+      ..addAll(replacement);
   }
 
   @override
@@ -195,4 +261,31 @@ class _MemoryStorageService implements StorageServiceInterface {
     writtenData = data;
     return true;
   }
+}
+
+class _FailOnceBackupSettingsStore implements BackupSettingsStore {
+  _FailOnceBackupSettingsStore(Map<String, dynamic> values)
+    : values = Map<String, dynamic>.of(values);
+
+  final Map<String, dynamic> values;
+  var _failed = false;
+
+  @override
+  Future<void> apply(
+    Map<String, dynamic> settings, {
+    required bool removeMissing,
+  }) async {
+    if (removeMissing) {
+      values.removeWhere((key, _) => !settings.containsKey(key));
+    }
+    values.addAll(settings);
+    if (!_failed) {
+      _failed = true;
+      throw StateError('simulated settings failure');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> snapshot() async =>
+      Map<String, dynamic>.of(values);
 }

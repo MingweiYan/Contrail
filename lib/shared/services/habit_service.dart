@@ -202,32 +202,13 @@ class HabitService {
       return false;
     }
 
-    List<Habit>? originalHabits;
     try {
-      originalHabits = List<Habit>.of(await habitRepository.getHabits());
-      await _replaceHabits(
-        habitRepository,
-        currentHabits: originalHabits,
-        replacementHabits: restoredHabits,
-      );
+      await habitRepository.replaceHabits(restoredHabits);
 
       _logger.debug('✅  习惯数据恢复完成');
       return true;
     } catch (e) {
-      _logger.error('❌  习惯数据恢复失败，正在回滚', e);
-      if (originalHabits != null) {
-        try {
-          final currentHabits = await habitRepository.getHabits();
-          await _replaceHabits(
-            habitRepository,
-            currentHabits: currentHabits,
-            replacementHabits: originalHabits,
-          );
-          _logger.debug('✅  习惯数据已回滚到恢复前状态');
-        } catch (rollbackError) {
-          _logger.error('❌  习惯数据回滚失败', rollbackError);
-        }
-      }
+      _logger.error('❌  习惯数据恢复失败', e);
       return false;
     }
   }
@@ -358,19 +339,6 @@ class HabitService {
       result[date] = entry.value as bool;
     }
     return result;
-  }
-
-  Future<void> _replaceHabits(
-    HabitRepository habitRepository, {
-    required List<Habit> currentHabits,
-    required List<Habit> replacementHabits,
-  }) async {
-    for (final habit in currentHabits) {
-      await habitRepository.deleteHabit(habit.id);
-    }
-    for (final habit in replacementHabits) {
-      await habitRepository.addHabit(habit);
-    }
   }
 
   Map<String, dynamic> _stringKeyedMap(Object? value, String fieldName) {
