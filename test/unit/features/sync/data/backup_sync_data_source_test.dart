@@ -1,15 +1,18 @@
 import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 import 'package:contrail/features/sync/data/backup_sync_data_source.dart';
+import 'package:contrail/features/sync/domain/crdt_payload.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/services/habit_service.dart';
+import 'package:crdt/map_crdt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late _MemoryHabitRepository repository;
   late BackupSyncDataSource dataSource;
+  late MapCrdt crdt;
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{
@@ -27,36 +30,47 @@ void main() {
         trackTime: true,
       ),
     ]);
+    crdt = MapCrdt(SyncCrdtTables.all);
     dataSource = BackupSyncDataSource(
       habitRepository: repository,
       habitService: HabitService(),
+      crdt: crdt,
     );
   });
 
   test('exports habits and allowlisted settings without credentials', () async {
     final payload = await dataSource.exportPayload();
+    final materialized = CrdtDomainMapper.materialize(
+      await CrdtPayloadCodec.visibleTables(payload),
+    );
 
-    expect((payload['habits'] as List).single['id'], 'local');
-    expect(payload['settings'], <String, dynamic>{
+    expect((materialized['habits'] as List).single['id'], 'local');
+    expect(materialized['settings'], <String, dynamic>{
       'username': 'Local user',
       'themeMode': 'dark',
     });
     expect(
-      (payload['settings'] as Map).keys,
+      (materialized['settings'] as Map).keys,
       isNot(contains(WebDavConfigStore.legacyPasswordKey)),
     );
   });
 
-  test('import replaces synchronized habits and settings exactly', () async {
-    await dataSource.importPayload(<String, dynamic>{
-      'habits': <dynamic>[_habitData('remote')],
-      'settings': <String, dynamic>{'username': 'Remote user'},
-    });
+  test('import merges CRDT habits and applies remote settings', () async {
+    await dataSource.initializeMigration();
+    await dataSource.importPayload(
+      await _payload(
+        habits: <dynamic>[_habitData('remote')],
+        settings: <String, dynamic>{'username': 'Remote user'},
+      ),
+    );
 
-    expect(repository.habits.map((habit) => habit.id), <String>['remote']);
+    expect(repository.habits.map((habit) => habit.id).toSet(), <String>{
+      'local',
+      'remote',
+    });
     final preferences = await SharedPreferences.getInstance();
     expect(preferences.getString('username'), 'Remote user');
-    expect(preferences.containsKey('themeMode'), isFalse);
+    expect(preferences.getString('themeMode'), 'dark');
     expect(
       preferences.getString(WebDavConfigStore.legacyPasswordKey),
       'must-not-sync',
@@ -64,15 +78,43 @@ void main() {
   });
 
   test(
+    'import preserves local writes made after the previous export',
+    () async {
+      await dataSource.exportPayload();
+      await repository.addHabit(
+        Habit(
+          id: 'during-sync',
+          name: 'Written during sync',
+          goalType: GoalType.positive,
+        ),
+      );
+
+      await dataSource.importPayload(
+        await _payload(
+          habits: <dynamic>[_habitData('remote')],
+          settings: <String, dynamic>{'username': 'Remote user'},
+        ),
+      );
+
+      expect(repository.habits.map((habit) => habit.id).toSet(), <String>{
+        'local',
+        'during-sync',
+        'remote',
+      });
+    },
+  );
+
+  test(
     'invalid remote habits leave local habits and settings unchanged',
     () async {
       final invalidHabit = _habitData('remote')..['goalType'] = 999;
+      final invalidPayload = await _payload(
+        habits: <dynamic>[invalidHabit],
+        settings: <String, dynamic>{'username': 'Remote user'},
+      );
 
       expect(
-        () => dataSource.importPayload(<String, dynamic>{
-          'habits': <dynamic>[invalidHabit],
-          'settings': <String, dynamic>{'username': 'Remote user'},
-        }),
+        () => dataSource.importPayload(invalidPayload),
         throwsA(isA<StateError>()),
       );
 
@@ -82,6 +124,51 @@ void main() {
       expect(preferences.getString('themeMode'), 'dark');
     },
   );
+
+  test('a removed habit is exported as a tombstone', () async {
+    await dataSource.exportPayload();
+    await repository.deleteHabit('local');
+
+    final payload = await dataSource.exportPayload();
+    final records = CrdtPayloadCodec.decode(payload)[SyncCrdtTables.habits]!;
+
+    expect(
+      records.singleWhere((record) => record['key'] == 'local')['is_deleted'],
+      isTrue,
+    );
+    final visible = await CrdtPayloadCodec.visibleTables(payload);
+    expect(visible[SyncCrdtTables.habits], isEmpty);
+  });
+
+  test('initial migration is idempotent and records its marker', () async {
+    await dataSource.initializeMigration();
+    final first = await dataSource.exportPayload();
+    await dataSource.initializeMigration();
+    final second = await dataSource.exportPayload();
+
+    expect(second, first);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getBool(BackupSyncDataSource.migrationCompleteKey),
+      isTrue,
+    );
+  });
+}
+
+Future<Map<String, dynamic>> _payload({
+  required List<dynamic> habits,
+  required Map<String, dynamic> settings,
+}) async {
+  final remote = MapCrdt(SyncCrdtTables.all);
+  final desired = CrdtDomainMapper.desiredTables(
+    habits: habits,
+    settings: settings,
+  );
+  final nonEmpty = Map<String, Map<String, dynamic>>.fromEntries(
+    desired.entries.where((entry) => entry.value.isNotEmpty),
+  );
+  if (nonEmpty.isNotEmpty) await remote.putAll(nonEmpty);
+  return CrdtPayloadCodec.encode(remote.getChangeset());
 }
 
 Map<String, dynamic> _habitData(String id) => <String, dynamic>{

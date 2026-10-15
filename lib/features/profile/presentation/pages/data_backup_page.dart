@@ -618,61 +618,6 @@ class _DataBackupPageState extends State<DataBackupPage>
   ) async {
     final result = await provider.synchronize();
     if (!context.mounted) return;
-
-    if (result.action == SyncAction.conflict) {
-      await _resolveSyncConflict(context, provider, result);
-      return;
-    }
-    await _finishSyncInteraction(context, result);
-  }
-
-  Future<void> _resolveSyncConflict(
-    BuildContext context,
-    WebDavBackupProvider provider,
-    SyncResult conflict,
-  ) async {
-    final reason = conflict.conflictReason;
-    final canChooseRemote =
-        reason == SyncConflictReason.firstSyncDiverged ||
-        reason == SyncConflictReason.bothSidesChanged;
-    final canChooseLocal =
-        canChooseRemote ||
-        reason == SyncConflictReason.remoteDeleted ||
-        reason == SyncConflictReason.changedDuringWrite;
-
-    final resolution = await showDialog<SyncConflictResolution>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('发现同步冲突'),
-        content: Text(_syncConflictMessage(reason)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('暂不处理'),
-          ),
-          if (canChooseRemote)
-            TextButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                SyncConflictResolution.remoteWins,
-              ),
-              child: const Text('使用远端数据'),
-            ),
-          if (canChooseLocal)
-            FilledButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                SyncConflictResolution.localWins,
-              ),
-              child: const Text('使用本地数据'),
-            ),
-        ],
-      ),
-    );
-    if (resolution == null || !context.mounted) return;
-
-    final result = await provider.synchronize(resolution: resolution);
-    if (!context.mounted) return;
     await _finishSyncInteraction(context, result);
   }
 
@@ -680,7 +625,8 @@ class _DataBackupPageState extends State<DataBackupPage>
     BuildContext context,
     SyncResult result,
   ) async {
-    if (result.action == SyncAction.downloaded) {
+    if (result.action == SyncAction.downloaded ||
+        result.action == SyncAction.merged) {
       await context.read<HabitProvider>().loadHabits();
       if (!context.mounted) return;
       await context.read<PersonalizationProvider>().initialize();
@@ -693,33 +639,18 @@ class _DataBackupPageState extends State<DataBackupPage>
     ).showSnackBar(SnackBar(content: Text(_syncResultMessage(result))));
   }
 
-  String _syncConflictMessage(SyncConflictReason? reason) {
-    switch (reason) {
-      case SyncConflictReason.firstSyncDiverged:
-        return '这是首次同步，但本地与远端已有不同数据。请选择保留哪一份；使用本地数据前会先保存远端快照。';
-      case SyncConflictReason.bothSidesChanged:
-        return '上次同步后，本地和远端都发生了变化，无法自动判断应保留哪一份。';
-      case SyncConflictReason.remoteDeleted:
-        return '远端同步文件已被删除。你可以使用本地数据重新创建远端文件。';
-      case SyncConflictReason.changedDuringWrite:
-        return '写入前远端文件又发生了变化。重新选择使用本地数据时，会基于最新远端版本再确认并保留快照。';
-      case SyncConflictReason.localChangedDuringSync:
-        return '同步期间本地数据又发生了变化，本次没有覆盖这些新修改。请稍后重新同步。';
-      case null:
-        return '无法安全地自动合并本地与远端数据，本次没有覆盖任何一方。';
-    }
-  }
-
   String _syncResultMessage(SyncResult result) {
     switch (result.action) {
       case SyncAction.uploaded:
         return '同步完成：本地数据已安全上传';
       case SyncAction.downloaded:
         return '同步完成：远端数据已应用到本地';
+      case SyncAction.merged:
+        return '同步完成：本地与远端改动已自动合并';
       case SyncAction.unchanged:
         return '同步完成：本地与远端已经一致';
       case SyncAction.conflict:
-        return '仍存在同步冲突，本次没有覆盖数据';
+        return '远端持续发生并发写入，自动合并暂未收敛；请稍后重试，本次没有覆盖未合并的数据';
       case SyncAction.failed:
         return '同步失败：${result.error ?? '请检查 WebDAV 配置与网络'}';
     }

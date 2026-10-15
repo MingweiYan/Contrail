@@ -5,6 +5,7 @@ import 'package:contrail/core/storage/local_data_store.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 import 'package:contrail/features/profile/domain/services/webdav_credential_store.dart';
 import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
+import 'package:contrail/features/sync/domain/crdt_payload.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
@@ -27,10 +28,15 @@ void main() {
   });
 
   tearDown(() async {
-    if (Hive.isBoxOpen(LocalDataStore.habitsBoxName)) {
-      await Hive.box<Habit>(LocalDataStore.habitsBoxName).close();
-    }
+    // HiveCrdt opens typed Record boxes internally. Close every open box
+    // through Hive before deleting the IndexedDB databases so teardown does
+    // not attempt to reopen those boxes with an incompatible dynamic type.
+    await Hive.close();
     await Hive.deleteBoxFromDisk(LocalDataStore.habitsBoxName);
+    for (final table in SyncCrdtTables.all) {
+      final boxName = '${LocalDataStore.syncCrdtPrefix}_$table';
+      await Hive.deleteBoxFromDisk(boxName);
+    }
     await BrowserPersistentWebDavCredentialStore().deletePassword();
     SharedPreferences.resetStatic();
   });
@@ -50,6 +56,24 @@ void main() {
 
     expect(restored?.id, 'browser-habit');
     expect(restored?.name, 'Browser persistence');
+  });
+
+  test('CRDT records survive an IndexedDB box close and reopen', () async {
+    final store = LocalDataStore();
+    final first = await store.openSyncCrdt();
+    await first.purge();
+    await first.put(SyncCrdtTables.habits, 'browser-habit', {
+      'id': 'browser-habit',
+      'name': 'CRDT persistence',
+    });
+    await first.close();
+
+    final reopened = await store.openSyncCrdt();
+
+    expect(
+      (reopened.get(SyncCrdtTables.habits, 'browser-habit') as Map)['name'],
+      'CRDT persistence',
+    );
   });
 
   test('an unconfigured WebDAV service makes no outbound request', () async {
