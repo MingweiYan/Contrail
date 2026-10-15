@@ -143,6 +143,31 @@ void main() {
     },
   );
 
+  test('uses a provider-specific bare ETag verbatim for If-Match', () async {
+    final requests = <http.Request>[];
+    final transport = WebDavSyncTransport(
+      configStore: configuredStore(),
+      client: MockClient((request) async {
+        requests.add(request);
+        if (request.method == 'MKCOL') return http.Response('', 405);
+        return http.Response(
+          '',
+          204,
+          headers: <String, String>{'etag': 'next_bare-etag'},
+        );
+      }),
+    );
+
+    final result = await transport.writeCurrent(
+      document('local'),
+      expectedVersion: 'bare_etag-token',
+    );
+
+    expect(requests.last.headers['if-match'], 'bare_etag-token');
+    expect(result.status, SyncWriteStatus.written);
+    expect(result.version, 'next_bare-etag');
+  });
+
   test('fails closed when a server did not provide a usable ETag', () async {
     final requests = <http.Request>[];
     final transport = WebDavSyncTransport(
@@ -156,6 +181,25 @@ void main() {
     final result = await transport.writeCurrent(
       document('local'),
       expectedVersion: document('old').checksum,
+    );
+
+    expect(result.status, SyncWriteStatus.conflict);
+    expect(requests.map((request) => request.method), <String>['MKCOL']);
+  });
+
+  test('does not treat the If-Match wildcard as a version', () async {
+    final requests = <http.Request>[];
+    final transport = WebDavSyncTransport(
+      configStore: configuredStore(),
+      client: MockClient((request) async {
+        requests.add(request);
+        return http.Response('', 405);
+      }),
+    );
+
+    final result = await transport.writeCurrent(
+      document('local'),
+      expectedVersion: '*',
     );
 
     expect(result.status, SyncWriteStatus.conflict);
