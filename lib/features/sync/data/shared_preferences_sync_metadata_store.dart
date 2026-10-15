@@ -13,7 +13,8 @@ class SharedPreferencesSyncMetadataStore implements SyncMetadataStore {
        _createDeviceId = createDeviceId ?? const Uuid().v4;
 
   static const deviceIdKey = 'sync_device_id';
-  static const checkpointKey = 'sync_checkpoint_v1';
+  static const checkpointKey = 'sync_checkpoint_v2';
+  static const legacyCheckpointKey = 'sync_checkpoint_v1';
 
   final Future<SharedPreferences> Function() _preferences;
   final String Function() _createDeviceId;
@@ -52,5 +53,6 @@ class SharedPreferencesSyncMetadataStore implements SyncMetadataStore {
   Future<void> clearCheckpoint() async {
     final prefs = await _preferences();
     await prefs.remove(checkpointKey);
+    await prefs.remove(legacyCheckpointKey);
   }
 }

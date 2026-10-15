@@ -5,26 +5,40 @@ import 'package:contrail/core/storage/local_data_store.dart';
 import 'package:contrail/features/profile/domain/services/webdav_config_store.dart';
 import 'package:contrail/features/profile/domain/services/webdav_credential_store.dart';
 import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
+import 'package:contrail/features/sync/domain/crdt_payload.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_web/shared_preferences_web.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
+  setUpAll(() {
+    SharedPreferencesPlugin.registerWith(null);
+  });
+
+  setUp(() async {
+    SharedPreferences.resetStatic();
+    await BrowserPersistentWebDavCredentialStore().deletePassword();
+    SharedPreferences.resetStatic();
   });
 
   tearDown(() async {
-    if (Hive.isBoxOpen(LocalDataStore.habitsBoxName)) {
-      await Hive.box<Habit>(LocalDataStore.habitsBoxName).close();
-    }
+    // HiveCrdt opens typed Record boxes internally. Close every open box
+    // through Hive before deleting the IndexedDB databases so teardown does
+    // not attempt to reopen those boxes with an incompatible dynamic type.
+    await Hive.close();
     await Hive.deleteBoxFromDisk(LocalDataStore.habitsBoxName);
+    for (final table in SyncCrdtTables.all) {
+      final boxName = '${LocalDataStore.syncCrdtPrefix}_$table';
+      await Hive.deleteBoxFromDisk(boxName);
+    }
     await BrowserPersistentWebDavCredentialStore().deletePassword();
+    SharedPreferences.resetStatic();
   });
 
   test('habit data survives an IndexedDB box close and reopen', () async {
@@ -42,6 +56,24 @@ void main() {
 
     expect(restored?.id, 'browser-habit');
     expect(restored?.name, 'Browser persistence');
+  });
+
+  test('CRDT records survive an IndexedDB box close and reopen', () async {
+    final store = LocalDataStore();
+    final first = await store.openSyncCrdt();
+    await first.purge();
+    await first.put(SyncCrdtTables.habits, 'browser-habit', {
+      'id': 'browser-habit',
+      'name': 'CRDT persistence',
+    });
+    await first.close();
+
+    final reopened = await store.openSyncCrdt();
+
+    expect(
+      (reopened.get(SyncCrdtTables.habits, 'browser-habit') as Map)['name'],
+      'CRDT persistence',
+    );
   });
 
   test('an unconfigured WebDAV service makes no outbound request', () async {
@@ -75,6 +107,9 @@ void main() {
       path: 'Contrail',
     );
 
+    // Drop the in-process cache so the next instance must read the value back
+    // from the browser's persistent localStorage implementation.
+    SharedPreferences.resetStatic();
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.containsKey(WebDavConfigStore.legacyPasswordKey), isFalse);
     expect(

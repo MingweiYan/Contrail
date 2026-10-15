@@ -22,60 +22,74 @@ class SyncCoordinator {
     required SyncEngine engine,
     required LocalSyncDataSource localDataSource,
     required SyncMetadataStore metadataStore,
+    this.maxConvergenceRounds = 3,
   }) : _engine = engine,
        _localDataSource = localDataSource,
-       _metadataStore = metadataStore;
+       _metadataStore = metadataStore,
+       assert(maxConvergenceRounds > 0);
 
   final SyncEngine _engine;
   final LocalSyncDataSource _localDataSource;
   final SyncMetadataStore _metadataStore;
+  final int maxConvergenceRounds;
 
   Future<SyncResult> synchronize({
     SyncConflictResolution resolution = SyncConflictResolution.manual,
   }) async {
     final deviceId = await _metadataStore.loadOrCreateDeviceId();
-    final checkpoint = await _metadataStore.loadCheckpoint();
-    final localPayload = await _localDataSource.exportPayload();
-    final result = await _engine.synchronize(
-      deviceId: deviceId,
-      localPayload: localPayload,
-      checkpoint: checkpoint,
-      resolution: resolution,
-    );
+    var checkpoint = await _metadataStore.loadCheckpoint();
+    var appliedRemoteChanges = false;
 
-    if (result.action == SyncAction.downloaded) {
-      final remoteDocument = result.remoteDocument;
+    for (var round = 0; round < maxConvergenceRounds; round++) {
+      final localPayload = await _localDataSource.exportPayload();
+      final result = await _engine.synchronize(
+        deviceId: deviceId,
+        localPayload: localPayload,
+        checkpoint: checkpoint,
+        resolution: resolution,
+      );
+      if (!result.isSuccess) return result;
+
+      final mergedDocument = result.remoteDocument;
+      if (mergedDocument != null) {
+        try {
+          await _localDataSource.importPayload(mergedDocument.payload);
+          appliedRemoteChanges = true;
+        } catch (error) {
+          return SyncResult(action: SyncAction.failed, error: error);
+        }
+      }
+
       final nextCheckpoint = result.checkpoint;
-      if (remoteDocument == null || nextCheckpoint == null) {
+      if (nextCheckpoint == null) {
         return SyncResult(
           action: SyncAction.failed,
-          error: StateError('Downloaded sync result is incomplete'),
+          error: StateError('Successful sync result has no checkpoint'),
         );
       }
-      try {
-        final latestLocalPayload = await _localDataSource.exportPayload();
-        if (SyncDocument.hashPayload(latestLocalPayload) !=
-            SyncDocument.hashPayload(localPayload)) {
+      await _metadataStore.saveCheckpoint(nextCheckpoint);
+      checkpoint = nextCheckpoint;
+
+      // A write can happen locally while the WebDAV request is in flight.
+      // Re-export after applying the merge and make another bounded pass when
+      // the remote checkpoint does not yet contain that write.
+      final latestPayload = await _localDataSource.exportPayload();
+      if (SyncDocument.hashPayload(latestPayload) ==
+          nextCheckpoint.payloadHash) {
+        if (appliedRemoteChanges && result.action != SyncAction.downloaded) {
           return SyncResult(
-            action: SyncAction.conflict,
-            conflictReason: SyncConflictReason.localChangedDuringSync,
-            remoteDocument: remoteDocument,
+            action: SyncAction.merged,
+            checkpoint: nextCheckpoint,
           );
         }
-        await _localDataSource.importPayload(remoteDocument.payload);
-        await _metadataStore.saveCheckpoint(nextCheckpoint);
-      } catch (error) {
-        return SyncResult(action: SyncAction.failed, error: error);
+        return result;
       }
-      return result;
     }
 
-    if ((result.action == SyncAction.uploaded ||
-            result.action == SyncAction.unchanged) &&
-        result.checkpoint != null) {
-      await _metadataStore.saveCheckpoint(result.checkpoint!);
-    }
-    return result;
+    return const SyncResult(
+      action: SyncAction.conflict,
+      conflictReason: SyncConflictReason.localChangedDuringSync,
+    );
   }
 
   Future<void> resetCheckpoint() => _metadataStore.clearCheckpoint();

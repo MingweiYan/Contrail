@@ -3,6 +3,7 @@ import 'package:contrail/core/storage/local_data_store.dart';
 import 'package:contrail/shared/services/habit_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_crdt/hive_crdt.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/features/profile/domain/services/storage_service_interface.dart';
 import 'package:contrail/features/profile/domain/services/platform_local_storage_service.dart';
@@ -67,7 +68,7 @@ Future<void> init() async {
 
   // 领域层 - 按模块组织
   _initHabitDomainLayer();
-  _initProfileDomainLayer();
+  await _initProfileDomainLayer();
 
   // 初始化习惯颜色映射
   try {
@@ -89,6 +90,7 @@ Future<void> initBackgroundBackupDependencies() async {
 Future<void> _initDataLayer() async {
   if (_dataLayerInitialized) return;
   final habitBox = await LocalDataStore().openHabitsBox();
+  final syncCrdt = await LocalDataStore().openSyncCrdt();
   if (!sl.isRegistered<Box<Habit>>()) {
     sl.registerLazySingleton<Box<Habit>>(() => habitBox);
   }
@@ -96,6 +98,9 @@ Future<void> _initDataLayer() async {
   // 注册Repository
   if (!sl.isRegistered<HabitRepository>()) {
     sl.registerLazySingleton<HabitRepository>(() => HiveHabitRepository(sl()));
+  }
+  if (!sl.isRegistered<HiveCrdt>()) {
+    sl.registerSingleton<HiveCrdt>(syncCrdt);
   }
   _dataLayerInitialized = true;
 }
@@ -124,7 +129,7 @@ void _initHabitDomainLayer() {
 }
 
 // 初始化Profile模块领域层
-void _initProfileDomainLayer() {
+Future<void> _initProfileDomainLayer() async {
   // 注册存储服务
   _registerSingletonIfAbsent<StorageServiceInterface>(
     createPlatformLocalStorageService(),
@@ -139,12 +144,13 @@ void _initProfileDomainLayer() {
   _registerSingletonIfAbsent<SyncMetadataStore>(
     SharedPreferencesSyncMetadataStore(),
   );
-  _registerSingletonIfAbsent<LocalSyncDataSource>(
-    BackupSyncDataSource(
-      habitRepository: sl<HabitRepository>(),
-      habitService: sl<HabitService>(),
-    ),
+  final localSyncDataSource = BackupSyncDataSource(
+    habitRepository: sl<HabitRepository>(),
+    habitService: sl<HabitService>(),
+    crdt: sl<HiveCrdt>(),
   );
+  await localSyncDataSource.initializeMigration();
+  _registerSingletonIfAbsent<LocalSyncDataSource>(localSyncDataSource);
   _registerSingletonIfAbsent<SyncEngine>(SyncEngine(transport: sl()));
   _registerSingletonIfAbsent<SyncCoordinator>(
     SyncCoordinator(engine: sl(), localDataSource: sl(), metadataStore: sl()),

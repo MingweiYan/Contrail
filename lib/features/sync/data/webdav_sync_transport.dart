@@ -18,7 +18,8 @@ class WebDavSyncTransport implements SyncTransport {
     http.Client? client,
     WebDavRequestClient? requestClient,
     DateTime Function()? now,
-    this.currentFileName = 'contrail_sync.json',
+    this.currentFileName = 'contrail_crdt_v2.json',
+    this.legacyFileName = 'contrail_sync.json',
   }) : _configStore = configStore ?? WebDavConfigStore(),
        _requestClient =
            requestClient ??
@@ -29,14 +30,26 @@ class WebDavSyncTransport implements SyncTransport {
   final WebDavRequestClient _requestClient;
   final DateTime Function() _now;
   final String currentFileName;
+  final String legacyFileName;
 
   @override
   Future<RemoteSyncObject?> readCurrent() async {
     final connection = await _loadConnection();
+    final current = await _readFile(connection, currentFileName);
+    if (current != null || legacyFileName == currentFileName) {
+      return current;
+    }
+    return _readFile(connection, legacyFileName);
+  }
+
+  Future<RemoteSyncObject?> _readFile(
+    _WebDavConnection connection,
+    String fileName,
+  ) async {
     final response = await _send(
       connection,
       'GET',
-      _fileUri(connection, currentFileName),
+      _fileUri(connection, fileName),
     );
     if (response.statusCode == 404) {
       return null;

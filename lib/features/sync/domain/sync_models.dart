@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
-enum SyncAction { uploaded, downloaded, unchanged, conflict, failed }
+enum SyncAction { uploaded, downloaded, merged, unchanged, conflict, failed }
 
 enum SyncConflictReason {
   firstSyncDiverged,
@@ -15,10 +15,12 @@ enum SyncConflictReason {
 enum SyncConflictResolution { manual, localWins, remoteWins }
 
 class SyncDocument {
-  static const int currentSchemaVersion = 1;
+  static const int legacySchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
   static const String checksumAlgorithm = 'sha256';
 
   const SyncDocument._({
+    required this.schemaVersion,
     required this.deviceId,
     required this.revision,
     required this.updatedAt,
@@ -28,6 +30,35 @@ class SyncDocument {
   });
 
   factory SyncDocument.create({
+    required String deviceId,
+    required int revision,
+    required DateTime updatedAt,
+    required Map<String, dynamic> payload,
+  }) => _create(
+    schemaVersion: currentSchemaVersion,
+    deviceId: deviceId,
+    revision: revision,
+    updatedAt: updatedAt,
+    payload: payload,
+  );
+
+  /// Builds a verified v1 document for migration tests and compatibility
+  /// tooling. Production writes always use [create].
+  factory SyncDocument.createLegacy({
+    required String deviceId,
+    required int revision,
+    required DateTime updatedAt,
+    required Map<String, dynamic> payload,
+  }) => _create(
+    schemaVersion: legacySchemaVersion,
+    deviceId: deviceId,
+    revision: revision,
+    updatedAt: updatedAt,
+    payload: payload,
+  );
+
+  static SyncDocument _create({
+    required int schemaVersion,
     required String deviceId,
     required int revision,
     required DateTime updatedAt,
@@ -44,7 +75,7 @@ class SyncDocument {
     final immutablePayload = _freeze(canonicalPayload) as Map<String, dynamic>;
     final payloadHash = _hash(canonicalPayload);
     final protected = <String, dynamic>{
-      'schemaVersion': currentSchemaVersion,
+      'schemaVersion': schemaVersion,
       'deviceId': deviceId,
       'revision': revision,
       'updatedAt': updatedAt.toUtc().toIso8601String(),
@@ -52,6 +83,7 @@ class SyncDocument {
       'payloadHash': '$checksumAlgorithm:$payloadHash',
     };
     return SyncDocument._(
+      schemaVersion: schemaVersion,
       deviceId: deviceId,
       revision: revision,
       updatedAt: updatedAt.toUtc(),
@@ -63,7 +95,8 @@ class SyncDocument {
 
   factory SyncDocument.fromJson(Map<String, dynamic> json) {
     final schemaVersion = json['schemaVersion'];
-    if (schemaVersion != currentSchemaVersion) {
+    if (schemaVersion != currentSchemaVersion &&
+        schemaVersion != legacySchemaVersion) {
       throw FormatException('Unsupported sync schema version: $schemaVersion');
     }
     final deviceId = json['deviceId'];
@@ -105,6 +138,7 @@ class SyncDocument {
     }
 
     return SyncDocument._(
+      schemaVersion: schemaVersion as int,
       deviceId: deviceId,
       revision: revision,
       updatedAt: updatedAt.toUtc(),
@@ -114,6 +148,7 @@ class SyncDocument {
     );
   }
 
+  final int schemaVersion;
   final String deviceId;
   final int revision;
   final DateTime updatedAt;
@@ -121,8 +156,10 @@ class SyncDocument {
   final String payloadHash;
   final String checksum;
 
+  bool get isLegacy => schemaVersion == legacySchemaVersion;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'schemaVersion': currentSchemaVersion,
+    'schemaVersion': schemaVersion,
     'deviceId': deviceId,
     'revision': revision,
     'updatedAt': updatedAt.toUtc().toIso8601String(),
@@ -133,6 +170,11 @@ class SyncDocument {
 
   static String hashPayload(Map<String, dynamic> payload) =>
       '$checksumAlgorithm:${_hash(_stringMap(payload, 'payload'))}';
+
+  static bool payloadsEqual(
+    Map<String, dynamic> left,
+    Map<String, dynamic> right,
+  ) => hashPayload(left) == hashPayload(right);
 
   static String _hash(Object? value) =>
       sha256.convert(utf8.encode(jsonEncode(_canonicalize(value)))).toString();
@@ -240,5 +282,6 @@ class SyncResult {
   bool get isSuccess =>
       action == SyncAction.uploaded ||
       action == SyncAction.downloaded ||
+      action == SyncAction.merged ||
       action == SyncAction.unchanged;
 }

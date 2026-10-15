@@ -29,6 +29,7 @@ void main() {
       SyncDocument.fromJson(document.toJson()).checksum,
       document.checksum,
     );
+    expect(document.schemaVersion, SyncDocument.currentSchemaVersion);
   });
 
   test('canonical hashing is independent of map insertion order', () {
@@ -42,5 +43,23 @@ void main() {
     };
 
     expect(SyncDocument.hashPayload(first), SyncDocument.hashPayload(second));
+  });
+
+  test('verified legacy documents remain readable for one-time migration', () {
+    final legacy = SyncDocument.createLegacy(
+      deviceId: 'legacy-device',
+      revision: 2,
+      updatedAt: DateTime.utc(2026, 10, 8),
+      payload: <String, dynamic>{
+        'habits': <dynamic>[],
+        'settings': <String, dynamic>{},
+      },
+    );
+
+    final restored = SyncDocument.fromJson(legacy.toJson());
+
+    expect(restored.isLegacy, isTrue);
+    expect(restored.schemaVersion, SyncDocument.legacySchemaVersion);
+    expect(restored.checksum, legacy.checksum);
   });
 }

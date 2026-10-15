@@ -10,6 +10,7 @@ void main() {
     expect(indexHtml, isNot(contains('id="splash"')));
     expect(indexHtml, isNot(contains('splash/img/')));
     expect(indexHtml, isNot(contains('removeSplashFromWeb')));
+    expect(indexHtml, contains('{{flutter_bootstrap_js}}'));
     expect(bootstrap, isNot(contains('removeSplashFromWeb')));
     expect(bootstrap, contains('await appRunner.runApp()'));
   });

@@ -57,7 +57,7 @@ void main() {
     expect(request.method, 'GET');
     expect(
       request.url.toString(),
-      'https://storage.example/dav/Contrail/contrail_sync.json',
+      'https://storage.example/dav/Contrail/contrail_crdt_v2.json',
     );
     expect(request.headers['authorization'], 'Basic YWxpY2U6c2VjcmV0');
     expect(result?.document.payload, <String, dynamic>{'value': 'remote'});
@@ -231,7 +231,7 @@ void main() {
     expect(put.url.toString(), 'https://app.example/api/webdav');
     expect(
       put.headers[WebDavRequestClient.targetUrlHeader.toLowerCase()],
-      'https://storage.example/dav/Contrail/contrail_sync.json',
+      'https://storage.example/dav/Contrail/contrail_crdt_v2.json',
     );
     expect(put.headers['if-match'], '"v1"');
     expect(
@@ -239,4 +239,41 @@ void main() {
       'Basic YWxpY2U6c2VjcmV0',
     );
   });
+
+  test(
+    'falls back to the verified legacy document when v2 is absent',
+    () async {
+      final legacy = SyncDocument.createLegacy(
+        deviceId: 'legacy-device',
+        revision: 3,
+        updatedAt: updatedAt,
+        payload: <String, dynamic>{
+          'habits': <dynamic>[],
+          'settings': <String, dynamic>{},
+        },
+      );
+      final requests = <http.Request>[];
+      final transport = WebDavSyncTransport(
+        configStore: configuredStore(),
+        client: MockClient((request) async {
+          requests.add(request);
+          if (request.url.path.endsWith('contrail_crdt_v2.json')) {
+            return http.Response('', 404);
+          }
+          return http.Response(
+            jsonEncode(legacy.toJson()),
+            200,
+            headers: <String, String>{'etag': '"legacy-v3"'},
+          );
+        }),
+      );
+
+      final result = await transport.readCurrent();
+
+      expect(requests, hasLength(2));
+      expect(requests.last.url.path, endsWith('/contrail_sync.json'));
+      expect(result?.document.isLegacy, isTrue);
+      expect(result?.version, '"legacy-v3"');
+    },
+  );
 }
