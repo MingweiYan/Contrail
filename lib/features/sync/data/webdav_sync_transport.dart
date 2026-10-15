@@ -13,6 +13,10 @@ import 'package:http/http.dart' as http;
 /// server. Web builds may instead use Contrail's stateless compatibility
 /// gateway when the provider does not support browser CORS.
 class WebDavSyncTransport implements SyncTransport {
+  static final RegExp _bareEntityTagPattern = RegExp(
+    r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$",
+  );
+
   WebDavSyncTransport({
     WebDavConfigStore? configStore,
     http.Client? client,
@@ -226,8 +230,21 @@ class WebDavSyncTransport implements SyncTransport {
         : entityTag;
   }
 
-  bool _isEntityTag(String version) =>
-      version.startsWith('"') || version.startsWith('W/"');
+  bool _isEntityTag(String version) {
+    final entityTag = version.trim();
+    if (entityTag.startsWith('"')) {
+      return entityTag.length >= 2 && entityTag.endsWith('"');
+    }
+    if (entityTag.startsWith('W/"')) {
+      return entityTag.length >= 4 && entityTag.endsWith('"');
+    }
+
+    // Some WebDAV providers (including Jianguoyun) return an opaque ETag
+    // token without the RFC-required quotes and expect that exact token in
+    // If-Match. Accept only an HTTP-token-shaped value so a payload checksum
+    // or malformed response can never be mistaken for a write precondition.
+    return entityTag != '*' && _bareEntityTagPattern.hasMatch(entityTag);
+  }
 
   String? _normalizedEntityTag(String? value) {
     final entityTag = value?.trim();
