@@ -422,6 +422,9 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
   late int _retentionCount;
   late WebDavAccessMode _accessMode;
   bool _obscurePassword = true;
+  bool _isHydratingForm = false;
+  bool _hasUserEditedForm = false;
+  bool _hasHydratedLoadedConfig = false;
 
   @override
   void initState() {
@@ -433,10 +436,44 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
     _pathController = TextEditingController(text: provider.webdavPath);
     _retentionCount = provider.retentionCount;
     _accessMode = provider.webdavAccessMode;
+    _hasHydratedLoadedConfig = provider.isConfigLoaded;
+    _urlController.addListener(_markFormEdited);
+    _usernameController.addListener(_markFormEdited);
+    _passwordController.addListener(_markFormEdited);
+    _pathController.addListener(_markFormEdited);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.watch<WebDavBackupProvider>();
+    if (!provider.isConfigLoaded || _hasHydratedLoadedConfig) return;
+
+    _hasHydratedLoadedConfig = true;
+    if (_hasUserEditedForm) return;
+
+    _isHydratingForm = true;
+    _urlController.text = provider.webdavUrl;
+    _usernameController.text = provider.webdavUsername;
+    _passwordController.text = provider.webdavPassword;
+    _pathController.text = provider.webdavPath;
+    _retentionCount = provider.retentionCount;
+    _accessMode = provider.webdavAccessMode;
+    _isHydratingForm = false;
+  }
+
+  void _markFormEdited() {
+    if (!_isHydratingForm) {
+      _hasUserEditedForm = true;
+    }
   }
 
   @override
   void dispose() {
+    _urlController.removeListener(_markFormEdited);
+    _usernameController.removeListener(_markFormEdited);
+    _passwordController.removeListener(_markFormEdited);
+    _pathController.removeListener(_markFormEdited);
     _urlController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();

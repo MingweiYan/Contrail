@@ -37,7 +37,26 @@ for _ in {1..50}; do
 done
 
 curl --fail --silent "http://127.0.0.1:$port/" \
-  | grep --quiet 'flutter_bootstrap.js'
+  | grep --quiet '_flutter.loader.load'
+
+for mutable_asset in \
+  index.html \
+  flutter.js \
+  flutter_bootstrap.js \
+  flutter_service_worker.js \
+  main.dart.js \
+  manifest.json \
+  version.json; do
+  cache_control="$({
+    curl --fail --silent --head \
+      "http://127.0.0.1:$port/$mutable_asset" \
+      | awk 'BEGIN { IGNORECASE=1 } /^Cache-Control:/ { print $0 }'
+  } | tr -d '\r')"
+  if [[ "$cache_control" != *"no-cache"* ]]; then
+    echo "Mutable Web shell asset is cacheable: $mutable_asset ($cache_control)" >&2
+    exit 1
+  fi
+done
 
 headers_file="$(mktemp)"
 trap 'rm -f "$headers_file"; cleanup' EXIT

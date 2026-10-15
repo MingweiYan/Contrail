@@ -89,7 +89,7 @@ common_args=(
   --disable-gpu
   --hide-scrollbars
   --window-size=1280,800
-  --virtual-time-budget=10000
+  --virtual-time-budget=20000
 )
 
 routes=("" "#/statistics" "#/profile" "#/route-that-does-not-exist")

@@ -100,15 +100,26 @@ Future<void> _serveStatic(HttpRequest request, Directory webRoot) async {
     ..set('Referrer-Policy', 'strict-origin-when-cross-origin')
     ..set(
       'Cache-Control',
-      file.path.endsWith('index.html')
-          ? 'no-cache, private'
-          : 'public, max-age=3600',
+      _mustRevalidate(file.path) ? 'no-cache, private' : 'public, max-age=3600',
     )
     ..contentType = _contentType(file.path);
   if (request.method == 'GET') {
     await request.response.addStream(file.openRead());
   }
   await request.response.close();
+}
+
+bool _mustRevalidate(String path) {
+  const mutableWebShellFiles = {
+    'index.html',
+    'flutter.js',
+    'flutter_bootstrap.js',
+    'flutter_service_worker.js',
+    'main.dart.js',
+    'manifest.json',
+    'version.json',
+  };
+  return mutableWebShellFiles.contains(File(path).uri.pathSegments.last);
 }
 
 ContentType _contentType(String path) {
