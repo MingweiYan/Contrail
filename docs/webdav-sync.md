@@ -1,27 +1,66 @@
 # WebDAV 双向同步
 
-Contrail 的同步采用 local-first 模式。应用运行数据始终先写入设备本地；Web 端由 Hive 使用浏览器 IndexedDB。同步支持两种连接方式：隐私直连模式由浏览器直接访问用户配置的 WebDAV；兼容模式由与 Web 应用一起部署的无状态 Gateway 转发，用于兼容不开放浏览器 CORS 的服务。
+Contrail 的同步采用 local-first 模式。应用运行数据始终先写入设备本地；
+Web 端由 Hive 使用浏览器 IndexedDB。同步支持两种连接方式：隐私直连模式
+由浏览器直接访问用户配置的 WebDAV；兼容模式由与 Web 应用一起部署的
+无状态 Gateway 转发，用于兼容不开放浏览器 CORS 的服务。
+
+## 同步与备份不是同一功能
+
+Contrail 保留了两条互不替代的数据保护链路：
+
+- **双向同步**使用固定文件 `contrail_crdt_v2.json`。它保存 CRDT changeset，
+  用于让多个设备合并并收敛到同一份当前状态。当前由用户点击“立即同步”触发。
+- **版本化备份**使用 `contrail_backup_<时间戳>.json`。它是一份可恢复的完整快照，
+  支持保留数量策略，也可以按自动备份策略生成；它不会参与 CRDT 合并。
+
+因此，“自动备份已开启”不等于“CRDT 会按固定间隔自动同步”。备份解决误删、
+损坏后的历史恢复；同步解决多设备当前数据一致性。
 
 ## 远端文件
 
-- 当前数据：`contrail_sync.json`
-- 冲突快照：`contrail_sync_snapshot_<UTC 毫秒>_<校验和前 12 位>.json`
-- 文档包含 schema 版本、设备 ID、单调递增 revision、更新时间、业务 payload、payload SHA-256 和整份文档 SHA-256。
-- WebDAV 密码不进入同步 payload 或备份文件。Web 端密码持久化在当前 Origin 的浏览器存储中，配置页默认隐藏并允许用户主动显示；清除站点数据或更换 Origin 后需要重新输入。
-- 兼容模式不会在 Gateway 持久化密码或业务数据，但 Gateway 会在单次请求期间处理凭据与请求/响应正文；部署者仍需被信任。
+- 当前 CRDT 数据：`contrail_crdt_v2.json`。
+- 旧版兼容文件：`contrail_sync.json`。新版只在 v2 文件不存在时读取它并迁移，
+  不再把它作为当前同步文件写入。
+- 版本化备份：`contrail_backup_<时间戳>.json`。
+- v2 文档包含 schema 版本、设备 ID、单调递增 revision、更新时间、CRDT payload、
+  payload SHA-256 和整份文档 SHA-256。
+- WebDAV 密码不进入同步 payload 或备份文件。Web 端密码持久化在当前 Origin
+  的浏览器存储中，配置页默认隐藏并允许用户主动显示；清除站点数据或更换
+  Origin 后需要重新输入。
+- 兼容模式不会在 Gateway 持久化密码或业务数据，但 Gateway 会在单次请求期间
+  处理凭据与请求/响应正文；部署者仍需被信任。
 
-## 合并规则
+## CRDT 合并与条件写入
 
-同步检查点记录上次成功同步的远端版本、payload hash 与 revision：
+同步内容按独立记录拆分为 `habits`、`daily_status`、`tracking_sessions` 和
+`settings`。不同记录的并发修改会全部保留；同一记录的并发修改由 HLC/LWW
+规则确定最终值，删除以 tombstone 传播。
 
-1. 远端不存在且没有检查点：使用 `If-None-Match: *` 首次上传。
-2. 只有本地变化：先保存远端快照，再使用远端 ETag 和 `If-Match` 条件更新。
-3. 只有远端变化：先确认同步期间本地未再次变化，再原子替换本地习惯和设置，成功后提交检查点。
-4. 本地与远端同时变化或首次同步内容不同：不自动覆盖，由用户选择本地或远端。被替换的数据先写入远端快照。
-5. 已同步的远端文件被删除：默认报告冲突；用户可明确选择用本地数据重新创建。
-6. HTTP 408、425、429 与 5xx 等瞬时失败使用指数退避重试。
+同步循环如下：
 
-远端服务器必须返回 ETag 才能安全更新已有同步文件。没有 ETag 时，Contrail 会报告冲突，而不会退化为可能覆盖并发修改的无条件 PUT。
+1. 校验本地 CRDT changeset，再读取远端文档及 ETag。
+2. 本地和远端 changeset 在内存中合并。
+3. 远端不存在时以 `If-None-Match: *` 创建，避免两个设备同时抢建文件。
+4. 远端存在时以刚读取的 ETag 作为 `If-Match` 条件写入。
+5. 若服务器返回 409/412，说明读写之间远端已变化；客户端重新读取、合并并重试。
+6. 下载或合并的数据先安全应用到本地，成功后才提交同步检查点。
+7. 若网络往返期间又发生本地写入，协调器会重新导出并做有限轮次的收敛。
+
+ETag 负责检测远端文件的写入竞态，CRDT 负责合并业务内容。没有可用 ETag 时，
+Contrail 会失败关闭，不会退化为可能静默覆盖其他设备修改的无条件 PUT。
+HTTP 408、425、429 与 5xx 等瞬时失败会使用指数退避重试。
+
+## 自动备份的实际调度
+
+- Android 使用 WorkManager 周期任务；系统可能因省电策略延后执行，因此“每天”
+  表示到期后尽快运行，不保证精确到固定时刻。
+- iOS 使用系统 BGProcessingTask，实际执行时间同样由系统决定。
+- Web/桌面没有可靠的网页后台定时器。应用会在启动和恢复到前台时检查备份窗口；
+  到期且 WebDAV 已配置时生成新的版本化备份。关闭网页后不会在后台继续运行。
+
+自动备份只生成版本化快照，不会调用 CRDT 双向同步。若未来需要自动多端同步，
+应另行定义启动、回前台、保存后延迟同步和并发重试策略。
 
 ## 浏览器限制
 
@@ -29,9 +68,14 @@ Contrail 的同步采用 local-first 模式。应用运行数据始终先写入�
 
 - 使用 HTTPS；HTTPS 页面不能访问 HTTP WebDAV（mixed content）；
 - 允许部署站点 Origin 的 CORS；
-- 放行 `GET`、`PUT`、`MKCOL`，以及 `Authorization`、`Content-Type`、`If-Match`、`If-None-Match` 请求头；
+- 放行 `GET`、`PUT`、`MKCOL`，以及 `Authorization`、`Content-Type`、
+  `If-Match`、`If-None-Match` 请求头；
 - 暴露 `ETag` 响应头。
 
-坚果云等不允许浏览器跨域直连的服务，可以使用 Contrail 集成服务中的同源 Gateway。用户只需在 WebDAV 配置中选择“兼容模式”，不再额外部署一个 Gateway。纯 GitHub Pages 等静态部署仍没有服务端执行环境，因此只能直连，或在构建时配置一个外部 Gateway URL。
+坚果云等不允许浏览器跨域直连的服务，可以使用 Contrail 集成服务中的同源
+Gateway。用户只需在 WebDAV 配置中选择“兼容模式”，不需要再部署第二个
+Gateway。纯 GitHub Pages 没有服务端执行环境，因此演示站只能使用本地浏览器
+数据；WebDAV 仅在提供商允许该站点跨域直连时可用。
 
-Gateway 是字节转发层，不解析或修改同步文档，并原样保留 ETag 条件请求。因此三方合并、校验和、冲突快照与“无 ETag 时失败关闭”的语义和直连模式一致。
+Gateway 是字节转发层，不解析或修改同步文档，并原样保留 ETag 条件请求。
+因此 CRDT 合并、校验和以及“无 ETag 时失败关闭”的语义和直连模式一致。
