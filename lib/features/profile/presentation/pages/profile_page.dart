@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
-import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/features/habit/data/repositories/habit_repository.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/presentation/pages/theme_selection_page.dart';
 import 'package:contrail/features/profile/presentation/pages/data_backup_page.dart';
@@ -515,13 +515,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         actions: [
           ElevatedButton(
-            child: Text(
-              '取消',
-              style: TextStyle(
-                fontSize: AppTypographyConstants.dialogActionFontSize,
-                color: ThemeHelper.onPrimary(context),
-              ),
-            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: ThemeHelper.primary(
                 context,
@@ -531,15 +524,15 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             onPressed: () => Navigator.pop(context),
-          ),
-          ElevatedButton(
             child: Text(
-              '确认',
+              '取消',
               style: TextStyle(
                 fontSize: AppTypographyConstants.dialogActionFontSize,
-                color: ThemeHelper.onDestructive(context),
+                color: ThemeHelper.onPrimary(context),
               ),
             ),
+          ),
+          ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: ThemeHelper.destructive(context),
               shape: RoundedRectangleBorder(
@@ -548,13 +541,15 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             onPressed: () async {
               try {
-                await Hive.box<Habit>('habits').clear();
+                await sl<HabitRepository>().replaceHabits(const []);
+                if (!context.mounted) return;
 
                 final habitProvider = Provider.of<HabitProvider>(
                   context,
                   listen: false,
                 );
                 await habitProvider.loadHabits();
+                if (!context.mounted) return;
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -567,6 +562,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 );
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -578,8 +574,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 );
               }
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
+            child: Text(
+              '确认',
+              style: TextStyle(
+                fontSize: AppTypographyConstants.dialogActionFontSize,
+                color: ThemeHelper.onDestructive(context),
+              ),
+            ),
           ),
         ],
       ),

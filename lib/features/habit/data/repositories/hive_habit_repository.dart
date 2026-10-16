@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:hive/hive.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 import 'habit_repository.dart';
 
 class HiveHabitRepository implements HabitRepository {
   final Box<Habit> _habitBox;
   Future<void> _operationTail = Future<void>.value();
 
-  HiveHabitRepository(this._habitBox);
+  HiveHabitRepository(this._habitBox, {LocalSyncChangeBus? syncChangeBus})
+    : _syncChangeBus = syncChangeBus ?? LocalSyncChangeBus.instance;
+
+  final LocalSyncChangeBus _syncChangeBus;
 
   @override
   Future<List<Habit>> getHabits() => _synchronized(() async {
@@ -40,6 +44,7 @@ class HiveHabitRepository implements HabitRepository {
   Future<void> addHabit(Habit habit) => _synchronized(() async {
     try {
       await _habitBox.put(habit.id, habit);
+      _syncChangeBus.notifyChanged();
       logger.info('习惯添加成功，key: ${habit.id}');
     } catch (e) {
       logger.error('习惯添加失败', e);
@@ -51,6 +56,7 @@ class HiveHabitRepository implements HabitRepository {
   Future<void> updateHabit(Habit habit) => _synchronized(() async {
     try {
       await _habitBox.put(habit.id, habit);
+      _syncChangeBus.notifyChanged();
       logger.info('习惯更新成功，key: ${habit.id}');
     } catch (e) {
       logger.error('习惯更新失败', e);
@@ -62,6 +68,7 @@ class HiveHabitRepository implements HabitRepository {
   Future<void> deleteHabit(String id) => _synchronized(() async {
     try {
       await _habitBox.delete(id);
+      _syncChangeBus.notifyChanged();
       logger.info('习惯删除成功，key: $id');
     } catch (e) {
       logger.error('习惯删除失败，ID: $id', e);
@@ -91,6 +98,7 @@ class HiveHabitRepository implements HabitRepository {
         if (obsoleteKeys.isNotEmpty) {
           await _habitBox.deleteAll(obsoleteKeys);
         }
+        _syncChangeBus.notifyChanged();
         logger.info('习惯数据集替换成功，数量: ${habits.length}');
       } catch (error, stackTrace) {
         logger.error('习惯数据集替换失败，正在回滚', error);

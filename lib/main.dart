@@ -22,6 +22,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'features/profile/domain/services/auto_backup_service.dart';
 import 'features/profile/domain/services/auto_backup_scheduler.dart';
 import 'features/profile/domain/services/user_settings_service.dart';
+import 'features/sync/domain/automatic_sync_service.dart';
+import 'features/sync/domain/sync_models.dart';
 import 'shared/utils/debug_menu_manager.dart';
 import 'shared/layout/responsive_layout.dart';
 
@@ -93,6 +95,9 @@ void main() async {
 
         logger.info('启动应用...');
         runApp(const ContrailApp());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          unawaited(sl<AutomaticSyncService>().start());
+        });
       } catch (e, stackTrace) {
         logger.error('初始化过程中出错', e, stackTrace);
       }
@@ -127,6 +132,7 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      sl<AutomaticSyncService>().handleAppResumed();
       unawaited(sl<FocusTrackingManager>().synchronizeTime());
       // 前台恢复时兜底触发一次自动备份检查；不 await，不阻塞 UI。
       // checkAndPerformAutoBackup 内部有窗口判断，不会重复备份。
@@ -137,6 +143,10 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
             logger.warning('resume 触发自动备份检查失败: $e');
             return false;
           });
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      sl<AutomaticSyncService>().handleAppBackgrounded();
     }
   }
 
@@ -153,73 +163,133 @@ class _ContrailAppState extends State<ContrailApp> with WidgetsBindingObserver {
         ),
         ChangeNotifierProvider(create: (context) => StatisticsProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        ChangeNotifierProvider(create: (context) => BackupProvider()),
+        ChangeNotifierProvider(
+          create: (context) =>
+              BackupProvider(automaticSyncService: sl<AutomaticSyncService>()),
+        ),
         ChangeNotifierProvider(
           create: (context) => PersonalizationProvider()..initialize(),
         ),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          // 将自定义ThemeMode转换为Flutter的ThemeMode
-          ThemeMode flutterThemeMode;
-          switch (themeProvider.themeMode) {
-            case app_theme.ThemeMode.light:
-              flutterThemeMode = ThemeMode.light;
-              break;
-            case app_theme.ThemeMode.dark:
-              flutterThemeMode = ThemeMode.dark;
-              break;
-            case app_theme.ThemeMode.system:
-              flutterThemeMode = ThemeMode.system;
-              break;
-          }
+      child: _AutomaticSyncRefreshBridge(
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            // 将自定义ThemeMode转换为Flutter的ThemeMode
+            ThemeMode flutterThemeMode;
+            switch (themeProvider.themeMode) {
+              case app_theme.ThemeMode.light:
+                flutterThemeMode = ThemeMode.light;
+                break;
+              case app_theme.ThemeMode.dark:
+                flutterThemeMode = ThemeMode.dark;
+                break;
+              case app_theme.ThemeMode.system:
+                flutterThemeMode = ThemeMode.system;
+                break;
+            }
 
-          return ScreenUtilInit(
-            designSize: ResponsiveLayout.designSize,
-            minTextAdapt: true,
-            splitScreenMode: true,
-            enableScaleWH: () => ResponsiveLayout.shouldScaleCompactDimensions(
-              ScreenUtil().screenWidth,
-              isWeb: kIsWeb,
-            ),
-            enableScaleText: () =>
-                ResponsiveLayout.shouldScaleCompactDimensions(
-                  ScreenUtil().screenWidth,
-                  isWeb: kIsWeb,
-                ),
-            builder: (context, child) {
-              return MaterialApp.router(
-                title: 'Contrail',
-                theme: themeProvider.currentTheme.lightTheme,
-                darkTheme: themeProvider.currentTheme.darkTheme,
-                themeMode: flutterThemeMode,
-                // 添加本地化代理，包括flutter_quill所需的代理
-                localizationsDelegates: const [
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  FlutterQuillLocalizations.delegate,
-                ],
-                // 支持的语言
-                supportedLocales: const [
-                  Locale('zh', 'CN'), // 中文
-                  Locale('en', 'US'), // 英文
-                ],
-                // 使用GoRouter的路由配置
-                routerConfig: AppRouter.router,
-                builder: (context, child) {
-                  final routedApp = child ?? const SizedBox.shrink();
-                  if (!kIsWeb) {
-                    return routedApp;
-                  }
+            return ScreenUtilInit(
+              designSize: ResponsiveLayout.designSize,
+              minTextAdapt: true,
+              splitScreenMode: true,
+              enableScaleWH: () =>
+                  ResponsiveLayout.shouldScaleCompactDimensions(
+                    ScreenUtil().screenWidth,
+                    isWeb: kIsWeb,
+                  ),
+              enableScaleText: () =>
+                  ResponsiveLayout.shouldScaleCompactDimensions(
+                    ScreenUtil().screenWidth,
+                    isWeb: kIsWeb,
+                  ),
+              builder: (context, child) {
+                return MaterialApp.router(
+                  title: 'Contrail',
+                  theme: themeProvider.currentTheme.lightTheme,
+                  darkTheme: themeProvider.currentTheme.darkTheme,
+                  themeMode: flutterThemeMode,
+                  // 添加本地化代理，包括flutter_quill所需的代理
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    FlutterQuillLocalizations.delegate,
+                  ],
+                  // 支持的语言
+                  supportedLocales: const [
+                    Locale('zh', 'CN'), // 中文
+                    Locale('en', 'US'), // 英文
+                  ],
+                  // 使用GoRouter的路由配置
+                  routerConfig: AppRouter.router,
+                  builder: (context, child) {
+                    final routedApp = child ?? const SizedBox.shrink();
+                    if (!kIsWeb) {
+                      return routedApp;
+                    }
 
-                  return ProportionalViewportFrame(child: routedApp);
-                },
-              );
-            },
-          );
-        },
+                    return ProportionalViewportFrame(child: routedApp);
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
+}
+
+/// Refreshes in-memory view models after automatic sync materializes remote
+/// CRDT records into Hive/SharedPreferences.
+class _AutomaticSyncRefreshBridge extends StatefulWidget {
+  const _AutomaticSyncRefreshBridge({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AutomaticSyncRefreshBridge> createState() =>
+      _AutomaticSyncRefreshBridgeState();
+}
+
+class _AutomaticSyncRefreshBridgeState
+    extends State<_AutomaticSyncRefreshBridge> {
+  StreamSubscription<AutomaticSyncEvent>? _subscription;
+  Future<void> _refreshTail = Future<void>.value();
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = sl<AutomaticSyncService>().events.listen((event) {
+      if (event.result.action != SyncAction.downloaded &&
+          event.result.action != SyncAction.merged) {
+        return;
+      }
+      _refreshTail = _refreshTail.then((_) => _refreshProviders()).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        logger.warning('自动同步后刷新页面状态失败: $error');
+        logger.debug(stackTrace.toString());
+      });
+    });
+  }
+
+  Future<void> _refreshProviders() async {
+    if (!mounted) return;
+    await context.read<HabitProvider>().loadHabits();
+    if (!mounted) return;
+    await context.read<PersonalizationProvider>().initialize();
+    if (!mounted) return;
+    await context.read<ThemeProvider>().reload();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

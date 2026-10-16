@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 
 import '../../shared/models/theme_model.dart' as app_theme;
 import '../../shared/theme/custom_theme_palette.dart';
@@ -116,6 +117,7 @@ class ThemeProvider extends ChangeNotifier {
       ),
     );
     await prefs.remove(_legacyCustomThemePaletteKey);
+    LocalSyncChangeBus.instance.notifyChanged();
   }
 
   Future<void> setThemeMode(app_theme.ThemeMode mode) async {

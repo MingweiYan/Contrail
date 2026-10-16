@@ -11,8 +11,10 @@ void main() {
 
   test('web mode initializes without touching a local file system', () async {
     final provider = BackupProvider(
-      LocalBackupService(storageService: UnavailableLocalStorageService()),
-      false,
+      backupService: LocalBackupService(
+        storageService: UnavailableLocalStorageService(),
+      ),
+      supportsLocalFileBackups: false,
     );
 
     await provider.initialize();

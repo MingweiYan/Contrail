@@ -23,6 +23,8 @@ import 'package:contrail/features/habit/presentation/providers/habit_provider.da
 import 'package:contrail/features/sync/data/backup_sync_data_source.dart';
 import 'package:contrail/features/sync/data/shared_preferences_sync_metadata_store.dart';
 import 'package:contrail/features/sync/data/webdav_sync_transport.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 import 'package:contrail/features/sync/domain/sync_coordinator.dart';
 import 'package:contrail/features/sync/domain/sync_engine.dart';
 import 'package:contrail/features/sync/domain/sync_transport.dart';
@@ -97,7 +99,10 @@ Future<void> _initDataLayer() async {
 
   // 注册Repository
   if (!sl.isRegistered<HabitRepository>()) {
-    sl.registerLazySingleton<HabitRepository>(() => HiveHabitRepository(sl()));
+    sl.registerLazySingleton<HabitRepository>(
+      () =>
+          HiveHabitRepository(sl(), syncChangeBus: LocalSyncChangeBus.instance),
+    );
   }
   if (!sl.isRegistered<HiveCrdt>()) {
     sl.registerSingleton<HiveCrdt>(syncCrdt);
@@ -154,6 +159,12 @@ Future<void> _initProfileDomainLayer() async {
   _registerSingletonIfAbsent<SyncEngine>(SyncEngine(transport: sl()));
   _registerSingletonIfAbsent<SyncCoordinator>(
     SyncCoordinator(engine: sl(), localDataSource: sl(), metadataStore: sl()),
+  );
+  _registerSingletonIfAbsent<AutomaticSyncService>(
+    AutomaticSyncService(
+      coordinator: sl(),
+      changeBus: LocalSyncChangeBus.instance,
+    ),
   );
 }
 

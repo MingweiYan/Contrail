@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 
 class ColorHelper {
   // 预定义的颜色选项
@@ -58,6 +59,7 @@ class ColorHelper {
         .map((c) => c.toARGB32().toString())
         .toList();
     await prefs.setStringList(_customColorsKey, colorValues);
+    LocalSyncChangeBus.instance.notifyChanged();
   }
 
   // 删除自定义颜色
@@ -74,9 +76,10 @@ class ColorHelper {
     // 保存到SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final List<String> colorValues = customColors
-        .map((c) => c.value.toString())
+        .map((c) => c.toARGB32().toString())
         .toList();
     await prefs.setStringList(_customColorsKey, colorValues);
+    LocalSyncChangeBus.instance.notifyChanged();
   }
 
   // 判断是否是预定义颜色

@@ -1,29 +1,39 @@
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
-import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
 
 class MockWebDavBackupService extends Mock implements WebDavBackupService {}
 
-class MockSyncCoordinator extends Mock implements SyncCoordinator {}
+class MockAutomaticSyncService extends Mock implements AutomaticSyncService {}
+
+class MockHabitProvider extends Mock implements HabitProvider {}
+
+class FakeBackupFileInfo extends Fake implements BackupFileInfo {}
 
 void main() {
   group('WebDavBackupProvider', () {
     late MockWebDavBackupService mockWebDavBackupService;
-    late MockSyncCoordinator mockSyncCoordinator;
+    late MockAutomaticSyncService mockAutomaticSyncService;
     late WebDavBackupProvider webDavBackupProvider;
 
     setUpAll(() {
       registerFallbackValue('');
       registerFallbackValue(WebDavAccessMode.direct);
+      registerFallbackValue(() async {});
+      registerFallbackValue(FakeBackupFileInfo());
     });
 
     setUp(() {
       mockWebDavBackupService = MockWebDavBackupService();
-      mockSyncCoordinator = MockSyncCoordinator();
+      mockAutomaticSyncService = MockAutomaticSyncService();
 
       when(() => mockWebDavBackupService.initialize()).thenAnswer((_) async {});
       when(
@@ -54,12 +64,15 @@ void main() {
         () => mockWebDavBackupService.loadBackupFiles(any()),
       ).thenAnswer((_) async => []);
       when(
-        () => mockSyncCoordinator.loadCheckpoint(),
+        () => mockAutomaticSyncService.events,
+      ).thenAnswer((_) => const Stream<AutomaticSyncEvent>.empty());
+      when(
+        () => mockAutomaticSyncService.loadCheckpoint(),
       ).thenAnswer((_) async => null);
 
       webDavBackupProvider = WebDavBackupProvider(
         mockWebDavBackupService,
-        syncCoordinator: mockSyncCoordinator,
+        automaticSyncService: mockAutomaticSyncService,
       );
     });
 
@@ -166,16 +179,12 @@ void main() {
         remoteRevision: 1,
         syncedAt: DateTime.utc(2026, 10, 8),
       );
-      when(
-        () => mockSyncCoordinator.synchronize(
-          resolution: SyncConflictResolution.manual,
-        ),
-      ).thenAnswer(
+      when(() => mockAutomaticSyncService.synchronizeNow()).thenAnswer(
         (_) async =>
             SyncResult(action: SyncAction.uploaded, checkpoint: checkpoint),
       );
       when(
-        () => mockSyncCoordinator.loadCheckpoint(),
+        () => mockAutomaticSyncService.loadCheckpoint(),
       ).thenAnswer((_) async => checkpoint);
 
       final result = await webDavBackupProvider.synchronize();
@@ -204,15 +213,64 @@ void main() {
         ),
       ).thenAnswer((_) async {});
       when(
-        () => mockSyncCoordinator.resetCheckpoint(),
-      ).thenAnswer((_) async {});
+        () => mockAutomaticSyncService.updateConfiguration<void>(
+          any(),
+          resetCheckpoint: true,
+        ),
+      ).thenAnswer((invocation) async {
+        final update =
+            invocation.positionalArguments.first as Future<void> Function();
+        await update();
+      });
 
       await webDavBackupProvider.initialize();
       webDavBackupProvider.setWebDavUrl('https://new.example/dav');
       await webDavBackupProvider.saveWebDavConfig();
 
-      verify(() => mockSyncCoordinator.resetCheckpoint()).called(1);
+      verify(
+        () => mockAutomaticSyncService.updateConfiguration<void>(
+          any(),
+          resetCheckpoint: true,
+        ),
+      ).called(1);
       expect(webDavBackupProvider.syncCheckpoint, isNull);
+    });
+
+    testWidgets('恢复 WebDAV 备份后清理同步检查点并自动发布恢复状态', (tester) async {
+      final backupFile = FakeBackupFileInfo();
+      final habitProvider = MockHabitProvider();
+      when(
+        () => mockWebDavBackupService.restoreFromBackup(backupFile),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockAutomaticSyncService.notifyLocalReplacement(),
+      ).thenAnswer((_) async {});
+      when(() => habitProvider.loadHabits()).thenAnswer((_) async {});
+
+      late BuildContext context;
+      await tester.pumpWidget(
+        ChangeNotifierProvider<HabitProvider>.value(
+          value: habitProvider,
+          child: Builder(
+            builder: (builderContext) {
+              context = builderContext;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      final result = await webDavBackupProvider.restoreBackupFile(
+        context,
+        backupFile,
+      );
+
+      expect(result, isTrue);
+      verifyInOrder([
+        () => mockWebDavBackupService.restoreFromBackup(backupFile),
+        () => mockAutomaticSyncService.notifyLocalReplacement(),
+        () => habitProvider.loadHabits(),
+      ]);
     });
   });
 }
