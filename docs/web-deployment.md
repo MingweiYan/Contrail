@@ -33,6 +33,23 @@ links such as `/#/statistics` survive reloads without a server-side rewrite.
 Static builds do not show compatibility mode unless a gateway URL is supplied
 explicitly at build time.
 
+### GitHub Pages demo
+
+The repository publishes a static demonstration build at
+<https://mingweiyan.github.io/Contrail/>. The demo is the real Flutter Web
+application rather than a screenshot: visitors can create habits, record
+sessions, generate their own data, and navigate every Web-compatible page.
+
+Each visitor's demo data stays in that browser's IndexedDB and preferences.
+There is no shared demo account or Contrail data backend, so one visitor cannot
+see another visitor's data. Clearing site data, using a private window, or
+changing the deployment origin removes or isolates that local dataset.
+
+GitHub Pages cannot run the bundled compatibility gateway. Direct WebDAV works
+only when the provider permits CORS from the Pages origin; providers such as
+Jianguoyun require the integrated self-hosted service for WebDAV access. The
+Pages deployment is therefore intended primarily as a safe product demo.
+
 ## Integrated service
 
 Build the application with the same-origin gateway endpoint and start the

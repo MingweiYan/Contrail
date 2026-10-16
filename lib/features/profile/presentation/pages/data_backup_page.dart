@@ -576,7 +576,7 @@ class _DataBackupPageState extends State<DataBackupPage>
           ),
           SizedBox(height: 10.h),
           Text(
-            '比较浏览器或设备中的当前数据与 WebDAV 上的同步文档。单边变更自动合并；双方都变更时由你选择，并先为被替换的数据保留远端快照。',
+            '比较浏览器或设备中的当前数据与 WebDAV 上的 CRDT 同步文档。不同记录的多端改动会自动合并；同一记录的并发修改按 CRDT 版本收敛，并通过 ETag 条件写入防止静默覆盖。',
             style: TextStyle(
               fontSize: AppTypographyConstants.formHelperFontSize,
               height: 1.45,
