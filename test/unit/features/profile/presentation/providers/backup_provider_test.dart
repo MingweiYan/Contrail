@@ -1,10 +1,18 @@
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
 import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 
 class MockLocalBackupService extends Mock implements LocalBackupService {}
+
+class MockAutomaticSyncService extends Mock implements AutomaticSyncService {}
+
+class MockHabitProvider extends Mock implements HabitProvider {}
 
 class FakeBackupFileInfo extends Fake implements BackupFileInfo {}
 
@@ -16,10 +24,12 @@ void main() {
 
   group('BackupProvider', () {
     late MockLocalBackupService mockLocalBackupService;
+    late MockAutomaticSyncService mockAutomaticSyncService;
     late BackupProvider backupProvider;
 
     setUp(() {
       mockLocalBackupService = MockLocalBackupService();
+      mockAutomaticSyncService = MockAutomaticSyncService();
 
       when(() => mockLocalBackupService.initialize()).thenAnswer((_) async {});
       when(
@@ -38,7 +48,10 @@ void main() {
         () => mockLocalBackupService.loadBackupFiles(any()),
       ).thenAnswer((_) async => []);
 
-      backupProvider = BackupProvider(mockLocalBackupService);
+      backupProvider = BackupProvider(
+        backupService: mockLocalBackupService,
+        automaticSyncService: mockAutomaticSyncService,
+      );
     });
 
     test('初始化时应该有正确的默认值', () {
@@ -162,6 +175,43 @@ void main() {
 
       expect(result, false);
       expect(backupProvider.errorMessage, isNotNull);
+    });
+
+    testWidgets('恢复本地备份后清理同步检查点并自动发布恢复状态', (tester) async {
+      final backupFile = FakeBackupFileInfo();
+      final habitProvider = MockHabitProvider();
+      when(
+        () => mockLocalBackupService.restoreFromBackup(backupFile),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockAutomaticSyncService.notifyLocalReplacement(),
+      ).thenAnswer((_) async {});
+      when(() => habitProvider.loadHabits()).thenAnswer((_) async {});
+
+      late BuildContext context;
+      await tester.pumpWidget(
+        ChangeNotifierProvider<HabitProvider>.value(
+          value: habitProvider,
+          child: Builder(
+            builder: (builderContext) {
+              context = builderContext;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      final result = await backupProvider.restoreFromBackup(
+        backupFile,
+        context,
+      );
+
+      expect(result, isTrue);
+      verifyInOrder([
+        () => mockLocalBackupService.restoreFromBackup(backupFile),
+        () => mockAutomaticSyncService.notifyLocalReplacement(),
+        () => habitProvider.loadHabits(),
+      ]);
     });
   });
 }

@@ -15,7 +15,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:contrail/core/platform/platform_capabilities.dart';
 import 'package:contrail/core/di/injection_container.dart';
-import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
@@ -120,7 +120,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                 return ChangeNotifierProvider<WebDavBackupProvider>(
                   create: (_) => WebDavBackupProvider(
                     WebDavBackupService(storageService: WebDavStorageService()),
-                    syncCoordinator: sl<SyncCoordinator>(),
+                    automaticSyncService: sl<AutomaticSyncService>(),
                   )..initialize(),
                   child: Consumer<WebDavBackupProvider>(
                     builder: (context, webdavProvider, _) {
@@ -576,7 +576,7 @@ class _DataBackupPageState extends State<DataBackupPage>
           ),
           SizedBox(height: 10.h),
           Text(
-            '比较浏览器或设备中的当前数据与 WebDAV 上的 CRDT 同步文档。不同记录的多端改动会自动合并；同一记录的并发修改按 CRDT 版本收敛，并通过 ETag 条件写入防止静默覆盖。',
+            '无需手动操作：应用会在启动、回到前台、本地数据变更后以及前台运行期间自动同步。不同记录的多端改动会自动合并；同一记录的并发修改按 CRDT 版本收敛，并通过 ETag 条件写入防止静默覆盖。',
             style: TextStyle(
               fontSize: AppTypographyConstants.formHelperFontSize,
               height: 1.45,
@@ -604,7 +604,7 @@ class _DataBackupPageState extends State<DataBackupPage>
                       child: const CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.sync_rounded),
-              label: Text(configured ? '立即同步' : '请先完成 WebDAV 配置'),
+              label: Text(configured ? '立即重试' : '请先完成 WebDAV 配置'),
             ),
           ),
         ],

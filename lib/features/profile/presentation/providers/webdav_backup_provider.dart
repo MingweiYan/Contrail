@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:provider/provider.dart';
@@ -6,17 +8,23 @@ import 'package:contrail/features/profile/domain/services/webdav_backup_service.
 import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
 import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/shared/utils/logger.dart';
-import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
 
 class WebDavBackupProvider extends ChangeNotifier {
   final WebDavBackupService _service;
-  final SyncCoordinator _syncCoordinator;
+  final AutomaticSyncService _automaticSyncService;
+  StreamSubscription<AutomaticSyncEvent>? _syncSubscription;
+  bool _disposed = false;
 
   WebDavBackupProvider(
     this._service, {
-    required SyncCoordinator syncCoordinator,
-  }) : _syncCoordinator = syncCoordinator;
+    required AutomaticSyncService automaticSyncService,
+  }) : _automaticSyncService = automaticSyncService {
+    _syncSubscription = _automaticSyncService.events.listen(
+      _handleAutomaticSyncEvent,
+    );
+  }
 
   bool _isLoading = false;
   List<BackupFileInfo> _backupFiles = [];
@@ -91,7 +99,7 @@ class WebDavBackupProvider extends ChangeNotifier {
       _retentionCount = await _service.loadRetentionCount();
       _isConfigLoaded = true;
       notifyListeners();
-      _syncCheckpoint = await _syncCoordinator.loadCheckpoint();
+      _syncCheckpoint = await _automaticSyncService.loadCheckpoint();
       final hasPermission = await _service.checkStoragePermission();
       if (!hasPermission) {
         _setError('请配置 WebDAV 凭据以启用网络备份');
@@ -166,15 +174,17 @@ class WebDavBackupProvider extends ChangeNotifier {
         _savedWebDavUrl != _webdavUrl ||
         _savedWebDavUsername != _webdavUsername ||
         _savedWebDavPath != _webdavPath;
-    await _service.saveWebDavConfig(
-      url: _webdavUrl,
-      username: _webdavUsername,
-      password: _webdavPassword,
-      path: _webdavPath,
-      accessMode: _webdavAccessMode,
+    await _automaticSyncService.updateConfiguration(
+      () => _service.saveWebDavConfig(
+        url: _webdavUrl,
+        username: _webdavUsername,
+        password: _webdavPassword,
+        path: _webdavPath,
+        accessMode: _webdavAccessMode,
+      ),
+      resetCheckpoint: endpointChanged,
     );
     if (endpointChanged) {
-      await _syncCoordinator.resetCheckpoint();
       _syncCheckpoint = null;
       _lastSyncResult = null;
     }
@@ -190,10 +200,15 @@ class WebDavBackupProvider extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
-      final result = await _syncCoordinator.synchronize(resolution: resolution);
+      final result =
+          await _automaticSyncService.synchronizeNow() ??
+          SyncResult(
+            action: SyncAction.failed,
+            error: StateError('WebDAV is not configured'),
+          );
       _lastSyncResult = result;
       if (result.isSuccess) {
-        _syncCheckpoint = await _syncCoordinator.loadCheckpoint();
+        _syncCheckpoint = await _automaticSyncService.loadCheckpoint();
       } else if (result.action == SyncAction.failed) {
         _setError('WebDAV 同步失败: ${result.error ?? '未知错误'}');
       }
@@ -207,6 +222,27 @@ class WebDavBackupProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> _handleAutomaticSyncEvent(AutomaticSyncEvent event) async {
+    try {
+      _lastSyncResult = event.result;
+      if (event.result.isSuccess) {
+        _syncCheckpoint = await _automaticSyncService.loadCheckpoint();
+      }
+      if (_disposed) return;
+      notifyListeners();
+    } catch (error, stackTrace) {
+      logger.warning('刷新自动同步状态失败: $error');
+      logger.debug(stackTrace.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    unawaited(_syncSubscription?.cancel());
+    super.dispose();
   }
 
   Future<bool> performBackup() async {
@@ -241,6 +277,7 @@ class WebDavBackupProvider extends ChangeNotifier {
   ) async {
     final ok = await _service.restoreFromBackup(file);
     if (ok) {
+      await _automaticSyncService.notifyLocalReplacement();
       if (!context.mounted) {
         return ok;
       }

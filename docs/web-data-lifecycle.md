@@ -7,11 +7,11 @@ any user-operated HTTP server without adding a Contrail application backend.
 
 | Data | Browser storage | Network behavior |
 | --- | --- | --- |
-| Habits, check-ins, and tracked durations | Hive backed by IndexedDB | Local changes do not trigger a request; configured backup/sync actions may upload them |
-| Theme, personalization, and backup settings | Shared Preferences backed by browser storage | Local changes do not trigger a request; allowlisted settings may be backed up or synchronized |
+| Habits, check-ins, and tracked durations | Hive backed by IndexedDB | After WebDAV is configured, durable local changes trigger a debounced CRDT sync |
+| Theme, personalization, and backup settings | Shared Preferences backed by browser storage | Allowlisted changes trigger the same debounced sync and may also be included in backups |
 | WebDAV password | Persistent browser storage scoped to the current origin | Direct mode sends it to WebDAV; compatibility mode relays it through the configured stateless gateway |
 | Versioned backup documents | User-selected WebDAV provider | Uploaded only after explicit configuration and a manual or enabled automatic backup |
-| CRDT current-state document | User-selected WebDAV provider | Read or written only when bidirectional synchronization runs |
+| CRDT current-state document | User-selected WebDAV provider | Automatically checked on startup/resume, after local changes, and every five foreground minutes |
 
 Closing a tab does not delete IndexedDB or browser preferences. Data can still
 be removed when the user clears site data, uses private browsing, the browser
@@ -28,7 +28,9 @@ Automatic backup and bidirectional synchronization are separate. Automatic
 backup writes timestamped, restorable snapshots. On Web it checks whether a
 backup is due when the app starts or returns to the foreground; a closed static
 page cannot run background work. Bidirectional synchronization currently runs
-from the explicit sync action and maintains `contrail_crdt_v2.json`.
+automatically while the app is open and maintains `contrail_crdt_v2.json`.
+Closing a Web tab stops its timers; reopening it immediately performs another
+sync. The manual action is retained only as an explicit retry/diagnostic tool.
 
 ## Outbound traffic contract
 

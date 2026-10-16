@@ -4,6 +4,7 @@ import 'package:contrail/features/habit/data/repositories/habit_repository.dart'
 import 'package:contrail/features/profile/domain/services/backup_payload_restorer.dart';
 import 'package:contrail/features/profile/domain/services/backup_settings_store.dart';
 import 'package:contrail/features/sync/domain/crdt_payload.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 import 'package:contrail/features/sync/domain/sync_coordinator.dart';
 import 'package:contrail/features/sync/domain/sync_models.dart';
 import 'package:contrail/shared/services/habit_service.dart';
@@ -24,13 +25,18 @@ class BackupSyncDataSource implements LocalSyncDataSource {
     Future<SharedPreferences> Function()? preferences,
     BackupSettingsStore? settingsStore,
     BackupPayloadRestorer? payloadRestorer,
+    LocalSyncChangeBus? syncChangeBus,
   }) : _habitRepository = habitRepository,
        _habitService = habitService,
        _crdt = crdt,
-       _preferences = preferences ?? SharedPreferences.getInstance {
+       _preferences = preferences ?? SharedPreferences.getInstance,
+       _syncChangeBus = syncChangeBus ?? LocalSyncChangeBus.instance {
     _settingsStore =
         settingsStore ??
-        SharedPreferencesBackupSettingsStore(preferences: preferences);
+        SharedPreferencesBackupSettingsStore(
+          preferences: preferences,
+          syncChangeBus: _syncChangeBus,
+        );
     _payloadRestorer =
         payloadRestorer ??
         BackupPayloadRestorer(
@@ -46,6 +52,7 @@ class BackupSyncDataSource implements LocalSyncDataSource {
   final HabitService _habitService;
   final MapCrdtBase _crdt;
   final Future<SharedPreferences> Function() _preferences;
+  final LocalSyncChangeBus _syncChangeBus;
   late final BackupSettingsStore _settingsStore;
   late final BackupPayloadRestorer _payloadRestorer;
   Future<void> _operationTail = Future<void>.value();
@@ -88,10 +95,12 @@ class BackupSyncDataSource implements LocalSyncDataSource {
         // Apply the validated application snapshot first. If this fails, the
         // durable CRDT mirror is untouched and the previous app state is
         // restored by BackupPayloadRestorer.
-        await _payloadRestorer.restore(
-          habits: habits,
-          settings: settings,
-          removeMissingSettings: true,
+        await _syncChangeBus.runSuppressed(
+          () => _payloadRestorer.restore(
+            habits: habits,
+            settings: settings,
+            removeMissingSettings: true,
+          ),
         );
         await _crdt.merge(CrdtPayloadCodec.decode(payload));
       });

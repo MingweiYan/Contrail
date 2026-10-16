@@ -10,11 +10,13 @@ import 'package:contrail/features/profile/domain/services/platform_local_storage
 import 'package:contrail/core/platform/platform_capabilities.dart';
 import 'package:contrail/features/profile/domain/services/unavailable_local_storage_service.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 
 /// 备份Provider，管理备份页面的状态并连接UI与服务层
 class BackupProvider extends ChangeNotifier {
   final LocalBackupService _backupService;
   final bool _supportsLocalFileBackups;
+  final AutomaticSyncService? _automaticSyncService;
   // 自动备份服务不在Provider中常驻，仅在需要时临时调用
 
   // UI状态
@@ -35,12 +37,14 @@ class BackupProvider extends ChangeNotifier {
   String? _errorMessage;
 
   // 构造函数，支持依赖注入
-  BackupProvider([
+  BackupProvider({
     LocalBackupService? backupService,
     bool? supportsLocalFileBackups,
-  ]) : _supportsLocalFileBackups =
+    AutomaticSyncService? automaticSyncService,
+  }) : _supportsLocalFileBackups =
            supportsLocalFileBackups ??
            PlatformCapabilities.supportsLocalBackupFiles,
+       _automaticSyncService = automaticSyncService,
        _backupService =
            backupService ??
            LocalBackupService(
@@ -255,6 +259,7 @@ class BackupProvider extends ChangeNotifier {
       final success = await _backupService.restoreFromBackup(backupFile);
 
       if (success) {
+        await _automaticSyncService?.notifyLocalReplacement();
         if (!context.mounted) return false;
         // 重新加载习惯数据
         final habitProvider = Provider.of<HabitProvider>(

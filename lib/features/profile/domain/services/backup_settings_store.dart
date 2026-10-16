@@ -1,4 +1,5 @@
 import 'package:contrail/features/profile/domain/services/backup_settings_policy.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract interface class BackupSettingsStore {
@@ -17,9 +18,12 @@ abstract interface class BackupSettingsStore {
 class SharedPreferencesBackupSettingsStore implements BackupSettingsStore {
   SharedPreferencesBackupSettingsStore({
     Future<SharedPreferences> Function()? preferences,
-  }) : _preferences = preferences ?? SharedPreferences.getInstance;
+    LocalSyncChangeBus? syncChangeBus,
+  }) : _preferences = preferences ?? SharedPreferences.getInstance,
+       _syncChangeBus = syncChangeBus ?? LocalSyncChangeBus.instance;
 
   final Future<SharedPreferences> Function() _preferences;
+  final LocalSyncChangeBus _syncChangeBus;
 
   @override
   Future<Map<String, dynamic>> snapshot() async {
@@ -51,6 +55,7 @@ class SharedPreferencesBackupSettingsStore implements BackupSettingsStore {
         'persist restored setting: $key',
       );
     }
+    _syncChangeBus.notifyChanged();
   }
 
   Future<bool> _write(SharedPreferences preferences, String key, Object value) {

@@ -4,7 +4,7 @@ import 'package:contrail/features/profile/domain/services/webdav_access_mode.dar
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
 import 'package:contrail/features/profile/presentation/pages/backup_config_page.dart';
 import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
-import 'package:contrail/features/sync/domain/sync_coordinator.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 import 'package:contrail/shared/theme/visual_theme_definitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,7 +16,7 @@ class _MockWebDavBackupProvider extends Mock implements WebDavBackupProvider {}
 
 class _MockWebDavBackupService extends Mock implements WebDavBackupService {}
 
-class _MockSyncCoordinator extends Mock implements SyncCoordinator {}
+class _MockAutomaticSyncService extends Mock implements AutomaticSyncService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -81,12 +81,17 @@ void main() {
 
     final configCompleter = Completer<Map<String, String?>>();
     final service = _MockWebDavBackupService();
-    final syncCoordinator = _MockSyncCoordinator();
+    final automaticSyncService = _MockAutomaticSyncService();
     when(() => service.initialize()).thenAnswer((_) async {});
     when(
       () => service.loadWebDavConfig(),
     ).thenAnswer((_) => configCompleter.future);
-    when(() => syncCoordinator.loadCheckpoint()).thenAnswer((_) async => null);
+    when(
+      () => automaticSyncService.events,
+    ).thenAnswer((_) => const Stream<AutomaticSyncEvent>.empty());
+    when(
+      () => automaticSyncService.loadCheckpoint(),
+    ).thenAnswer((_) async => null);
     when(() => service.checkStoragePermission()).thenAnswer((_) async => true);
     when(() => service.loadAutoBackupSettings()).thenAnswer(
       (_) async => {
@@ -103,7 +108,7 @@ void main() {
 
     final provider = WebDavBackupProvider(
       service,
-      syncCoordinator: syncCoordinator,
+      automaticSyncService: automaticSyncService,
     );
     await tester.pumpWidget(
       ScreenUtilInit(
@@ -147,12 +152,17 @@ void main() {
 
     final configCompleter = Completer<Map<String, String?>>();
     final service = _MockWebDavBackupService();
-    final syncCoordinator = _MockSyncCoordinator();
+    final automaticSyncService = _MockAutomaticSyncService();
     when(() => service.initialize()).thenAnswer((_) async {});
     when(
       () => service.loadWebDavConfig(),
     ).thenAnswer((_) => configCompleter.future);
-    when(() => syncCoordinator.loadCheckpoint()).thenAnswer((_) async => null);
+    when(
+      () => automaticSyncService.events,
+    ).thenAnswer((_) => const Stream<AutomaticSyncEvent>.empty());
+    when(
+      () => automaticSyncService.loadCheckpoint(),
+    ).thenAnswer((_) async => null);
     when(() => service.checkStoragePermission()).thenAnswer((_) async => true);
     when(() => service.loadAutoBackupSettings()).thenAnswer(
       (_) async => {
@@ -169,7 +179,7 @@ void main() {
 
     final provider = WebDavBackupProvider(
       service,
-      syncCoordinator: syncCoordinator,
+      automaticSyncService: automaticSyncService,
     );
     await tester.pumpWidget(
       ScreenUtilInit(
