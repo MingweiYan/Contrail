@@ -1,7 +1,6 @@
 # Contrail 
 
-代码使用 Trae 来开发，非 Solo 模式，主要是 Doubao-seed-1.6 max 模式
-icon 等图像资源使用豆包来生成
+整个代码主要vibe coding 开发
 
 ## 在线演示
 
