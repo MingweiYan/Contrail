@@ -4,7 +4,8 @@ param(
     [int]$Port,
     [string]$AllowedHosts,
     [switch]$NoOpen,
-    [switch]$SmokeTest
+    [switch]$SmokeTest,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,7 +27,7 @@ if ([string]::IsNullOrWhiteSpace($BindAddress)) {
 
 if (-not $PSBoundParameters.ContainsKey("Port")) {
     if ([string]::IsNullOrWhiteSpace($env:PORT)) {
-        $ServicePort = 8080
+        $ServicePort = 27831
     } else {
         $ParsedPort = 0
         if (-not [int]::TryParse($env:PORT, [ref]$ParsedPort)) {
@@ -53,9 +54,11 @@ if ([string]::IsNullOrWhiteSpace(($AllowedHosts -replace "[,\s]", ""))) {
     throw "At least one WebDAV host must be allowed."
 }
 
-foreach ($CommandName in @("flutter", "dart")) {
-    if ($null -eq (Get-Command $CommandName -ErrorAction SilentlyContinue)) {
-        throw "Required command is not available: $CommandName"
+if (-not $SkipBuild) {
+    foreach ($CommandName in @("flutter", "dart")) {
+        if ($null -eq (Get-Command $CommandName -ErrorAction SilentlyContinue)) {
+            throw "Required command is not available: $CommandName"
+        }
     }
 }
 
@@ -76,18 +79,28 @@ foreach ($Name in $EnvironmentNames) {
 $ServerProcess = $null
 Push-Location $RepoRoot
 try {
-    Write-Host "==> Installing locked Flutter dependencies"
-    & flutter pub get --enforce-lockfile
-    Assert-LastExitCode "flutter pub get"
+    if ($SkipBuild) {
+        if (-not (Test-Path -LiteralPath $ServerBinary -PathType Leaf)) {
+            throw "Prebuilt Contrail server is missing: $ServerBinary"
+        }
+        $WebIndex = Join-Path $WebRoot "index.html"
+        if (-not (Test-Path -LiteralPath $WebIndex -PathType Leaf)) {
+            throw "Prebuilt Contrail Web application is missing: $WebIndex"
+        }
+    } else {
+        Write-Host "==> Installing locked Flutter dependencies"
+        & flutter pub get --enforce-lockfile
+        Assert-LastExitCode "flutter pub get"
 
-    Write-Host "==> Building the integrated Web application"
-    & flutter build web --release --no-wasm-dry-run `
-        --dart-define=WEBDAV_GATEWAY_URL=/api/webdav
-    Assert-LastExitCode "flutter build web"
+        Write-Host "==> Building the integrated Web application"
+        & flutter build web --release --no-wasm-dry-run `
+            --dart-define=WEBDAV_GATEWAY_URL=/api/webdav
+        Assert-LastExitCode "flutter build web"
 
-    Write-Host "==> Compiling the integrated Web server"
-    & dart compile exe server/bin/contrail_server.dart -o $ServerBinary
-    Assert-LastExitCode "dart compile exe"
+        Write-Host "==> Compiling the integrated Web server"
+        & dart compile exe server/bin/contrail_server.dart -o $ServerBinary
+        Assert-LastExitCode "dart compile exe"
+    }
 
     $env:CONTRAIL_BIND_ADDRESS = $BindAddress
     $env:CONTRAIL_WEB_ROOT = $WebRoot

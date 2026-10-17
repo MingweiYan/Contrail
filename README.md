@@ -13,7 +13,9 @@ Contrail 的服务器，也不会与其他访客共享。清除站点数据后�
 GitHub Pages 不运行 WebDAV Gateway，因此这里只保证本地功能可用；需要使用
 坚果云等不开放浏览器 CORS 的 WebDAV 时，请使用集成式自部署版本。
 
-macOS 和 Windows 的一键本地部署脚本及安全说明见
+普通用户可从 [GitHub Releases](https://github.com/MingweiYan/Contrail/releases)
+下载无需 Flutter/Dart 的 macOS 或 Windows 预编译包；开发者也可以继续从源码
+一键构建。两种方式及安全说明见
 [Web deployment](docs/web-deployment.md#one-click-local-deployment)。
 
 ## Motivation 

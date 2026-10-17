@@ -6,10 +6,11 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/.." && pwd)"
 
 bind_address="${CONTRAIL_BIND_ADDRESS:-127.0.0.1}"
-service_port="${PORT:-8080}"
+service_port="${PORT:-27831}"
 allowed_hosts="${WEBDAV_GATEWAY_ALLOWED_HOSTS:-dav.jianguoyun.com}"
 open_browser=true
 smoke_test=false
+skip_build=false
 
 usage() {
   cat <<'USAGE'
@@ -19,11 +20,12 @@ Usage: scripts/deploy_web.sh [options]
 
 Options:
   --bind <address>         Bind address (default: 127.0.0.1)
-  --port <port>            Service port (default: 8080)
+  --port <port>            Service port (default: 27831)
   --allowed-hosts <hosts>  Comma-separated WebDAV host allowlist
                            (default: dav.jianguoyun.com)
   --no-open                Do not open the application in a browser
   --smoke-test             Stop after the service health check succeeds
+  --skip-build             Run an existing build without Flutter or Dart
   -h, --help               Show this help
 
 The same defaults can be overridden with CONTRAIL_BIND_ADDRESS, PORT, and
@@ -60,6 +62,10 @@ while (($# > 0)); do
       open_browser=false
       shift
       ;;
+    --skip-build)
+      skip_build=true
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -82,7 +88,11 @@ if [[ -z "${allowed_hosts//[[:space:],]/}" ]]; then
   exit 64
 fi
 
-for command_name in flutter dart curl; do
+required_commands=(curl)
+if [[ "$skip_build" != true ]]; then
+  required_commands+=(flutter dart)
+fi
+for command_name in "${required_commands[@]}"; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Required command is not available: $command_name" >&2
     exit 69
@@ -91,18 +101,29 @@ done
 
 cd "$repo_root"
 
-echo "==> Installing locked Flutter dependencies"
-flutter pub get --enforce-lockfile
-
-echo "==> Building the integrated Web application"
-flutter build web --release --no-wasm-dry-run \
-  --dart-define=WEBDAV_GATEWAY_URL=/api/webdav
-
 server_binary="$repo_root/build/contrail-server"
 web_root="$repo_root/build/web"
 
-echo "==> Compiling the integrated Web server"
-dart compile exe server/bin/contrail_server.dart -o "$server_binary"
+if [[ "$skip_build" == true ]]; then
+  if [[ ! -x "$server_binary" ]]; then
+    echo "Prebuilt Contrail server is missing or not executable: $server_binary" >&2
+    exit 66
+  fi
+  if [[ ! -f "$web_root/index.html" ]]; then
+    echo "Prebuilt Contrail Web application is missing: $web_root/index.html" >&2
+    exit 66
+  fi
+else
+  echo "==> Installing locked Flutter dependencies"
+  flutter pub get --enforce-lockfile
+
+  echo "==> Building the integrated Web application"
+  flutter build web --release --no-wasm-dry-run \
+    --dart-define=WEBDAV_GATEWAY_URL=/api/webdav
+
+  echo "==> Compiling the integrated Web server"
+  dart compile exe server/bin/contrail_server.dart -o "$server_binary"
+fi
 
 export CONTRAIL_BIND_ADDRESS="$bind_address"
 export CONTRAIL_WEB_ROOT="$web_root"

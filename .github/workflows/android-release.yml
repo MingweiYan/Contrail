@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: write
 
 jobs:
@@ -170,3 +171,11 @@ jobs:
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger prebuilt macOS and Windows Web bundles
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh workflow run web-prebuilt-release.yml
+          --repo "$GITHUB_REPOSITORY"
+          --ref main
+          --field tag_name="$TAG_NAME"

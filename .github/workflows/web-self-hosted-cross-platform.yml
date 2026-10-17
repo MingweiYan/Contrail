@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - ".github/workflows/web-self-hosted-cross-platform.yml"
+      - ".github/workflows/web-prebuilt-release.yml"
       - "lib/**"
       - "server/**"
       - "scripts/deploy_web.sh"
       - "scripts/deploy_web.ps1"
       - "scripts/deploy_web_macos.command"
       - "scripts/deploy_web_windows.cmd"
+      - "scripts/package_prebuilt_web.sh"
+      - "scripts/package_prebuilt_web.ps1"
+      - "scripts/release/**"
       - "pubspec.yaml"
       - "pubspec.lock"
       - "web/**"
@@ -27,8 +31,16 @@ env:
 
 jobs:
   macos:
-    name: macOS one-click deployment
-    runs-on: macos-latest
+    name: macOS ${{ matrix.architecture }} source and prebuilt deployment
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -42,6 +54,23 @@ jobs:
           --smoke-test
           --no-open
           --port 4182
+      - name: Package the prebuilt release bundle
+        run: >-
+          ./scripts/package_prebuilt_web.sh
+          --architecture ${{ matrix.architecture }}
+          --output-dir dist
+      - name: Start and health-check the prebuilt release bundle
+        run: >-
+          "./dist/Contrail-macOS-${{ matrix.architecture }}/Start Contrail.command"
+          --smoke-test
+          --no-open
+      - name: Upload the prebuilt release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: contrail-web-macos-${{ matrix.architecture }}-${{ github.sha }}
+          path: dist/Contrail-macOS-${{ matrix.architecture }}.zip
+          if-no-files-found: error
+          retention-days: 7
 
   windows:
     name: Windows one-click deployment
@@ -60,3 +89,22 @@ jobs:
           -SmokeTest
           -NoOpen
           -Port 4183
+      - name: Package the prebuilt release bundle
+        shell: powershell
+        run: >-
+          .\scripts\package_prebuilt_web.ps1
+          -Architecture x64
+          -OutputDirectory dist
+      - name: Start and health-check the prebuilt release bundle
+        shell: cmd
+        run: >-
+          "dist\Contrail-Windows-x64\Start Contrail.cmd"
+          -SmokeTest
+          -NoOpen
+      - name: Upload the prebuilt release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: contrail-web-windows-x64-${{ github.sha }}
+          path: dist/Contrail-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 7
