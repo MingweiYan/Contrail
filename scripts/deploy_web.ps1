@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$BindAddress,
-    [Nullable[int]]$Port,
+    [int]$Port,
     [string]$AllowedHosts,
     [switch]$NoOpen,
     [switch]$SmokeTest
@@ -24,7 +24,7 @@ if ([string]::IsNullOrWhiteSpace($BindAddress)) {
     }
 }
 
-if ($null -eq $Port) {
+if (-not $PSBoundParameters.ContainsKey("Port")) {
     if ([string]::IsNullOrWhiteSpace($env:PORT)) {
         $ServicePort = 8080
     } else {
@@ -35,7 +35,7 @@ if ($null -eq $Port) {
         $ServicePort = $ParsedPort
     }
 } else {
-    $ServicePort = $Port.Value
+    $ServicePort = $Port
 }
 
 if ($ServicePort -lt 1 -or $ServicePort -gt 65535) {

@@ -8,7 +8,7 @@ set "contrail_exit_code=%ERRORLEVEL%"
 if not "%contrail_exit_code%"=="0" (
   echo.
   echo Contrail deployment failed with exit code %contrail_exit_code%.
-  pause
+  if not defined CI pause
 )
 
 exit /b %contrail_exit_code%
