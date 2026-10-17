@@ -55,6 +55,100 @@ Pages deployment is therefore intended primarily as a safe product demo.
 Build the application with the same-origin gateway endpoint and start the
 bundled server:
 
+### One-click local deployment
+
+Contrail supports both prebuilt release bundles for regular users and source
+builds for developers. Both modes start the same integrated Web application
+and WebDAV gateway, verify `/healthz`, and open the application in the default
+browser.
+
+Both modes default to `127.0.0.1:27831` and allow only
+`dav.jianguoyun.com` as the upstream WebDAV host. Port `27831` is a fixed,
+uncommon high port selected to reduce collisions with development services
+that often use `8080`. It intentionally remains stable between launches
+because IndexedDB and credential storage are origin-scoped.
+
+If an earlier source deployment already stored browser data on port `8080`,
+continue launching that copy with `--port 8080` / `-Port 8080` until the data
+has been exported or intentionally migrated. Browsers cannot automatically
+move IndexedDB or local credentials between two origins with different ports.
+
+#### Prebuilt release bundles (recommended)
+
+Download and extract the bundle for the current machine from
+[GitHub Releases](https://github.com/MingweiYan/Contrail/releases):
+
+- `Contrail-macOS-arm64.zip` for Apple Silicon Macs.
+- `Contrail-macOS-x64.zip` for Intel Macs.
+- `Contrail-Windows-x64.zip` for 64-bit Windows.
+
+On macOS, double-click `Start Contrail.command`. On Windows, double-click
+`Start Contrail.cmd`. Flutter and Dart are not required. Keep the extracted
+directory together because the launcher, Web assets, and native server are a
+single bundle.
+
+Release bundles are built and smoke-tested on their native GitHub runners.
+Version tags publish the three archives plus `SHA256SUMS.txt`; the existing
+Android release workflow also dispatches this Web bundle workflow for the same
+release tag.
+
+The bundles are currently unsigned. macOS Gatekeeper or Windows SmartScreen
+may require explicit first-run approval. This does not affect source builds,
+and no WebDAV credential or user data is embedded in any bundle.
+
+#### Build from source
+
+The repository includes platform-native launchers that install locked Flutter
+dependencies, build the Web application, compile the integrated server, start
+it, verify `/healthz`, and open the application in the default browser.
+Flutter must already be installed and available on `PATH`; CI pins Flutter
+`3.41.9`, which is the recommended local version.
+
+On macOS, double-click `scripts/deploy_web_macos.command` in Finder or run:
+
+```sh
+./scripts/deploy_web_macos.command
+```
+
+On Windows, double-click `scripts\deploy_web_windows.cmd` in Explorer. The
+wrapper uses Windows PowerShell with a process-local execution-policy bypass;
+it does not change the machine's PowerShell policy. The underlying script can
+also be run directly:
+
+```powershell
+.\scripts\deploy_web.ps1
+```
+
+Command-line options can change the bind address, port, or allowlist:
+
+```sh
+./scripts/deploy_web.sh \
+  --bind 127.0.0.1 \
+  --port 27832 \
+  --allowed-hosts dav.jianguoyun.com
+```
+
+```powershell
+.\scripts\deploy_web.ps1 `
+  -BindAddress 127.0.0.1 `
+  -Port 27832 `
+  -AllowedHosts dav.jianguoyun.com
+```
+
+Use `--no-open` / `-NoOpen` to suppress browser launch. The
+`--smoke-test` / `-SmokeTest` option is intended for automation: it stops the
+service after the health check succeeds. GitHub Actions exercises this complete
+path on native macOS and Windows runners for relevant pull requests.
+
+The service has no built-in edge authentication. Keep the default loopback
+binding for single-machine use. Before binding to `0.0.0.0` or exposing the
+service outside the machine, put HTTPS, authentication, and rate limiting in
+front of it.
+
+### Manual deployment
+
+The equivalent manual commands are:
+
 ```sh
 flutter pub get --enforce-lockfile
 flutter build web --release --no-wasm-dry-run \
@@ -63,7 +157,7 @@ WEBDAV_GATEWAY_ALLOWED_HOSTS=dav.jianguoyun.com \
   dart run server/bin/contrail_server.dart
 ```
 
-The process listens on `0.0.0.0:8080`, serves `build/web`, exposes
+The process listens on `0.0.0.0:27831`, serves `build/web`, exposes
 `GET /healthz`, and handles WebDAV forwarding at `/api/webdav`. Put TLS in front
 of it for non-local use. A production image can compile the entry point first:
 
@@ -91,7 +185,7 @@ an allowlist, especially for an Internet-facing deployment:
 | `WEBDAV_GATEWAY_TIMEOUT_SECONDS` | `20` | Upstream connect and request timeout |
 | `CONTRAIL_BIND_ADDRESS` | `0.0.0.0` | Service bind address |
 | `CONTRAIL_WEB_ROOT` | `build/web` | Flutter build directory |
-| `PORT` | `8080` | Service port |
+| `PORT` | `27831` | Service port |
 
 For a private NAS or a local OpenList instance, the operator may also need to
 enable private targets, HTTP, and its non-standard port. Those options should

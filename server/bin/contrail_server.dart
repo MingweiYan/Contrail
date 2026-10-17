@@ -10,7 +10,7 @@ Future<void> main() async {
   config.validateForStartup();
 
   final address = environment['CONTRAIL_BIND_ADDRESS'] ?? '0.0.0.0';
-  final port = int.tryParse(environment['PORT'] ?? '') ?? 8080;
+  final port = int.tryParse(environment['PORT'] ?? '') ?? 27831;
   final webRoot = Directory(environment['CONTRAIL_WEB_ROOT'] ?? 'build/web');
   if (!await webRoot.exists()) {
     stderr.writeln('Contrail Web root does not exist: ${webRoot.path}');
