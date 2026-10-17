@@ -1,0 +1,62 @@
+name: Cross-platform Web self-hosting
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/web-self-hosted-cross-platform.yml"
+      - "lib/**"
+      - "server/**"
+      - "scripts/deploy_web.sh"
+      - "scripts/deploy_web.ps1"
+      - "scripts/deploy_web_macos.command"
+      - "scripts/deploy_web_windows.cmd"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "web/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cross-platform-web-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.41.9
+
+jobs:
+  macos:
+    name: macOS one-click deployment
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build, start, and health-check the integrated service
+        run: >-
+          ./scripts/deploy_web_macos.command
+          --smoke-test
+          --no-open
+          --port 4182
+
+  windows:
+    name: Windows one-click deployment
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build, start, and health-check the integrated service
+        shell: cmd
+        run: >-
+          scripts\deploy_web_windows.cmd
+          -SmokeTest
+          -NoOpen
+          -Port 4183

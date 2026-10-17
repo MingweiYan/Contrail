@@ -55,6 +55,64 @@ Pages deployment is therefore intended primarily as a safe product demo.
 Build the application with the same-origin gateway endpoint and start the
 bundled server:
 
+### One-click local deployment
+
+The repository includes platform-native launchers that install locked Flutter
+dependencies, build the Web application, compile the integrated server, start
+it, verify `/healthz`, and open the application in the default browser.
+Flutter must already be installed and available on `PATH`; CI pins Flutter
+`3.41.9`, which is the recommended local version.
+
+On macOS, double-click `scripts/deploy_web_macos.command` in Finder or run:
+
+```sh
+./scripts/deploy_web_macos.command
+```
+
+On Windows, double-click `scripts\deploy_web_windows.cmd` in Explorer. The
+wrapper uses Windows PowerShell with a process-local execution-policy bypass;
+it does not change the machine's PowerShell policy. The underlying script can
+also be run directly:
+
+```powershell
+.\scripts\deploy_web.ps1
+```
+
+Both launchers default to `127.0.0.1:8080` and allow only
+`dav.jianguoyun.com` as the upstream WebDAV host. Keep using the same scheme,
+host, and port in the browser because IndexedDB and credential storage are
+origin-scoped.
+
+Command-line options can change the bind address, port, or allowlist:
+
+```sh
+./scripts/deploy_web.sh \
+  --bind 127.0.0.1 \
+  --port 8081 \
+  --allowed-hosts dav.jianguoyun.com
+```
+
+```powershell
+.\scripts\deploy_web.ps1 `
+  -BindAddress 127.0.0.1 `
+  -Port 8081 `
+  -AllowedHosts dav.jianguoyun.com
+```
+
+Use `--no-open` / `-NoOpen` to suppress browser launch. The
+`--smoke-test` / `-SmokeTest` option is intended for automation: it stops the
+service after the health check succeeds. GitHub Actions exercises this complete
+path on native macOS and Windows runners for relevant pull requests.
+
+The service has no built-in edge authentication. Keep the default loopback
+binding for single-machine use. Before binding to `0.0.0.0` or exposing the
+service outside the machine, put HTTPS, authentication, and rate limiting in
+front of it.
+
+### Manual deployment
+
+The equivalent manual commands are:
+
 ```sh
 flutter pub get --enforce-lockfile
 flutter build web --release --no-wasm-dry-run \
