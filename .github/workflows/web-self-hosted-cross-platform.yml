@@ -3,6 +3,7 @@ name: Cross-platform Web self-hosting
 on:
   pull_request:
     paths:
+      - ".github/workflows/android-release.yml"
       - ".github/workflows/web-self-hosted-cross-platform.yml"
       - ".github/workflows/web-prebuilt-release.yml"
       - "lib/**"

@@ -1,9 +1,12 @@
 name: Web prebuilt release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    inputs:
+      tag_name:
+        description: "Existing release tag created by the Android release job"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       tag_name:
@@ -119,7 +122,7 @@ jobs:
 
   publish:
     name: Publish prebuilt bundles
-    if: startsWith(github.ref, 'refs/tags/') || inputs.tag_name != ''
+    if: inputs.tag_name != ''
     needs:
       - macos
       - windows
