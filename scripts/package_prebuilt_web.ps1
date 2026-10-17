@@ -40,8 +40,14 @@ Copy-Item `
     -LiteralPath (Join-Path $RepoRoot "scripts\deploy_web.ps1") `
     -Destination (Join-Path $ScriptsDirectory "deploy_web.ps1")
 Copy-Item `
+    -LiteralPath (Join-Path $RepoRoot "scripts\stop_web.ps1") `
+    -Destination (Join-Path $ScriptsDirectory "stop_web.ps1")
+Copy-Item `
     -LiteralPath (Join-Path $RepoRoot "scripts\release\start_prebuilt_web_windows.cmd") `
     -Destination (Join-Path $BundleDirectory "Start Contrail.cmd")
+Copy-Item `
+    -LiteralPath (Join-Path $RepoRoot "scripts\release\stop_prebuilt_web_windows.cmd") `
+    -Destination (Join-Path $BundleDirectory "Stop Contrail.cmd")
 Copy-Item `
     -LiteralPath (Join-Path $RepoRoot "scripts\release\PREBUILT_README.txt") `
     -Destination (Join-Path $BundleDirectory "README.txt")

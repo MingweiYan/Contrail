@@ -2,10 +2,30 @@ import 'dart:async';
 import 'dart:io';
 
 // ignore: avoid_relative_lib_imports
+import '../lib/server_logger.dart';
+// ignore: avoid_relative_lib_imports
 import '../lib/webdav_gateway.dart';
 
 Future<void> main() async {
   final environment = Platform.environment;
+  ServerLogger logger;
+  try {
+    logger = ServerLogger.fromEnvironment(environment);
+  } on Object catch (error) {
+    stderr.writeln('Invalid Contrail logging configuration: $error');
+    exitCode = 64;
+    return;
+  }
+
+  try {
+    await _run(environment, logger);
+  } on Object catch (error, stackTrace) {
+    logger.error('Contrail server failed', error, stackTrace);
+    exitCode = 1;
+  }
+}
+
+Future<void> _run(Map<String, String> environment, ServerLogger logger) async {
   final config = WebDavGatewayConfig.fromEnvironment(environment);
   config.validateForStartup();
 
@@ -13,18 +33,16 @@ Future<void> main() async {
   final port = int.tryParse(environment['PORT'] ?? '') ?? 27831;
   final webRoot = Directory(environment['CONTRAIL_WEB_ROOT'] ?? 'build/web');
   if (!await webRoot.exists()) {
-    stderr.writeln('Contrail Web root does not exist: ${webRoot.path}');
-    exitCode = 64;
-    return;
+    throw FileSystemException('Contrail Web root does not exist', webRoot.path);
   }
 
   final gateway = WebDavGateway(config: config);
   final server = await HttpServer.bind(address, port);
-  stdout.writeln('Contrail listening on http://$address:$port');
+  logger.info('Contrail listening on http://$address:$port');
 
   final subscriptions = <StreamSubscription<ProcessSignal>>[];
   Future<void> shutdown(ProcessSignal signal) async {
-    stdout.writeln('Received $signal, shutting down.');
+    logger.info('Received $signal, shutting down.');
     await server.close(force: true);
     for (final subscription in subscriptions) {
       await subscription.cancel();
@@ -37,7 +55,7 @@ Future<void> main() async {
   }
 
   await for (final request in server) {
-    unawaited(_handle(request, gateway, webRoot));
+    unawaited(_handle(request, gateway, webRoot, logger));
   }
 }
 
@@ -45,7 +63,9 @@ Future<void> _handle(
   HttpRequest request,
   WebDavGateway gateway,
   Directory webRoot,
+  ServerLogger logger,
 ) async {
+  final stopwatch = Stopwatch()..start();
   try {
     if (request.uri.path == '/healthz') {
       request.response
@@ -60,13 +80,24 @@ Future<void> _handle(
       return;
     }
     await _serveStatic(request, webRoot);
-  } on Object {
+  } on Object catch (error, stackTrace) {
+    logger.error(
+      'Request ${request.method} ${request.uri.path} failed',
+      error,
+      stackTrace,
+    );
     try {
       request.response.statusCode = HttpStatus.internalServerError;
       await request.response.close();
     } on Object {
       // The gateway or static handler may already have closed the response.
     }
+  } finally {
+    stopwatch.stop();
+    logger.debug(
+      '${request.method} ${request.uri.path} -> '
+      '${request.response.statusCode} (${stopwatch.elapsedMilliseconds} ms)',
+    );
   }
 }
 

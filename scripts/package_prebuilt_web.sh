@@ -19,8 +19,8 @@ Options:
   --output-dir <path>         Destination directory (default: dist)
   -h, --help                  Show this help
 
-Run scripts/deploy_web.sh --smoke-test first to create build/web and the
-native build/contrail-server executable.
+Run scripts/build_web.sh first to create build/web and the native
+build/contrail-server executable.
 USAGE
 }
 
@@ -111,14 +111,19 @@ mkdir -p "$bundle_dir/build" "$bundle_dir/scripts"
 cp -R "$web_root" "$bundle_dir/build/web"
 cp "$server_binary" "$bundle_dir/build/contrail-server"
 cp "$repo_root/scripts/deploy_web.sh" "$bundle_dir/scripts/deploy_web.sh"
+cp "$repo_root/scripts/stop_web.sh" "$bundle_dir/scripts/stop_web.sh"
 cp "$repo_root/scripts/release/start_prebuilt_web_macos.command" \
   "$bundle_dir/Start Contrail.command"
+cp "$repo_root/scripts/release/stop_prebuilt_web_macos.command" \
+  "$bundle_dir/Stop Contrail.command"
 cp "$repo_root/scripts/release/PREBUILT_README.txt" "$bundle_dir/README.txt"
 cp "$repo_root/LICENSE" "$bundle_dir/LICENSE"
 chmod +x \
   "$bundle_dir/build/contrail-server" \
   "$bundle_dir/scripts/deploy_web.sh" \
-  "$bundle_dir/Start Contrail.command"
+  "$bundle_dir/scripts/stop_web.sh" \
+  "$bundle_dir/Start Contrail.command" \
+  "$bundle_dir/Stop Contrail.command"
 
 ditto -c -k --keepParent "$bundle_dir" "$archive_path"
 echo "Created prebuilt release bundle: $archive_path"

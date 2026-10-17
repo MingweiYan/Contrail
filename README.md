@@ -15,7 +15,8 @@ GitHub Pages 不运行 WebDAV Gateway，因此这里只保证本地功能可用�
 
 普通用户可从 [GitHub Releases](https://github.com/MingweiYan/Contrail/releases)
 下载无需 Flutter/Dart 的 macOS 或 Windows 预编译包；开发者也可以继续从源码
-一键构建。两种方式及安全说明见
+一键构建。启动后服务在后台运行，并提供配套停止脚本和有大小上限的轮转日志。
+两种方式、日志参数及安全说明见
 [Web deployment](docs/web-deployment.md#one-click-local-deployment)。
 
 ## Motivation 
