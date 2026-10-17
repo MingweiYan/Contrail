@@ -65,17 +65,22 @@ class WebDavBackupProvider extends ChangeNotifier {
 
   void _setLoading(bool v) {
     _isLoading = v;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   void _setError(String msg) {
     _errorMessage = msg;
+    _notifyListenersIfActive();
+  }
+
+  void _notifyListenersIfActive() {
+    if (_disposed) return;
     notifyListeners();
   }
 
   void clearError() {
     _errorMessage = null;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   Future<void> initialize() async {
@@ -98,7 +103,7 @@ class WebDavBackupProvider extends ChangeNotifier {
       _savedWebDavPath = _webdavPath;
       _retentionCount = await _service.loadRetentionCount();
       _isConfigLoaded = true;
-      notifyListeners();
+      _notifyListenersIfActive();
       _syncCheckpoint = await _automaticSyncService.loadCheckpoint();
       final hasPermission = await _service.checkStoragePermission();
       if (!hasPermission) {
@@ -123,7 +128,7 @@ class WebDavBackupProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _backupFiles = await _service.loadBackupFiles(_displayPath);
-      notifyListeners();
+      _notifyListenersIfActive();
     } catch (e) {
       _setError('加载 WebDAV 备份文件失败: $e');
     } finally {
@@ -135,38 +140,38 @@ class WebDavBackupProvider extends ChangeNotifier {
     await _service.saveAutoBackupSettings(enabled, frequency);
     _autoBackupEnabled = enabled;
     _backupFrequency = frequency;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   Future<void> saveRetentionCount(int count) async {
     await _service.saveRetentionCount(count);
     _retentionCount = count;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   void setWebDavUrl(String v) {
     _webdavUrl = v;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   void setWebDavUsername(String v) {
     _webdavUsername = v;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   void setWebDavPassword(String v) {
     _webdavPassword = v;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   void setWebDavPath(String v) {
     _webdavPath = v;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   void setWebDavAccessMode(WebDavAccessMode value) {
     _webdavAccessMode = value;
-    notifyListeners();
+    _notifyListenersIfActive();
   }
 
   Future<void> saveWebDavConfig() async {
@@ -212,7 +217,7 @@ class WebDavBackupProvider extends ChangeNotifier {
       } else if (result.action == SyncAction.failed) {
         _setError('WebDAV 同步失败: ${result.error ?? '未知错误'}');
       }
-      notifyListeners();
+      _notifyListenersIfActive();
       return result;
     } catch (error) {
       final result = SyncResult(action: SyncAction.failed, error: error);
@@ -231,7 +236,7 @@ class WebDavBackupProvider extends ChangeNotifier {
         _syncCheckpoint = await _automaticSyncService.loadCheckpoint();
       }
       if (_disposed) return;
-      notifyListeners();
+      _notifyListenersIfActive();
     } catch (error, stackTrace) {
       logger.warning('刷新自动同步状态失败: $error');
       logger.debug(stackTrace.toString());
