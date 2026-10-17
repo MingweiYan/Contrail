@@ -405,7 +405,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     final List<Habit> singleHabitList = [habit];
 
     // 创建习惯颜色映射
-    final Map<String, Color> habitColors = {habit.name: habit.color};
+    final Map<String, Color> habitColors = {habit.id: habit.color};
     final provider = Provider.of<HabitDetailStatisticsProvider>(context);
     final stats = provider.calculateHabitStats();
     final completedDays = stats['completedDays'] as int;

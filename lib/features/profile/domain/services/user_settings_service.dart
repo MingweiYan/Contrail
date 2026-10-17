@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 
 class UserSettings {
   final String username;
@@ -51,6 +52,7 @@ class UserSettingsService implements IUserSettingsService {
     }
     await prefs.setBool(_keyDataBackupEnabled, settings.dataBackupEnabled);
     await prefs.setString(_keyBackupFrequency, settings.backupFrequency);
+    LocalSyncChangeBus.instance.notifyChanged();
   }
 
   Future<void> restoreSettings(
@@ -62,15 +64,22 @@ class UserSettingsService implements IUserSettingsService {
       final key = entry.key;
       final value = entry.value;
       if (skipKeys.contains(key)) continue;
+      bool? succeeded;
       if (value is String) {
-        await prefs.setString(key, value);
+        succeeded = await prefs.setString(key, value);
       } else if (value is bool) {
-        await prefs.setBool(key, value);
+        succeeded = await prefs.setBool(key, value);
       } else if (value is int) {
-        await prefs.setInt(key, value);
+        succeeded = await prefs.setInt(key, value);
       } else if (value is double) {
-        await prefs.setDouble(key, value);
+        succeeded = await prefs.setDouble(key, value);
+      } else if (value is List && value.every((element) => element is String)) {
+        succeeded = await prefs.setStringList(key, value.cast<String>());
+      }
+      if (succeeded == false) {
+        throw StateError('无法恢复设置: $key');
       }
     }
+    LocalSyncChangeBus.instance.notifyChanged();
   }
 }

@@ -1,9 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/core/platform/platform_capabilities.dart';
 
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
 import 'package:contrail/features/profile/domain/services/webdav_backup_service.dart';
-import 'package:contrail/features/profile/domain/services/local_storage_service.dart';
+import 'package:contrail/features/profile/domain/services/platform_local_storage_service.dart';
 import 'package:contrail/features/profile/domain/services/webdav_storage_service.dart';
 import 'package:contrail/features/profile/domain/services/backup_channel_service.dart';
 import 'package:contrail/features/profile/domain/services/auto_backup_scheduler.dart';
@@ -62,7 +63,8 @@ class AutoBackupService {
     if (localLast != null && webdavLast != null) {
       lastMillis = localLast > webdavLast ? localLast : webdavLast;
     } else {
-      lastMillis = localLast ?? webdavLast ?? prefs.getInt(_legacyLastBackupTimeKey);
+      lastMillis =
+          localLast ?? webdavLast ?? prefs.getInt(_legacyLastBackupTimeKey);
     }
 
     final last = lastMillis != null
@@ -145,10 +147,12 @@ class AutoBackupService {
       // 任一通道从未成功过，就应该尝试
       return true;
     }
-    final localDiff =
-        now.difference(DateTime.fromMillisecondsSinceEpoch(localLast)).inDays;
-    final webdavDiff =
-        now.difference(DateTime.fromMillisecondsSinceEpoch(webdavLast)).inDays;
+    final localDiff = now
+        .difference(DateTime.fromMillisecondsSinceEpoch(localLast))
+        .inDays;
+    final webdavDiff = now
+        .difference(DateTime.fromMillisecondsSinceEpoch(webdavLast))
+        .inDays;
     return localDiff >= freqDays || webdavDiff >= freqDays;
   }
 
@@ -159,11 +163,14 @@ class AutoBackupService {
 
     bool anySuccess = false;
     final List<_NamedChannel> channels = [
-      _NamedChannel(
-        'local',
-        _localLastBackupTimeKey,
-        LocalBackupService(storageService: LocalStorageService()),
-      ),
+      if (PlatformCapabilities.supportsLocalBackupFiles)
+        _NamedChannel(
+          'local',
+          _localLastBackupTimeKey,
+          LocalBackupService(
+            storageService: createPlatformLocalStorageService(),
+          ),
+        ),
       _NamedChannel(
         'webdav',
         _webdavLastBackupTimeKey,

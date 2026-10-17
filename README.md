@@ -3,6 +3,17 @@
 代码使用 Trae 来开发，非 Solo 模式，主要是 Doubao-seed-1.6 max 模式
 icon 等图像资源使用豆包来生成
 
+## 在线演示
+
+[打开 Contrail Web 演示](https://mingweiyan.github.io/Contrail/)
+
+这是完整的静态 Web 版本，不是截图。你可以自行创建习惯、记录数据并体验统计
+和主题等功能。演示数据只保存在当前浏览器的 IndexedDB/站点存储中，不会上传到
+Contrail 的服务器，也不会与其他访客共享。清除站点数据后演示数据会消失。
+
+GitHub Pages 不运行 WebDAV Gateway，因此这里只保证本地功能可用；需要使用
+坚果云等不开放浏览器 CORS 的 WebDAV 时，请使用集成式自部署版本。
+
 ## Motivation 
 
 为什么要做这个 App ?

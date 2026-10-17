@@ -1,10 +1,18 @@
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
 import 'package:contrail/features/profile/domain/services/local_backup_service.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
+import 'package:contrail/features/sync/domain/automatic_sync_service.dart';
 
 class MockLocalBackupService extends Mock implements LocalBackupService {}
+
+class MockAutomaticSyncService extends Mock implements AutomaticSyncService {}
+
+class MockHabitProvider extends Mock implements HabitProvider {}
 
 class FakeBackupFileInfo extends Fake implements BackupFileInfo {}
 
@@ -16,19 +24,34 @@ void main() {
 
   group('BackupProvider', () {
     late MockLocalBackupService mockLocalBackupService;
+    late MockAutomaticSyncService mockAutomaticSyncService;
     late BackupProvider backupProvider;
 
     setUp(() {
       mockLocalBackupService = MockLocalBackupService();
-      
+      mockAutomaticSyncService = MockAutomaticSyncService();
+
       when(() => mockLocalBackupService.initialize()).thenAnswer((_) async {});
-      when(() => mockLocalBackupService.checkStoragePermission()).thenAnswer((_) async => true);
-      when(() => mockLocalBackupService.hasExternalAuthorizedDirectory()).thenAnswer((_) async => false);
-      when(() => mockLocalBackupService.loadOrCreateBackupPath()).thenAnswer((_) async => '/test/path');
-      when(() => mockLocalBackupService.loadRetentionCount()).thenAnswer((_) async => 10);
-      when(() => mockLocalBackupService.loadBackupFiles(any())).thenAnswer((_) async => []);
-      
-      backupProvider = BackupProvider(mockLocalBackupService);
+      when(
+        () => mockLocalBackupService.checkStoragePermission(),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockLocalBackupService.hasExternalAuthorizedDirectory(),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockLocalBackupService.loadOrCreateBackupPath(),
+      ).thenAnswer((_) async => '/test/path');
+      when(
+        () => mockLocalBackupService.loadRetentionCount(),
+      ).thenAnswer((_) async => 10);
+      when(
+        () => mockLocalBackupService.loadBackupFiles(any()),
+      ).thenAnswer((_) async => []);
+
+      backupProvider = BackupProvider(
+        backupService: mockLocalBackupService,
+        automaticSyncService: mockAutomaticSyncService,
+      );
     });
 
     test('初始化时应该有正确的默认值', () {
@@ -53,81 +76,142 @@ void main() {
     });
 
     test('应该能刷新备份文件', () async {
-      when(() => mockLocalBackupService.loadBackupFiles(any())).thenAnswer((_) async => []);
-      
+      when(
+        () => mockLocalBackupService.loadBackupFiles(any()),
+      ).thenAnswer((_) async => []);
+
       await backupProvider.refreshBackupFiles();
-      
+
       verify(() => mockLocalBackupService.loadBackupFiles(any())).called(1);
       expect(backupProvider.isLoading, false);
     });
 
     test('应该能保存保留数量', () async {
-      when(() => mockLocalBackupService.saveRetentionCount(any())).thenAnswer((_) async {});
-      when(() => mockLocalBackupService.loadRetentionCount()).thenAnswer((_) async => 5);
-      
+      when(
+        () => mockLocalBackupService.saveRetentionCount(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockLocalBackupService.loadRetentionCount(),
+      ).thenAnswer((_) async => 5);
+
       await backupProvider.saveRetentionCount(5);
-      
+
       verify(() => mockLocalBackupService.saveRetentionCount(5)).called(1);
       verify(() => mockLocalBackupService.loadRetentionCount()).called(1);
       expect(backupProvider.retentionCount, 5);
     });
 
     test('应该能重置到默认备份路径', () async {
-      when(() => mockLocalBackupService.resetBackupPathToDefault()).thenAnswer((_) async => '/default/path');
-      when(() => mockLocalBackupService.loadBackupFiles(any())).thenAnswer((_) async => []);
-      
+      when(
+        () => mockLocalBackupService.resetBackupPathToDefault(),
+      ).thenAnswer((_) async => '/default/path');
+      when(
+        () => mockLocalBackupService.loadBackupFiles(any()),
+      ).thenAnswer((_) async => []);
+
       await backupProvider.resetBackupPathToDefault();
-      
+
       verify(() => mockLocalBackupService.resetBackupPathToDefault()).called(1);
       expect(backupProvider.localBackupPath, '/default/path');
     });
 
     test('应该能更改备份路径', () async {
-      when(() => mockLocalBackupService.changeBackupPath()).thenAnswer((_) async => '/new/path');
-      when(() => mockLocalBackupService.loadBackupFiles(any())).thenAnswer((_) async => []);
-      
+      when(
+        () => mockLocalBackupService.changeBackupPath(),
+      ).thenAnswer((_) async => '/new/path');
+      when(
+        () => mockLocalBackupService.loadBackupFiles(any()),
+      ).thenAnswer((_) async => []);
+
       await backupProvider.changeBackupPath();
-      
+
       verify(() => mockLocalBackupService.changeBackupPath()).called(1);
       expect(backupProvider.localBackupPath, '/new/path');
     });
 
     test('删除备份文件成功时应该更新列表', () async {
       final testFile = FakeBackupFileInfo();
-      when(() => mockLocalBackupService.deleteBackupFile(any())).thenAnswer((_) async => true);
-      
+      when(
+        () => mockLocalBackupService.deleteBackupFile(any()),
+      ).thenAnswer((_) async => true);
+
       final result = await backupProvider.deleteBackupFile(testFile);
-      
+
       verify(() => mockLocalBackupService.deleteBackupFile(testFile)).called(1);
       expect(result, true);
     });
 
     test('删除备份文件失败时应该返回false', () async {
       final testFile = FakeBackupFileInfo();
-      when(() => mockLocalBackupService.deleteBackupFile(any())).thenAnswer((_) async => false);
-      
+      when(
+        () => mockLocalBackupService.deleteBackupFile(any()),
+      ).thenAnswer((_) async => false);
+
       final result = await backupProvider.deleteBackupFile(testFile);
-      
+
       verify(() => mockLocalBackupService.deleteBackupFile(testFile)).called(1);
       expect(result, false);
     });
 
     test('备份成功时应该更新文件列表', () async {
-      when(() => mockLocalBackupService.performBackup(any())).thenAnswer((_) async => true);
-      when(() => mockLocalBackupService.loadBackupFiles(any())).thenAnswer((_) async => []);
-      
+      when(
+        () => mockLocalBackupService.performBackup(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockLocalBackupService.loadBackupFiles(any()),
+      ).thenAnswer((_) async => []);
+
       final result = await backupProvider.performBackup();
-      
+
       expect(result, isNotNull);
-    }, skip: '暂时跳过，避免复杂的mock setup');
+    });
 
     test('没有存储权限时备份应该失败', () async {
-      when(() => mockLocalBackupService.checkStoragePermission()).thenAnswer((_) async => false);
-      
+      when(
+        () => mockLocalBackupService.checkStoragePermission(),
+      ).thenAnswer((_) async => false);
+
       final result = await backupProvider.performBackup();
-      
+
       expect(result, false);
       expect(backupProvider.errorMessage, isNotNull);
+    });
+
+    testWidgets('恢复本地备份后清理同步检查点并自动发布恢复状态', (tester) async {
+      final backupFile = FakeBackupFileInfo();
+      final habitProvider = MockHabitProvider();
+      when(
+        () => mockLocalBackupService.restoreFromBackup(backupFile),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockAutomaticSyncService.notifyLocalReplacement(),
+      ).thenAnswer((_) async {});
+      when(() => habitProvider.loadHabits()).thenAnswer((_) async {});
+
+      late BuildContext context;
+      await tester.pumpWidget(
+        ChangeNotifierProvider<HabitProvider>.value(
+          value: habitProvider,
+          child: Builder(
+            builder: (builderContext) {
+              context = builderContext;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      final result = await backupProvider.restoreFromBackup(
+        backupFile,
+        context,
+      );
+
+      expect(result, isTrue);
+      verifyInOrder([
+        () => mockLocalBackupService.restoreFromBackup(backupFile),
+        () => mockAutomaticSyncService.notifyLocalReplacement(),
+        () => habitProvider.loadHabits(),
+      ]);
     });
   });
 }

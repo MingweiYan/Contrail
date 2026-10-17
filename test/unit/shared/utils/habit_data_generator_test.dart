@@ -1,10 +1,23 @@
+import 'package:contrail/core/di/injection_container.dart';
+import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:contrail/shared/utils/habit_data_generator.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
+import 'package:contrail/shared/services/habit_service.dart';
+import 'package:flutter/material.dart';
+
+class MockAddHabitUseCase extends Mock implements AddHabitUseCase {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    registerFallbackValue(Habit(id: 'fallback', name: 'fallback'));
+  });
+
   group('HabitDataGenerator', () {
     group('generateMockHabitsWithData', () {
       test('should generate exactly 6 habits', () {
@@ -79,6 +92,53 @@ void main() {
           expect(habit.currentDays, lessThanOrEqualTo(30));
         }
       });
+    });
+
+    testWidgets('refreshes listeners after all generated habits are saved', (
+      tester,
+    ) async {
+      await sl.reset();
+      sl.registerSingleton<HabitService>(HabitService());
+      addTearDown(sl.reset);
+
+      final addHabitUseCase = MockAddHabitUseCase();
+      final savedHabits = <Habit>[];
+      var refreshCount = 0;
+      Future<void>? generation;
+
+      when(() => addHabitUseCase.execute(any())).thenAnswer((invocation) async {
+        savedHabits.add(invocation.positionalArguments.single as Habit);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () {
+                  generation = HabitDataGenerator.generateAndSaveTestData(
+                    addHabitUseCase: addHabitUseCase,
+                    context: context,
+                    onDataSaved: () async {
+                      expect(savedHabits, hasLength(6));
+                      refreshCount++;
+                    },
+                  );
+                },
+                child: const Text('生成'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('生成'));
+      await tester.pump();
+      await generation!;
+      await tester.pumpAndSettle();
+
+      expect(savedHabits, hasLength(6));
+      expect(refreshCount, 1);
     });
   });
 }

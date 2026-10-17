@@ -3,11 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/habit_data_generator.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
+import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/shared/utils/json_editor_page.dart';
 import 'package:contrail/shared/utils/debug_logs_viewer_page.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 /// Debug菜单管理器 - 提供作为标签页的调试功能
 class DebugMenuManager with WidgetsBindingObserver {
@@ -181,7 +183,9 @@ class DebugMenuManager with WidgetsBindingObserver {
                       end: Alignment.bottomRight,
                       colors: [
                         Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                        Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(
@@ -211,6 +215,7 @@ class DebugMenuManager with WidgetsBindingObserver {
                     await HabitDataGenerator.generateAndSaveTestData(
                       addHabitUseCase: addHabitUseCase,
                       context: context,
+                      onDataSaved: context.read<HabitProvider>().loadHabits,
                     );
                   } catch (e) {
                     // 修复空指针错误

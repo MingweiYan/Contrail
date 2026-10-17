@@ -87,6 +87,7 @@ void main() {
           'backupFrequency': '每周',
           'someIntValue': 42,
           'someDoubleValue': 3.14,
+          'someStringList': <dynamic>['one', 'two'],
         };
 
         await userSettingsService.restoreSettings(settingsMap, {});
@@ -97,6 +98,7 @@ void main() {
         expect(prefs.getString('backupFrequency'), equals('每周'));
         expect(prefs.getInt('someIntValue'), equals(42));
         expect(prefs.getDouble('someDoubleValue'), equals(3.14));
+        expect(prefs.getStringList('someStringList'), equals(['one', 'two']));
       });
 
       test('should skip specified keys', () async {

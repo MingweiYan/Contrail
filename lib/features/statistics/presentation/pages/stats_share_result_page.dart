@@ -11,14 +11,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/features/statistics/presentation/providers/statistics_result_provider.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/services/habit_color_registry.dart';
+import 'package:contrail/shared/utils/time_management_util.dart';
 
 class StatsResultPage extends StatefulWidget {
   // 可选的参数，用于接收统计数据
   final Map<String, dynamic>? statisticsData;
   final String? periodType; // 'week', 'month', 'year'
 
-  const StatsResultPage({Key? key, this.statisticsData, this.periodType})
-    : super(key: key);
+  const StatsResultPage({super.key, this.statisticsData, this.periodType});
 
   @override
   State<StatsResultPage> createState() => _StatsResultPageState();
@@ -62,6 +62,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
       );
     } catch (e) {
       logger.error('❌  加载统计数据失败: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('加载统计数据失败')));
@@ -72,12 +73,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
   Map<String, int> _getMonthlyHabitCompletionCounts() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
     if (_periodType == 'year') {
-      return _statisticsService.getYearlyHabitCompletionCountsFor(
+      return _statisticsService.getYearlyHabitCompletionCountsForByHabitId(
         habitProvider.habits,
         year: _selectedYear,
       );
     }
-    return _statisticsService.getMonthlyHabitCompletionCountsFor(
+    return _statisticsService.getMonthlyHabitCompletionCountsForByHabitId(
       habitProvider.habits,
       year: _selectedYear,
       month: _selectedMonth,
@@ -88,12 +89,12 @@ class _StatsResultPageState extends State<StatsResultPage> {
   Map<String, int> _getMonthlyHabitCompletionMinutes() {
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
     if (_periodType == 'year') {
-      return _statisticsService.getYearlyHabitCompletionMinutesFor(
+      return _statisticsService.getYearlyHabitCompletionMinutesForByHabitId(
         habitProvider.habits,
         year: _selectedYear,
       );
     }
-    return _statisticsService.getMonthlyHabitCompletionMinutesFor(
+    return _statisticsService.getMonthlyHabitCompletionMinutesForByHabitId(
       habitProvider.habits,
       year: _selectedYear,
       month: _selectedMonth,
@@ -111,9 +112,9 @@ class _StatsResultPageState extends State<StatsResultPage> {
       startDate = DateTime(_selectedYear, 1, 1);
       endDate = DateTime(_selectedYear, 12, 31);
     } else {
-      final now = DateTime.now();
-      startDate = now.subtract(Duration(days: now.weekday - 1));
-      endDate = startDate.add(const Duration(days: 6));
+      final now = TimeManagementUtil.dateOnly(DateTime.now());
+      startDate = TimeManagementUtil.getWeekStartDate(now);
+      endDate = TimeManagementUtil.addCalendarDays(startDate, 6);
     }
     return _statisticsService.getHabitGoalCompletionDataFor(
       habitProvider.habits,
@@ -331,7 +332,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 ),
                 Expanded(
                   child: Text(
-                    '${_selectedYear}年${_selectedMonth}月',
+                    '$_selectedYear年$_selectedMonth月',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize:
@@ -379,7 +380,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 ),
                 Expanded(
                   child: Text(
-                    '${_selectedYear}年',
+                    '$_selectedYear年',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize:
@@ -410,6 +411,8 @@ class _StatsResultPageState extends State<StatsResultPage> {
   // 饼状图部分 - 用于显示习惯完成次数
   Widget _buildCompletionCountPieChart() {
     final completionCounts = _getMonthlyHabitCompletionCounts();
+    final habits = Provider.of<HabitProvider>(context, listen: false).habits;
+    final habitsById = {for (final habit in habits) habit.id: habit};
     final totalCount = completionCounts.values.fold(
       0,
       (sum, count) => sum + count,
@@ -421,10 +424,11 @@ class _StatsResultPageState extends State<StatsResultPage> {
 
     // 创建饼图数据点
     final List<PieChartSectionData> sections = [];
-    Color colorFor(String name) => sl<HabitColorRegistry>().getColor(
-      name,
+    Color colorFor(String habitId) => sl<HabitColorRegistry>().getColorById(
+      habitId,
       fallback: Theme.of(context).colorScheme.primary,
     );
+    String nameFor(String habitId) => habitsById[habitId]?.name ?? habitId;
 
     for (final entry in completionCounts.entries) {
       if (entry.value > 0) {
@@ -464,7 +468,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                       StatsShareResultPageConstants.pieChartLegendIconSpacing,
                 ),
                 Text(
-                  '${entry.key}: ${entry.value}次',
+                  '${nameFor(entry.key)}: ${entry.value}次',
                   style: TextStyle(
                     fontSize:
                         StatsShareResultPageConstants.pieChartLegendFontSize,
@@ -591,10 +595,13 @@ class _StatsResultPageState extends State<StatsResultPage> {
   // 饼状图部分 - 用于显示习惯完成时间
   Widget _buildCompletionTimePieChart() {
     final completionMinutes = _getMonthlyHabitCompletionMinutes();
-    Color colorFor(String name) => sl<HabitColorRegistry>().getColor(
-      name,
+    final habits = Provider.of<HabitProvider>(context, listen: false).habits;
+    final habitsById = {for (final habit in habits) habit.id: habit};
+    Color colorFor(String habitId) => sl<HabitColorRegistry>().getColorById(
+      habitId,
       fallback: Theme.of(context).colorScheme.primary,
     );
+    String nameFor(String habitId) => habitsById[habitId]?.name ?? habitId;
     final totalMinutes = completionMinutes.values.fold(
       0,
       (sum, minutes) => sum + minutes,
@@ -646,7 +653,7 @@ class _StatsResultPageState extends State<StatsResultPage> {
                 ),
                 SizedBox(width: ScreenUtil().setWidth(6)),
                 Text(
-                  '${entry.key}: $timeDisplay',
+                  '${nameFor(entry.key)}: $timeDisplay',
                   style: TextStyle(
                     fontSize: AppTypographyConstants.formSectionTitleFontSize,
                   ),
@@ -1121,10 +1128,10 @@ class KeepAliveStatsResultPage extends StatefulWidget {
   final String? periodType;
 
   const KeepAliveStatsResultPage({
-    Key? key,
+    super.key,
     this.statisticsData,
     this.periodType,
-  }) : super(key: key);
+  });
 
   @override
   State<KeepAliveStatsResultPage> createState() =>

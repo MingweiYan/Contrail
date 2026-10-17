@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 
 import '../../shared/models/theme_model.dart' as app_theme;
 import '../../shared/theme/custom_theme_palette.dart';
@@ -43,12 +44,15 @@ class ThemeProvider extends ChangeNotifier {
     _loadSettings();
   }
 
+  Future<void> reload() => _loadSettings();
+
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final storedThemeOverrides = prefs.getString(_themeOverridesKey);
       if (storedThemeOverrides != null && storedThemeOverrides.isNotEmpty) {
-        final decoded = jsonDecode(storedThemeOverrides) as Map<String, dynamic>;
+        final decoded =
+            jsonDecode(storedThemeOverrides) as Map<String, dynamic>;
         _themeOverrides = decoded.map(
           (key, value) => MapEntry(
             key,
@@ -73,15 +77,16 @@ class ThemeProvider extends ChangeNotifier {
       final storedThemeId = prefs.getString(_selectedThemeIdKey);
       final legacyThemeName = prefs.getString(_legacySelectedThemeKey);
       final legacyThemeId = _legacyThemeNameToId[legacyThemeName];
-      final matchedLegacyTheme = _availableThemes.cast<app_theme.AppTheme?>().firstWhere(
-        (theme) => theme?.name == legacyThemeName || theme?.id == legacyThemeId,
-        orElse: () => null,
-      );
+      final matchedLegacyTheme = _availableThemes
+          .cast<app_theme.AppTheme?>()
+          .firstWhere(
+            (theme) =>
+                theme?.name == legacyThemeName || theme?.id == legacyThemeId,
+            orElse: () => null,
+          );
 
       _selectedThemeId =
-          storedThemeId ??
-          matchedLegacyTheme?.id ??
-          _availableThemes.first.id;
+          storedThemeId ?? matchedLegacyTheme?.id ?? _availableThemes.first.id;
       if (!_availableThemes.any((theme) => theme.id == _selectedThemeId)) {
         _selectedThemeId = _availableThemes.first.id;
       }
@@ -108,12 +113,11 @@ class ThemeProvider extends ChangeNotifier {
     await prefs.setString(
       _themeOverridesKey,
       jsonEncode(
-        _themeOverrides.map(
-          (key, value) => MapEntry(key, value.toMap()),
-        ),
+        _themeOverrides.map((key, value) => MapEntry(key, value.toMap())),
       ),
     );
     await prefs.remove(_legacyCustomThemePaletteKey);
+    LocalSyncChangeBus.instance.notifyChanged();
   }
 
   Future<void> setThemeMode(app_theme.ThemeMode mode) async {
@@ -125,10 +129,9 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Future<void> setThemeByName(String themeName) async {
-    final matchedTheme = _availableThemes.cast<app_theme.AppTheme?>().firstWhere(
-          (theme) => theme?.name == themeName,
-          orElse: () => null,
-        );
+    final matchedTheme = _availableThemes
+        .cast<app_theme.AppTheme?>()
+        .firstWhere((theme) => theme?.name == themeName, orElse: () => null);
     if (matchedTheme != null) {
       await setThemeById(matchedTheme.id);
     }
@@ -169,10 +172,7 @@ class ThemeProvider extends ChangeNotifier {
     CustomThemePalette palette, {
     bool applyAfterSave = true,
   }) async {
-    _themeOverrides = {
-      ..._themeOverrides,
-      themeId: palette,
-    };
+    _themeOverrides = {..._themeOverrides, themeId: palette};
     _rebuildAvailableThemes();
     if (applyAfterSave) {
       _selectedThemeId = themeId;
@@ -248,9 +248,7 @@ class ThemeProvider extends ChangeNotifier {
           );
         })
         .toList(growable: false);
-    final themeMap = {
-      for (final theme in builtThemes) theme.id: theme,
-    };
+    final themeMap = {for (final theme in builtThemes) theme.id: theme};
     final sanitizedOrder = <String>[];
 
     for (final themeId in _themeOrderIds) {

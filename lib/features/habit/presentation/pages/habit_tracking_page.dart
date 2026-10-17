@@ -14,6 +14,7 @@ import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/habit/presentation/widgets/pomodoro_settings_dialog.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:contrail/shared/layout/responsive_layout.dart';
 
 class HabitTrackingPage extends StatefulWidget {
   final Habit habit;
@@ -147,7 +148,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   // 重置计时器
   void _resetTimer() {
     _focusManager.resetFocus();
-    logger.debug('重置计时器，新的持续时间: ${_timerDuration}分钟');
+    logger.debug('重置计时器，新的持续时间: $_timerDuration分钟');
   }
 
   // 处理倒计时结束
@@ -181,7 +182,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
     showDialog(
       context: context,
       barrierDismissible: false, // 用户必须点击按钮才能关闭
-      builder: (context) {
+      builder: (dialogContext) {
         // 根据不同模式设置弹窗标题和内容
         String title = '';
         String content = '';
@@ -210,7 +211,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
 
                 // 根据不同模式处理用户确认后的逻辑
                 if (_selectedMode == TrackingMode.countdown) {
@@ -315,14 +316,14 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
   void _showConfirmationDialog() {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('确认停止'),
           content: const Text('确定要停止当前的计时吗？'),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 logger.debug('用户取消停止计时');
               },
               child: const Text('取消'),
@@ -335,7 +336,7 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                 setState(() {
                   _showSettings = true;
                 });
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
               },
               child: const Text('不保存'),
             ),
@@ -358,16 +359,22 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
                   logger.debug('专注记录保存成功，时长: ${duration.inMinutes}分钟');
                 } catch (e) {
                   logger.error('保存专注记录失败', e);
+                  if (!mounted) {
+                    return;
+                  }
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('保存专注记录失败: $e')));
                 }
 
+                if (!mounted || !dialogContext.mounted) {
+                  return;
+                }
                 setState(() {
                   _showSettings = true;
                 });
 
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
               },
               child: const Text('保存'),
             ),
@@ -487,8 +494,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
           // 时钟部分 - 始终保持在整个页面的最中央
           Center(
             child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.75,
-              height: MediaQuery.of(context).size.width * 0.75,
+              width: ResponsiveLayout.trackingClockDiameter(context),
+              height: ResponsiveLayout.trackingClockDiameter(context),
               child: ClockWidget(
                 // 根据当前模式设置不同的初始值
                 duration: _selectedMode == TrackingMode.stopwatch
@@ -689,8 +696,8 @@ class _HabitTrackingPageState extends State<HabitTrackingPage> {
           // 时钟部分 - 始终保持在整个页面的最中央
           Center(
             child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.75,
-              height: MediaQuery.of(context).size.width * 0.75,
+              width: ResponsiveLayout.trackingClockDiameter(context),
+              height: ResponsiveLayout.trackingClockDiameter(context),
               child: Stack(
                 alignment: Alignment.center,
                 children: [

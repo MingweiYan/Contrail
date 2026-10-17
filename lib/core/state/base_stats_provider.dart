@@ -173,11 +173,11 @@ class BaseStatsProvider with ChangeNotifier {
 
     switch (_selectedPeriod) {
       case 'week':
-        return '${_selectedYear}年第${_selectedWeek}周';
+        return '$_selectedYear年第$_selectedWeek周';
       case 'month':
-        return '${_selectedYear}年${_selectedMonth}月';
+        return '$_selectedYear年$_selectedMonth月';
       case 'year':
-        return '${_selectedYear}年';
+        return '$_selectedYear年';
       default:
         return getCurrentTimeLabel();
     }
@@ -286,7 +286,7 @@ class BaseStatsProvider with ChangeNotifier {
   /// 对于 year 模式 N=365，图表会按月聚合 12 个自然月。
   DateTimeRange getRollingDateRange() {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = TimeManagementUtil.dateOnly(now);
     final int days;
     switch (_selectedPeriod) {
       case 'month':
@@ -303,7 +303,7 @@ class BaseStatsProvider with ChangeNotifier {
     // 滚动窗口：以今天为 end
     if (_isRollingWindow) {
       return DateTimeRange(
-        start: today.subtract(Duration(days: days - 1)),
+        start: TimeManagementUtil.addCalendarDays(today, -(days - 1)),
         end: today,
       );
     }
@@ -312,7 +312,7 @@ class BaseStatsProvider with ChangeNotifier {
     final naturalRange = getSelectedDateRange();
     final end = naturalRange.end;
     return DateTimeRange(
-      start: end.subtract(Duration(days: days - 1)),
+      start: TimeManagementUtil.addCalendarDays(end, -(days - 1)),
       end: end,
     );
   }

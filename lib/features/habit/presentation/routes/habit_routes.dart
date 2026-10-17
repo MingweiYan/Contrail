@@ -18,6 +18,7 @@ class HabitRoutes {
     GoRoute(path: add, builder: (context, state) => const AddHabitPage()),
     GoRoute(
       path: edit,
+      redirect: (context, state) => state.extra is Habit ? null : '/habits',
       builder: (context, state) {
         final habit = state.extra as Habit;
         return AddHabitPage(habitToEdit: habit);
@@ -25,6 +26,7 @@ class HabitRoutes {
     ),
     GoRoute(
       path: tracking,
+      redirect: (context, state) => state.extra is Habit ? null : '/habits',
       builder: (context, state) {
         final habit = state.extra as Habit;
         return HabitTrackingPage(habit: habit);

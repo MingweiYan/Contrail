@@ -54,13 +54,11 @@ class _MainTabPageState extends State<MainTabPage> {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: Stack(
-          children: [
-            Container(
-              decoration: decoration,
-              child: _pages.elementAt(_selectedIndex),
-            ),
-          ],
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: decoration,
+          child: _pages.elementAt(_selectedIndex),
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -78,44 +76,57 @@ class _MainTabPageState extends State<MainTabPage> {
                 final item = items[index];
                 final isSelected = _selectedIndex == index;
                 return Expanded(
-                  child: GestureDetector(
-                    onTap: () => _onItemTapped(index),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: AppTypographyConstants.bottomNavItemVerticalPadding,
-                      ),
-                      decoration: isSelected
-                          ? ThemeHelper.selectedNavigationItemDecoration(context)
-                          : BoxDecoration(
-                              borderRadius: BorderRadius.circular(18.r),
-                            ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            item.icon,
-                            size: ScreenUtil().setSp(19),
-                            color: isSelected
-                                ? visualTheme.navSelectedForeground
-                                : visualTheme.navUnselectedForeground,
-                          ),
-                          SizedBox(width: 6.w),
-                          Text(
-                            item.label,
-                            style: TextStyle(
-                              fontSize:
-                                  AppTypographyConstants.bottomNavLabelFontSize,
-                              fontWeight: isSelected
-                                  ? FontWeight.w800
-                                  : FontWeight.w600,
+                  child: Semantics(
+                    button: true,
+                    selected: isSelected,
+                    label: item.label,
+                    child: InkWell(
+                      onTap: () => _onItemTapped(index),
+                      borderRadius: BorderRadius.circular(18.r),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: AppTypographyConstants
+                              .bottomNavItemVerticalPadding,
+                        ),
+                        decoration: isSelected
+                            ? ThemeHelper.selectedNavigationItemDecoration(
+                                context,
+                              )
+                            : BoxDecoration(
+                                borderRadius: BorderRadius.circular(18.r),
+                              ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              item.icon,
+                              size: ScreenUtil().setSp(19),
                               color: isSelected
                                   ? visualTheme.navSelectedForeground
                                   : visualTheme.navUnselectedForeground,
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 6.w),
+                            Flexible(
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: AppTypographyConstants
+                                      .bottomNavLabelFontSize,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                                  color: isSelected
+                                      ? visualTheme.navSelectedForeground
+                                      : visualTheme.navUnselectedForeground,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contrail/shared/utils/logger.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
+import 'package:contrail/features/sync/domain/local_sync_change_bus.dart';
 
 class PersonalizationProvider extends ChangeNotifier {
   static const String _weekStartDayKey = 'weekStartDay';
@@ -58,6 +59,7 @@ class PersonalizationProvider extends ChangeNotifier {
       // 保存到本地存储
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_weekStartDayKey, value.name);
+      LocalSyncChangeBus.instance.notifyChanged();
 
       notifyListeners();
       logger.info('周起始日设置已保存: ${value.name}');
@@ -92,6 +94,7 @@ class PersonalizationProvider extends ChangeNotifier {
       // 清除存储的设置
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_weekStartDayKey);
+      LocalSyncChangeBus.instance.notifyChanged();
 
       notifyListeners();
       logger.info('个性化设置已重置到默认值');

@@ -4,6 +4,35 @@ import 'package:flutter/material.dart';
 enum WeekStartDay { sunday, monday }
 
 class TimeManagementUtil {
+  /// Normalizes a value to a local calendar date.
+  ///
+  /// Statistics are keyed by the user's calendar day, so the time of day and
+  /// UTC offset must not take part in comparisons.
+  static DateTime dateOnly(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  /// Adds calendar days without assuming that every local day is 24 hours.
+  static DateTime addCalendarDays(DateTime date, int days) {
+    return DateTime(date.year, date.month, date.day + days);
+  }
+
+  /// Returns the number of calendar-day boundaries from [start] to [end].
+  ///
+  /// UTC is used only for the arithmetic so daylight-saving transitions do
+  /// not turn a neighbouring date into a zero- or two-day difference.
+  static int calendarDayDifference(DateTime start, DateTime end) {
+    final startOrdinal = DateTime.utc(start.year, start.month, start.day);
+    final endOrdinal = DateTime.utc(end.year, end.month, end.day);
+    return endOrdinal.difference(startOrdinal).inDays;
+  }
+
+  /// Counts both endpoints of a calendar-date range.
+  static int inclusiveCalendarDayCount(DateTime start, DateTime end) {
+    final difference = calendarDayDifference(start, end);
+    return difference < 0 ? 0 : difference + 1;
+  }
+
   static int getWeekNumber(
     DateTime date, {
     WeekStartDay weekStartDay = WeekStartDay.monday,
@@ -14,7 +43,7 @@ class TimeManagementUtil {
     int firstDayAdjustedWeekday = (firstDayOfYear.weekday - offset) % 7;
     if (firstDayAdjustedWeekday < 0) firstDayAdjustedWeekday = 6;
 
-    int daysFromFirstDay = date.difference(firstDayOfYear).inDays;
+    int daysFromFirstDay = calendarDayDifference(firstDayOfYear, date);
     int weekNumber = ((daysFromFirstDay + firstDayAdjustedWeekday + 1) / 7)
         .ceil();
     return max(1, weekNumber);
@@ -42,15 +71,11 @@ class TimeManagementUtil {
         firstWeekMonday = firstDayOfYear;
       } else {
         final daysToSubtract = firstDayWeekday - 1;
-        firstWeekMonday = firstDayOfYear.subtract(
-          Duration(days: daysToSubtract),
-        );
+        firstWeekMonday = addCalendarDays(firstDayOfYear, -daysToSubtract);
       }
 
-      final targetWeekMonday = firstWeekMonday.add(
-        Duration(days: (week - 1) * 7),
-      );
-      final targetWeekSunday = targetWeekMonday.add(const Duration(days: 6));
+      final targetWeekMonday = addCalendarDays(firstWeekMonday, (week - 1) * 7);
+      final targetWeekSunday = addCalendarDays(targetWeekMonday, 6);
 
       return DateTimeRange(start: targetWeekMonday, end: targetWeekSunday);
     } else {
@@ -62,15 +87,11 @@ class TimeManagementUtil {
         firstWeekSunday = firstDayOfYear;
       } else {
         final daysToSubtract = firstDayWeekday;
-        firstWeekSunday = firstDayOfYear.subtract(
-          Duration(days: daysToSubtract),
-        );
+        firstWeekSunday = addCalendarDays(firstDayOfYear, -daysToSubtract);
       }
 
-      final targetWeekSunday = firstWeekSunday.add(
-        Duration(days: (week - 1) * 7),
-      );
-      final targetWeekSaturday = targetWeekSunday.add(const Duration(days: 6));
+      final targetWeekSunday = addCalendarDays(firstWeekSunday, (week - 1) * 7);
+      final targetWeekSaturday = addCalendarDays(targetWeekSunday, 6);
 
       return DateTimeRange(start: targetWeekSunday, end: targetWeekSaturday);
     }
@@ -96,7 +117,7 @@ class TimeManagementUtil {
 
   static DateTime getWeekEndDate(DateTime date, {WeekStartDay? weekStartDay}) {
     final startDate = getWeekStartDate(date, weekStartDay: weekStartDay);
-    return startDate.add(const Duration(days: 6));
+    return addCalendarDays(startDate, 6);
   }
 
   static String generateTimeLabel(
@@ -129,8 +150,10 @@ class TimeManagementUtil {
   }
 
   static bool isDateInRange(DateTime date, DateTimeRange range) {
-    return date.isAfter(range.start.subtract(const Duration(seconds: 1))) &&
-        date.isBefore(range.end.add(const Duration(seconds: 1)));
+    final day = dateOnly(date);
+    final start = dateOnly(range.start);
+    final end = dateOnly(range.end);
+    return !day.isBefore(start) && !day.isAfter(end);
   }
 
   static int getDaysInMonth(int year, int month) {

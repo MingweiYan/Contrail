@@ -408,6 +408,14 @@ class StatisticsPageConstants extends BaseLayoutConstants {
   // 间距相关参数
   static final double titleSubtitleSpacing = ScreenUtil().setHeight(8);
   static final double subtitleCardSpacing = ScreenUtil().setHeight(24);
+
+  // 与明细、趋势视图中的其他统计面板保持相同的水平边界。
+  static EdgeInsets get legendFilterMargin => EdgeInsets.fromLTRB(
+    ScreenUtil().setWidth(16),
+    ScreenUtil().setHeight(12),
+    ScreenUtil().setWidth(16),
+    ScreenUtil().setHeight(4),
+  );
 }
 
 /// 习惯详情统计页面专用常量

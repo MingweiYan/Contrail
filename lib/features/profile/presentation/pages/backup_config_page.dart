@@ -1,7 +1,10 @@
 import 'package:contrail/features/profile/presentation/providers/backup_provider.dart';
 import 'package:contrail/features/profile/presentation/providers/webdav_backup_provider.dart';
+import 'package:contrail/features/profile/domain/services/webdav_access_mode.dart';
+import 'package:contrail/features/profile/domain/services/webdav_request_client.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -417,6 +420,11 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
   late TextEditingController _passwordController;
   late TextEditingController _pathController;
   late int _retentionCount;
+  late WebDavAccessMode _accessMode;
+  bool _obscurePassword = true;
+  bool _isHydratingForm = false;
+  bool _hasUserEditedForm = false;
+  bool _hasHydratedLoadedConfig = false;
 
   @override
   void initState() {
@@ -427,10 +435,45 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
     _passwordController = TextEditingController(text: provider.webdavPassword);
     _pathController = TextEditingController(text: provider.webdavPath);
     _retentionCount = provider.retentionCount;
+    _accessMode = provider.webdavAccessMode;
+    _hasHydratedLoadedConfig = provider.isConfigLoaded;
+    _urlController.addListener(_markFormEdited);
+    _usernameController.addListener(_markFormEdited);
+    _passwordController.addListener(_markFormEdited);
+    _pathController.addListener(_markFormEdited);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.watch<WebDavBackupProvider>();
+    if (!provider.isConfigLoaded || _hasHydratedLoadedConfig) return;
+
+    _hasHydratedLoadedConfig = true;
+    if (_hasUserEditedForm) return;
+
+    _isHydratingForm = true;
+    _urlController.text = provider.webdavUrl;
+    _usernameController.text = provider.webdavUsername;
+    _passwordController.text = provider.webdavPassword;
+    _pathController.text = provider.webdavPath;
+    _retentionCount = provider.retentionCount;
+    _accessMode = provider.webdavAccessMode;
+    _isHydratingForm = false;
+  }
+
+  void _markFormEdited() {
+    if (!_isHydratingForm) {
+      _hasUserEditedForm = true;
+    }
   }
 
   @override
   void dispose() {
+    _urlController.removeListener(_markFormEdited);
+    _usernameController.removeListener(_markFormEdited);
+    _passwordController.removeListener(_markFormEdited);
+    _pathController.removeListener(_markFormEdited);
     _urlController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -444,6 +487,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
     provider.setWebDavUsername(_usernameController.text.trim());
     provider.setWebDavPassword(_passwordController.text);
     provider.setWebDavPath(_pathController.text.trim());
+    provider.setWebDavAccessMode(_accessMode);
     await provider.saveRetentionCount(_retentionCount);
     await provider.saveWebDavConfig();
     if (!mounted) return;
@@ -473,6 +517,7 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                 final configured =
                     provider.webdavUrl.trim().isNotEmpty &&
                     provider.webdavUsername.trim().isNotEmpty &&
+                    provider.webdavPassword.isNotEmpty &&
                     provider.webdavPath.trim().isNotEmpty;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,6 +598,12 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (kIsWeb &&
+                                      WebDavRequestClient
+                                          .isGatewayBuildConfigured) ...[
+                                    _buildAccessModeSelector(context),
+                                    SizedBox(height: 12.h),
+                                  ],
                                   _buildFieldCard(
                                     context,
                                     icon: Icons.link_rounded,
@@ -584,11 +635,38 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
                                     icon: Icons.lock_outline_rounded,
                                     title: '密码',
                                     child: TextField(
+                                      key: const ValueKey(
+                                        'webdav_password_field',
+                                      ),
                                       controller: _passwordController,
-                                      obscureText: true,
-                                      decoration: const InputDecoration(
+                                      obscureText: _obscurePassword,
+                                      autocorrect: false,
+                                      enableSuggestions: false,
+                                      autofillHints: const [
+                                        AutofillHints.password,
+                                      ],
+                                      decoration: InputDecoration(
                                         border: InputBorder.none,
                                         hintText: '输入 WebDAV 密码',
+                                        suffixIcon: IconButton(
+                                          key: const ValueKey(
+                                            'webdav_password_visibility',
+                                          ),
+                                          tooltip: _obscurePassword
+                                              ? '显示密码'
+                                              : '隐藏密码',
+                                          onPressed: () {
+                                            setState(() {
+                                              _obscurePassword =
+                                                  !_obscurePassword;
+                                            });
+                                          },
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -675,6 +753,65 @@ class _WebDavBackupConfigPageState extends State<WebDavBackupConfigPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAccessModeSelector(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: ThemeHelper.visualTheme(context).panelSecondaryColor,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: ThemeHelper.visualTheme(context).panelBorderColor,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '连接方式',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.cardTitleFontSize,
+              fontWeight: FontWeight.w700,
+              color: ThemeHelper.onBackground(context),
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            _accessMode == WebDavAccessMode.direct
+                ? '浏览器直接连接 WebDAV，服务端需要允许当前站点跨域访问。'
+                : '由 Contrail 无状态 Gateway 转发，适用于不支持浏览器跨域的 WebDAV。',
+            style: TextStyle(
+              fontSize: AppTypographyConstants.formHelperFontSize,
+              height: 1.4,
+              color: ThemeHelper.onBackground(context).withValues(alpha: 0.68),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          SegmentedButton<WebDavAccessMode>(
+            segments: const [
+              ButtonSegment(
+                value: WebDavAccessMode.direct,
+                icon: Icon(Icons.lock_person_outlined),
+                label: Text('隐私直连'),
+              ),
+              ButtonSegment(
+                value: WebDavAccessMode.gateway,
+                icon: Icon(Icons.hub_outlined),
+                label: Text('兼容模式'),
+              ),
+            ],
+            selected: {_accessMode},
+            onSelectionChanged: (selection) {
+              setState(() {
+                _accessMode = selection.single;
+              });
+            },
+          ),
+        ],
       ),
     );
   }
