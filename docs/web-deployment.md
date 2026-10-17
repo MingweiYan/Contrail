@@ -82,10 +82,12 @@ Download and extract the bundle for the current machine from
 - `Contrail-macOS-x64.zip` for Intel Macs.
 - `Contrail-Windows-x64.zip` for 64-bit Windows.
 
-On macOS, double-click `Start Contrail.command`. On Windows, double-click
-`Start Contrail.cmd`. Flutter and Dart are not required. Keep the extracted
-directory together because the launcher, Web assets, and native server are a
-single bundle.
+On macOS, double-click `Start Contrail.command`; use `Stop Contrail.command`
+when finished. On Windows, use `Start Contrail.cmd` and `Stop Contrail.cmd`.
+The service runs in the background, so closing the terminal window does not
+stop it. Flutter and Dart are not required. Keep the extracted directory
+together because the launchers, runtime state, Web assets, and native server
+are a single bundle.
 
 Release bundles are built and smoke-tested on their native GitHub runners.
 Version tags publish the three archives plus `SHA256SUMS.txt`; the existing
@@ -98,11 +100,22 @@ and no WebDAV credential or user data is embedded in any bundle.
 
 #### Build from source
 
-The repository includes platform-native launchers that install locked Flutter
-dependencies, build the Web application, compile the integrated server, start
-it, verify `/healthz`, and open the application in the default browser.
-Flutter must already be installed and available on `PATH`; CI pins Flutter
-`3.41.9`, which is the recommended local version.
+Building and running are separate operations. The deployment launcher reuses
+an existing `build/web` and native server. If either artifact is missing, it
+automatically invokes the build script; use `--rebuild` / `-Rebuild` after a
+source update when an older build already exists. Flutter must be installed and
+available on `PATH` only when a build is needed. CI pins Flutter `3.41.9`, which
+is the recommended local version.
+
+To build without starting the service, use:
+
+```sh
+./scripts/build_web_macos.command
+```
+
+```powershell
+scripts\build_web_windows.cmd
+```
 
 On macOS, double-click `scripts/deploy_web_macos.command` in Finder or run:
 
@@ -118,6 +131,21 @@ also be run directly:
 ```powershell
 .\scripts\deploy_web.ps1
 ```
+
+Both launchers return after `/healthz` succeeds while Contrail continues in the
+background. Stop the exact recorded Contrail process with the companion script:
+
+```sh
+./scripts/stop_web_macos.command
+```
+
+```powershell
+scripts\stop_web_windows.cmd
+```
+
+The stop script validates that the recorded PID still belongs to the expected
+Contrail executable before terminating it, so a stale PID file cannot kill an
+unrelated process.
 
 Command-line options can change the bind address, port, or allowlist:
 
@@ -135,10 +163,46 @@ Command-line options can change the bind address, port, or allowlist:
   -AllowedHosts dav.jianguoyun.com
 ```
 
-Use `--no-open` / `-NoOpen` to suppress browser launch. The
+Use `--no-open` / `-NoOpen` to suppress browser launch and `--skip-build` /
+`-SkipBuild` to require pre-existing artifacts without invoking Flutter. The
 `--smoke-test` / `-SmokeTest` option is intended for automation: it stops the
-service after the health check succeeds. GitHub Actions exercises this complete
-path on native macOS and Windows runners for relevant pull requests.
+temporary background process after the health check succeeds. GitHub Actions
+exercises separate build, background start, stop, and prebuilt bundle paths on
+native macOS and Windows runners for relevant pull requests.
+
+#### Local service logs
+
+Background deployments write service logs to `runtime/contrail.log` by
+default. Logs are bounded rather than append-only forever: each file is limited
+to 10 MB and 3 rotated backups are retained (`contrail.log.1` through `.3`), so
+the normal maximum is about 40 MB. The small `contrail-launch*.log` files only
+capture early process startup failures and are truncated on every launch.
+
+The default `info` level records lifecycle and failures. Per-request method,
+path, status, and timing are recorded only at `debug`; request headers, WebDAV
+credentials, bodies, and query strings are never included. Available controls:
+
+| macOS/Linux | Windows | Environment | Purpose |
+| --- | --- | --- | --- |
+| `--log-level debug` | `-LogLevel debug` | `CONTRAIL_LOG_LEVEL` | `debug`, `info`, `warn`, `error`, or `off` |
+| `--log-file path` | `-LogFile path` | `CONTRAIL_LOG_FILE` | Change the rotating log destination |
+| `--log-max-mb 20` | `-LogMaxMegabytes 20` | `CONTRAIL_LOG_MAX_BYTES` | Change the per-file size limit |
+| `--log-backups 5` | `-LogBackups 5` | `CONTRAIL_LOG_BACKUP_COUNT` | Change retained rotated files (0-100) |
+| `--open-log` | `-OpenLog` | — | Open the current log after startup |
+
+For example:
+
+```sh
+./scripts/deploy_web.sh --log-level debug --open-log
+```
+
+```powershell
+.\scripts\deploy_web.ps1 -LogLevel debug -OpenLog
+```
+
+The active file is rotated while the service is running, not only at restart.
+A single unusually large record can briefly exceed the per-file limit, but
+normal request and lifecycle entries remain within the configured bound.
 
 The service has no built-in edge authentication. Keep the default loopback
 binding for single-machine use. Before binding to `0.0.0.0` or exposing the
@@ -186,6 +250,10 @@ an allowlist, especially for an Internet-facing deployment:
 | `CONTRAIL_BIND_ADDRESS` | `0.0.0.0` | Service bind address |
 | `CONTRAIL_WEB_ROOT` | `build/web` | Flutter build directory |
 | `PORT` | `27831` | Service port |
+| `CONTRAIL_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`, or `off` |
+| `CONTRAIL_LOG_FILE` | stdout/stderr | Optional rotating server log file |
+| `CONTRAIL_LOG_MAX_BYTES` | `10485760` | Per-file log rotation threshold |
+| `CONTRAIL_LOG_BACKUP_COUNT` | `3` | Rotated log files to retain |
 
 For a private NAS or a local OpenList instance, the operator may also need to
 enable private targets, HTTP, and its non-standard port. Those options should

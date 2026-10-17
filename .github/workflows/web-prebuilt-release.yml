@@ -42,9 +42,12 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - name: Build and smoke-test from source
+      - name: Build from source
+        run: ./scripts/build_web_macos.command
+      - name: Smoke-test the compiled service
         run: >-
           ./scripts/deploy_web_macos.command
+          --skip-build
           --smoke-test
           --no-open
           --port 4182
@@ -53,11 +56,15 @@ jobs:
           ./scripts/package_prebuilt_web.sh
           --architecture ${{ matrix.architecture }}
           --output-dir dist
-      - name: Smoke-test the prebuilt release bundle
+      - name: Start the prebuilt release bundle
         run: >-
           "./dist/Contrail-macOS-${{ matrix.architecture }}/Start Contrail.command"
-          --smoke-test
           --no-open
+          --port 4184
+      - name: Verify the bounded log and stop the prebuilt release bundle
+        run: |
+          test -s "./dist/Contrail-macOS-${{ matrix.architecture }}/runtime/contrail.log"
+          "./dist/Contrail-macOS-${{ matrix.architecture }}/Stop Contrail.command"
       - uses: actions/upload-artifact@v4
         with:
           name: contrail-web-macos-${{ matrix.architecture }}
@@ -76,10 +83,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - name: Build and smoke-test from source
+      - name: Build from source
+        shell: cmd
+        run: scripts\build_web_windows.cmd
+      - name: Smoke-test the compiled service
         shell: cmd
         run: >-
           scripts\deploy_web_windows.cmd
+          -SkipBuild
           -SmokeTest
           -NoOpen
           -Port 4183
@@ -89,12 +100,17 @@ jobs:
           .\scripts\package_prebuilt_web.ps1
           -Architecture x64
           -OutputDirectory dist
-      - name: Smoke-test the prebuilt release bundle
+      - name: Start the prebuilt release bundle
         shell: cmd
         run: >-
           "dist\Contrail-Windows-x64\Start Contrail.cmd"
-          -SmokeTest
           -NoOpen
+          -Port 4185
+      - name: Verify the bounded log and stop the prebuilt release bundle
+        shell: cmd
+        run: |
+          if not exist "dist\Contrail-Windows-x64\runtime\contrail.log" exit /b 1
+          call "dist\Contrail-Windows-x64\Stop Contrail.cmd"
       - uses: actions/upload-artifact@v4
         with:
           name: contrail-web-windows-x64

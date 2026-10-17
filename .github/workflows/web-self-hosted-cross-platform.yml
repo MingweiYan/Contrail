@@ -7,10 +7,18 @@ on:
       - ".github/workflows/web-prebuilt-release.yml"
       - "lib/**"
       - "server/**"
+      - "scripts/build_web.sh"
+      - "scripts/build_web.ps1"
+      - "scripts/build_web_macos.command"
+      - "scripts/build_web_windows.cmd"
       - "scripts/deploy_web.sh"
       - "scripts/deploy_web.ps1"
       - "scripts/deploy_web_macos.command"
       - "scripts/deploy_web_windows.cmd"
+      - "scripts/stop_web.sh"
+      - "scripts/stop_web.ps1"
+      - "scripts/stop_web_macos.command"
+      - "scripts/stop_web_windows.cmd"
       - "scripts/package_prebuilt_web.sh"
       - "scripts/package_prebuilt_web.ps1"
       - "scripts/release/**"
@@ -48,9 +56,12 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - name: Build, start, and health-check the integrated service
+      - name: Build the Web application and native server
+        run: ./scripts/build_web_macos.command
+      - name: Start and health-check the compiled service
         run: >-
           ./scripts/deploy_web_macos.command
+          --skip-build
           --smoke-test
           --no-open
           --port 4182
@@ -59,11 +70,16 @@ jobs:
           ./scripts/package_prebuilt_web.sh
           --architecture ${{ matrix.architecture }}
           --output-dir dist
-      - name: Start and health-check the prebuilt release bundle
+      - name: Start the prebuilt release bundle in the background
         run: >-
           "./dist/Contrail-macOS-${{ matrix.architecture }}/Start Contrail.command"
-          --smoke-test
           --no-open
+          --port 4184
+          --log-level debug
+      - name: Verify the bounded log and stop the prebuilt release bundle
+        run: |
+          test -s "./dist/Contrail-macOS-${{ matrix.architecture }}/runtime/contrail.log"
+          "./dist/Contrail-macOS-${{ matrix.architecture }}/Stop Contrail.command"
       - name: Upload the prebuilt release bundle
         uses: actions/upload-artifact@v4
         with:
@@ -82,10 +98,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - name: Build, start, and health-check the integrated service
+      - name: Build the Web application and native server
+        shell: cmd
+        run: scripts\build_web_windows.cmd
+      - name: Start and health-check the compiled service
         shell: cmd
         run: >-
           scripts\deploy_web_windows.cmd
+          -SkipBuild
           -SmokeTest
           -NoOpen
           -Port 4183
@@ -95,12 +115,18 @@ jobs:
           .\scripts\package_prebuilt_web.ps1
           -Architecture x64
           -OutputDirectory dist
-      - name: Start and health-check the prebuilt release bundle
+      - name: Start the prebuilt release bundle in the background
         shell: cmd
         run: >-
           "dist\Contrail-Windows-x64\Start Contrail.cmd"
-          -SmokeTest
           -NoOpen
+          -Port 4185
+          -LogLevel debug
+      - name: Verify the bounded log and stop the prebuilt release bundle
+        shell: cmd
+        run: |
+          if not exist "dist\Contrail-Windows-x64\runtime\contrail.log" exit /b 1
+          call "dist\Contrail-Windows-x64\Stop Contrail.cmd"
       - name: Upload the prebuilt release bundle
         uses: actions/upload-artifact@v4
         with:
