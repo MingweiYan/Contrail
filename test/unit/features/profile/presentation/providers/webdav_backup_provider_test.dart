@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:contrail/features/habit/presentation/providers/habit_provider.dart';
 import 'package:contrail/features/profile/domain/models/backup_file_info.dart';
 import 'package:flutter/material.dart';
@@ -192,6 +194,23 @@ void main() {
       expect(result.action, SyncAction.uploaded);
       expect(webDavBackupProvider.syncCheckpoint, same(checkpoint));
       expect(webDavBackupProvider.isLoading, isFalse);
+    });
+
+    test('同步完成时 Provider 已释放也不会继续通知监听器', () async {
+      final syncCompleter = Completer<SyncResult>();
+      when(
+        () => mockAutomaticSyncService.synchronizeNow(),
+      ).thenAnswer((_) => syncCompleter.future);
+      final result = SyncResult(
+        action: SyncAction.failed,
+        error: StateError('simulated sync failure'),
+      );
+
+      final pendingSync = webDavBackupProvider.synchronize();
+      webDavBackupProvider.dispose();
+      syncCompleter.complete(result);
+
+      await expectLater(pendingSync, completion(equals(result)));
     });
 
     test('修改 WebDAV 端点时清除旧同步检查点', () async {

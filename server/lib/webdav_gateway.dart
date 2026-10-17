@@ -162,7 +162,13 @@ class WebDavGateway {
           'Request body is too large',
         );
       }
-      final body = await _readLimited(request, config.maxRequestBytes);
+      final body = await _readLimited(
+        request,
+        config.maxRequestBytes,
+        timeout: config.requestTimeout,
+        timeoutStatusCode: HttpStatus.requestTimeout,
+        timeoutMessage: 'WebDAV request body timed out',
+      );
       await _forward(request, target!, targetAddress, authorization, body);
     } on _GatewayRequestException catch (error) {
       await _error(request.response, error.statusCode, error.message);
@@ -394,15 +400,41 @@ class WebDavGateway {
     int limit, {
     int statusCode = HttpStatus.requestEntityTooLarge,
     String message = 'WebDAV payload exceeded the configured limit',
+    Duration? timeout,
+    int timeoutStatusCode = HttpStatus.gatewayTimeout,
+    String timeoutMessage = 'WebDAV payload timed out',
   }) async {
     final builder = BytesBuilder(copy: false);
     var total = 0;
-    await for (final chunk in stream) {
-      total += chunk.length;
-      if (total > limit) {
-        throw _GatewayRequestException(statusCode, message);
+    final iterator = StreamIterator<List<int>>(stream);
+    final stopwatch = timeout == null ? null : (Stopwatch()..start());
+    try {
+      while (true) {
+        final remaining = timeout == null ? null : timeout - stopwatch!.elapsed;
+        if (remaining != null && remaining <= Duration.zero) {
+          throw _GatewayRequestException(timeoutStatusCode, timeoutMessage);
+        }
+        final hasNext = remaining == null
+            ? await iterator.moveNext()
+            : await iterator.moveNext().timeout(
+                remaining,
+                onTimeout: () => throw _GatewayRequestException(
+                  timeoutStatusCode,
+                  timeoutMessage,
+                ),
+              );
+        if (!hasNext) break;
+
+        final chunk = iterator.current;
+        total += chunk.length;
+        if (total > limit) {
+          throw _GatewayRequestException(statusCode, message);
+        }
+        builder.add(chunk);
       }
-      builder.add(chunk);
+    } finally {
+      stopwatch?.stop();
+      await iterator.cancel();
     }
     return builder.takeBytes();
   }
@@ -439,6 +471,15 @@ class WebDavGateway {
       return false; // link-local and deprecated site-local ranges
     }
     if (bytes[0] == 0xff) return false; // multicast
+    if (bytes[0] == 0x20 && bytes[1] == 0x02) {
+      return false; // deprecated 6to4 embeds an IPv4 destination
+    }
+    if (bytes[0] == 0x20 &&
+        bytes[1] == 0x01 &&
+        bytes[2] == 0x00 &&
+        bytes[3] == 0x00) {
+      return false; // Teredo embeds obfuscated IPv4 endpoints
+    }
     if (bytes[0] == 0x20 &&
         bytes[1] == 0x01 &&
         bytes[2] == 0x0d &&

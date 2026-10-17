@@ -222,6 +222,73 @@ void main() {
     expect(oversizedResponse.body, contains('response exceeded'));
   });
 
+  test('times out an incomplete inbound request body', () async {
+    final gatewayUri = await _startGateway(
+      servers,
+      const WebDavGatewayConfig(
+        allowedHosts: {'webdav.invalid'},
+        allowPrivateTargets: true,
+        allowInsecureTargets: true,
+        requestTimeout: Duration(milliseconds: 100),
+      ),
+      lookup: (_) async => [InternetAddress.loopbackIPv4],
+    );
+    final socket = await Socket.connect(gatewayUri.host, gatewayUri.port);
+
+    socket.write(
+      'PUT ${gatewayUri.path} HTTP/1.1\r\n'
+      'Host: ${gatewayUri.authority}\r\n'
+      'Connection: close\r\n'
+      'Content-Length: 5\r\n'
+      '${WebDavGateway.targetUrlHeader}: '
+      'http://webdav.invalid:443/dav\r\n'
+      '${WebDavGateway.authorizationHeader}: Basic YWxpY2U6c2VjcmV0\r\n'
+      '\r\n'
+      '1',
+    );
+    await socket.flush();
+
+    final stopwatch = Stopwatch()..start();
+    final response = await utf8.decoder
+        .bind(socket)
+        .join()
+        .timeout(const Duration(seconds: 2));
+    stopwatch.stop();
+
+    // Dart's HttpServer may close an incomplete HTTP/1.1 request without
+    // serializing the 408 response, but the connection must still be released
+    // promptly instead of remaining occupied by a slow client.
+    expect(stopwatch.elapsed, lessThan(const Duration(seconds: 1)));
+    if (response.isNotEmpty) {
+      expect(response, startsWith('HTTP/1.1 408'));
+      expect(response, contains('WebDAV request body timed out'));
+    }
+  });
+
+  test('rejects IPv6 transition addresses that can tunnel to IPv4', () async {
+    for (final address in <String>[
+      '2002:7f00:1::',
+      '2001:0000:4136:e378:8000:63bf:3fff:fdd2',
+    ]) {
+      final gatewayUri = await _startGateway(
+        servers,
+        const WebDavGatewayConfig(allowedHosts: {'webdav.invalid'}),
+        lookup: (_) async => [InternetAddress(address)],
+      );
+
+      final response = await _send(
+        gatewayUri,
+        headers: {
+          WebDavGateway.targetUrlHeader: 'https://webdav.invalid/dav',
+          WebDavGateway.authorizationHeader: 'Basic YWxpY2U6c2VjcmV0',
+        },
+      );
+
+      expect(response.statusCode, HttpStatus.forbidden, reason: address);
+      expect(response.body, contains('private or reserved'), reason: address);
+    }
+  });
+
   test('fails startup validation without an explicit target policy', () {
     expect(
       const WebDavGatewayConfig().validateForStartup,
