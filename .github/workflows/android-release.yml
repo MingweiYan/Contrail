@@ -1,4 +1,4 @@
-name: Android Release
+name: Android + Web Release
 on:
   workflow_dispatch:
 
@@ -7,8 +7,11 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  android:
+    name: Build and release Android
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.version.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -67,6 +70,7 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
       - name: Prepare signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -171,11 +175,11 @@ jobs:
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Trigger prebuilt macOS and Windows Web bundles
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >-
-          gh workflow run web-prebuilt-release.yml
-          --repo "$GITHUB_REPOSITORY"
-          --ref main
-          --field tag_name="$TAG_NAME"
+
+  web:
+    name: Build and release Web bundles
+    needs: android
+    uses: ./.github/workflows/web-prebuilt-release.yml
+    with:
+      tag_name: ${{ needs.android.outputs.tag_name }}
+    secrets: inherit
