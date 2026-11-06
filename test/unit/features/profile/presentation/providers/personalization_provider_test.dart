@@ -14,6 +14,7 @@ void main() {
       await provider.initialize();
 
       expect(provider.weekStartDay, WeekStartDay.monday);
+      expect(provider.autoSortHabitsByProgress, true);
       expect(provider.isLoading, false);
       expect(provider.errorMessage, null);
     });
@@ -21,12 +22,27 @@ void main() {
     // 测试从存储加载设置
     test('应能从存储中加载已保存的设置', () async {
       // 模拟已保存的设置（周日）
-      SharedPreferences.setMockInitialValues({'weekStartDay': 'sunday'});
+      SharedPreferences.setMockInitialValues({
+        'weekStartDay': 'sunday',
+        'habit_list_auto_sort_by_progress': false,
+      });
 
       final provider = PersonalizationProvider();
       await provider.initialize();
 
       expect(provider.weekStartDay, WeekStartDay.sunday);
+      expect(provider.autoSortHabitsByProgress, false);
+    });
+
+    test('应能保存习惯卡片自动排序设置', () async {
+      SharedPreferences.setMockInitialValues({});
+      final provider = PersonalizationProvider();
+
+      await provider.setAutoSortHabitsByProgress(false);
+
+      expect(provider.autoSortHabitsByProgress, false);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('habit_list_auto_sort_by_progress'), false);
     });
 
     // 测试保存设置
@@ -48,7 +64,10 @@ void main() {
     // 测试重置功能
     test('重置功能应将设置恢复到默认值', () async {
       // 模拟已保存的设置
-      SharedPreferences.setMockInitialValues({'weekStartDay': 'sunday'});
+      SharedPreferences.setMockInitialValues({
+        'weekStartDay': 'sunday',
+        'habit_list_auto_sort_by_progress': false,
+      });
 
       final provider = PersonalizationProvider();
       await provider.initialize();
@@ -58,10 +77,12 @@ void main() {
 
       // 验证设置已重置
       expect(provider.weekStartDay, WeekStartDay.monday);
+      expect(provider.autoSortHabitsByProgress, true);
 
       // 验证存储中的值已被移除
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.containsKey('weekStartDay'), false);
+      expect(prefs.containsKey('habit_list_auto_sort_by_progress'), false);
     });
 
     // 测试设置检查功能
@@ -75,6 +96,12 @@ void main() {
       SharedPreferences.setMockInitialValues({'weekStartDay': 'monday'});
       final provider2 = PersonalizationProvider();
       expect(await provider2.hasSettings(), true);
+
+      SharedPreferences.setMockInitialValues({
+        'habit_list_auto_sort_by_progress': false,
+      });
+      final provider3 = PersonalizationProvider();
+      expect(await provider3.hasSettings(), true);
     });
 
     // 测试默认值获取

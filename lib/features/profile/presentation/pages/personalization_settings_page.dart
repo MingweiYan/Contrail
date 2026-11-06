@@ -19,168 +19,228 @@ class _PersonalizationSettingsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ChangeNotifierProvider(
-        create: (context) => PersonalizationProvider()..initialize(),
-        child: DecoratedBox(
-          decoration:
-              ThemeHelper.generateBackgroundDecoration(context) ??
-              BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-          child: SafeArea(
-            child: Padding(
-              padding: PageLayoutConstants.getPageContainerPadding(),
-              child: Consumer<PersonalizationProvider>(
-                builder: (context, provider, child) {
-                  final heroForeground =
-                      ThemeHelper.visualTheme(context).heroForeground;
-                  final heroSecondary =
-                      ThemeHelper.visualTheme(context).heroSecondaryForeground;
+      body: DecoratedBox(
+        decoration:
+            ThemeHelper.generateBackgroundDecoration(context) ??
+            BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
+        child: SafeArea(
+          child: Padding(
+            padding: PageLayoutConstants.getPageContainerPadding(),
+            child: Consumer<PersonalizationProvider>(
+              builder: (context, provider, child) {
+                final heroForeground = ThemeHelper.visualTheme(
+                  context,
+                ).heroForeground;
+                final heroSecondary = ThemeHelper.visualTheme(
+                  context,
+                ).heroSecondaryForeground;
 
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          decoration: ThemeHelper.heroDecoration(
-                            context,
-                            radius: 28.r,
-                          ),
-                          padding: EdgeInsets.all(20.w),
-                          child: Row(
-                            children: [
-                              _buildHeaderButton(context),
-                              SizedBox(width: 14.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '个性化设置',
-                                      style: TextStyle(
-                                        fontSize: AppTypographyConstants
-                                            .secondaryHeroTitleFontSize,
-                                        fontWeight: FontWeight.w800,
-                                        color: heroForeground,
-                                      ),
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    Text(
-                                      '调整与你的日历、统计与使用习惯相关的个人偏好',
-                                      style: TextStyle(
-                                        fontSize: AppTypographyConstants
-                                            .secondaryHeroSubtitleFontSize,
-                                        height: 1.5,
-                                        color: heroSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        decoration: ThemeHelper.heroDecoration(
+                          context,
+                          radius: 28.r,
                         ),
-                        SizedBox(
-                          height: PersonalizationSettingsPageConstants
-                              .containerTopMargin,
-                        ),
-                        Container(
-                          width: double.infinity,
-                          padding:
-                              PersonalizationSettingsPageConstants.containerPadding,
-                          decoration: ThemeHelper.panelDecoration(
-                            context,
-                            radius: PersonalizationSettingsPageConstants
-                                .containerBorderRadius,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '每周第一天',
-                                style: TextStyle(
-                                  fontSize: PersonalizationSettingsPageConstants
-                                      .titleFontSize,
-                                  fontWeight: FontWeight.w800,
-                                  color: ThemeHelper.onBackground(context),
-                                ),
-                              ),
-                              SizedBox(
-                                height: PersonalizationSettingsPageConstants
-                                    .titleDescriptionSpacing,
-                              ),
-                              Text(
-                                '选择每周的起始日期，影响日历显示和周统计数据',
-                                style: TextStyle(
-                                  fontSize: PersonalizationSettingsPageConstants
-                                      .descriptionFontSize,
-                                  height: 1.5,
-                                  color: ThemeHelper.onBackground(
-                                    context,
-                                  ).withValues(alpha: 0.7),
-                                ),
-                              ),
-                              SizedBox(
-                                height: PersonalizationSettingsPageConstants
-                                    .descriptionOptionsSpacing,
-                              ),
-                              Row(
+                        padding: EdgeInsets.all(20.w),
+                        child: Row(
+                          children: [
+                            _buildHeaderButton(context),
+                            SizedBox(width: 14.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: _buildOptionTile(
-                                      context,
-                                      label: '周天',
-                                      selected: provider.weekStartDay ==
-                                          WeekStartDay.sunday,
-                                      onTap: () {
-                                        provider.setWeekStartDay(
-                                          WeekStartDay.sunday,
-                                        );
-                                      },
+                                  Text(
+                                    '个性化设置',
+                                    style: TextStyle(
+                                      fontSize: AppTypographyConstants
+                                          .secondaryHeroTitleFontSize,
+                                      fontWeight: FontWeight.w800,
+                                      color: heroForeground,
                                     ),
                                   ),
-                                  SizedBox(
-                                    width: PersonalizationSettingsPageConstants
-                                        .optionsSpacing,
-                                  ),
-                                  Expanded(
-                                    child: _buildOptionTile(
-                                      context,
-                                      label: '周一',
-                                      selected: provider.weekStartDay ==
-                                          WeekStartDay.monday,
-                                      onTap: () {
-                                        provider.setWeekStartDay(
-                                          WeekStartDay.monday,
-                                        );
-                                      },
+                                  SizedBox(height: 8.h),
+                                  Text(
+                                    '调整与你的日历、统计与使用习惯相关的个人偏好',
+                                    style: TextStyle(
+                                      fontSize: AppTypographyConstants
+                                          .secondaryHeroSubtitleFontSize,
+                                      height: 1.5,
+                                      color: heroSecondary,
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: PersonalizationSettingsPageConstants
-                                .containerBottomMargin,
-                          ),
-                          child: Text(
-                            '设置会自动保存并在下次应用启动时生效',
-                            style: TextStyle(
-                              fontSize:
-                                  PersonalizationSettingsPageConstants.hintFontSize,
-                              color: ThemeHelper.onBackground(
-                                context,
-                              ).withValues(alpha: 0.52),
                             ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: PersonalizationSettingsPageConstants
+                            .containerTopMargin,
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: PersonalizationSettingsPageConstants
+                            .containerPadding,
+                        decoration: ThemeHelper.panelDecoration(
+                          context,
+                          radius: PersonalizationSettingsPageConstants
+                              .containerBorderRadius,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '每周第一天',
+                              style: TextStyle(
+                                fontSize: PersonalizationSettingsPageConstants
+                                    .titleFontSize,
+                                fontWeight: FontWeight.w800,
+                                color: ThemeHelper.onBackground(context),
+                              ),
+                            ),
+                            SizedBox(
+                              height: PersonalizationSettingsPageConstants
+                                  .titleDescriptionSpacing,
+                            ),
+                            Text(
+                              '选择每周的起始日期，影响日历显示和周统计数据',
+                              style: TextStyle(
+                                fontSize: PersonalizationSettingsPageConstants
+                                    .descriptionFontSize,
+                                height: 1.5,
+                                color: ThemeHelper.onBackground(
+                                  context,
+                                ).withValues(alpha: 0.7),
+                              ),
+                            ),
+                            SizedBox(
+                              height: PersonalizationSettingsPageConstants
+                                  .descriptionOptionsSpacing,
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildOptionTile(
+                                    context,
+                                    label: '周天',
+                                    selected:
+                                        provider.weekStartDay ==
+                                        WeekStartDay.sunday,
+                                    onTap: () {
+                                      provider.setWeekStartDay(
+                                        WeekStartDay.sunday,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: PersonalizationSettingsPageConstants
+                                      .optionsSpacing,
+                                ),
+                                Expanded(
+                                  child: _buildOptionTile(
+                                    context,
+                                    label: '周一',
+                                    selected:
+                                        provider.weekStartDay ==
+                                        WeekStartDay.monday,
+                                    onTap: () {
+                                      provider.setWeekStartDay(
+                                        WeekStartDay.monday,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: PersonalizationSettingsPageConstants
+                            .containerBottomMargin,
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: PersonalizationSettingsPageConstants
+                            .containerPadding,
+                        decoration: ThemeHelper.panelDecoration(
+                          context,
+                          radius: PersonalizationSettingsPageConstants
+                              .containerBorderRadius,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '习惯卡片排序',
+                                    style: TextStyle(
+                                      fontSize:
+                                          PersonalizationSettingsPageConstants
+                                              .titleFontSize,
+                                      fontWeight: FontWeight.w800,
+                                      color: ThemeHelper.onBackground(context),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: PersonalizationSettingsPageConstants
+                                        .titleDescriptionSpacing,
+                                  ),
+                                  Text(
+                                    provider.autoSortHabitsByProgress
+                                        ? '自动将未达成目标的习惯排在前面'
+                                        : '当前为手动顺序，可在习惯页拖动进度条调整',
+                                    style: TextStyle(
+                                      fontSize:
+                                          PersonalizationSettingsPageConstants
+                                              .descriptionFontSize,
+                                      height: 1.5,
+                                      color: ThemeHelper.onBackground(
+                                        context,
+                                      ).withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            Switch.adaptive(
+                              key: const ValueKey('habit-auto-sort-switch'),
+                              value: provider.autoSortHabitsByProgress,
+                              onChanged: provider.setAutoSortHabitsByProgress,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: PersonalizationSettingsPageConstants
+                              .containerBottomMargin,
+                        ),
+                        child: Text(
+                          '设置会自动保存并在下次应用启动时生效',
+                          style: TextStyle(
+                            fontSize: PersonalizationSettingsPageConstants
+                                .hintFontSize,
+                            color: ThemeHelper.onBackground(
+                              context,
+                            ).withValues(alpha: 0.52),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -197,14 +257,15 @@ class _PersonalizationSettingsPageState
         borderRadius: BorderRadius.circular(16.r),
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-          decoration: ThemeHelper.heroControlDecoration(
-            context,
-            radius: 16.r,
-          ),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 16.r),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.arrow_back_rounded, size: 18.sp, color: heroForeground),
+              Icon(
+                Icons.arrow_back_rounded,
+                size: 18.sp,
+                color: heroForeground,
+              ),
               SizedBox(width: 6.w),
               Text(
                 '返回',
@@ -256,7 +317,9 @@ class _PersonalizationSettingsPageState
               style: TextStyle(
                 fontSize: PersonalizationSettingsPageConstants.optionFontSize,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? scheme.primary : ThemeHelper.onBackground(context),
+                color: selected
+                    ? scheme.primary
+                    : ThemeHelper.onBackground(context),
               ),
             ),
           ),

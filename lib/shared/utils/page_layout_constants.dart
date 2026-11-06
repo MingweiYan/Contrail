@@ -40,8 +40,8 @@ class AppTypographyConstants extends BaseLayoutConstants {
   }
 
   // 主页面 Hero Header
-  static double get primaryHeroTitleFontSize => _sp(34);
-  static double get primaryHeroSubtitleFontSize => _sp(20);
+  static double get primaryHeroTitleFontSize => _sp(30);
+  static double get primaryHeroSubtitleFontSize => _sp(14);
 
   // 普通功能页 Hero Header
   static double get secondaryHeroTitleFontSize => _sp(28);
@@ -49,8 +49,8 @@ class AppTypographyConstants extends BaseLayoutConstants {
   static double get secondaryHeroButtonFontSize => _sp(12);
 
   // 主页面 Hero 按钮
-  static double get primaryHeroActionTitleFontSize => _sp(14);
-  static double get primaryHeroActionSubtitleFontSize => _sp(12);
+  static double get primaryHeroActionTitleFontSize => _sp(13);
+  static double get primaryHeroActionSubtitleFontSize => _sp(10);
   static double get primaryHeroBadgeFontSize => _sp(11);
 
   // 弹窗与提示
@@ -101,6 +101,7 @@ class AppTypographyConstants extends BaseLayoutConstants {
   static double get chartLegendFontSize => _sp(14);
   static double get chartStatLabelFontSize => _sp(11);
   static double get chartStatValueFontSize => _sp(15);
+  static double get statisticsSegmentLabelFontSize => _sp(16);
 
   // 全局主题
   static double get appBarTitleFontSize => _sp(22);
@@ -211,6 +212,9 @@ class JsonEditorPageConstants extends BaseLayoutConstants {
 
 /// 习惯管理页面专用常量
 class HabitManagementPageConstants extends BaseLayoutConstants {
+  // 习惯卡片在设计画布中保持适中的阅读宽度，避免 Web 宽屏上横向铺满。
+  static const double habitListMaxWidth = 460;
+
   // 头部容器相关参数
   static final EdgeInsets headerPadding = EdgeInsets.symmetric(
     horizontal: ScreenUtil().setWidth(24),
@@ -532,16 +536,16 @@ class HabitItemWidgetConstants extends BaseLayoutConstants {
     vertical: ScreenUtil().setHeight(28),
   );
   static final EdgeInsets cardMargin = EdgeInsets.symmetric(
-    horizontal: ScreenUtil().setWidth(16),
-    vertical: ScreenUtil().setHeight(10),
+    horizontal: ScreenUtil().setWidth(0),
+    vertical: ScreenUtil().setHeight(6),
   );
   static final EdgeInsets firstCardMargin = EdgeInsets.symmetric(
-    horizontal: ScreenUtil().setWidth(16),
-    vertical: ScreenUtil().setHeight(8),
+    horizontal: ScreenUtil().setWidth(0),
+    vertical: ScreenUtil().setHeight(4),
   );
   static final EdgeInsets backgroundContainerMargin = EdgeInsets.symmetric(
-    horizontal: ScreenUtil().setWidth(16),
-    vertical: ScreenUtil().setHeight(10),
+    horizontal: ScreenUtil().setWidth(0),
+    vertical: ScreenUtil().setHeight(6),
   );
 
   // 图标区域参数
@@ -744,10 +748,10 @@ class StatisticsChartWidgetConstants extends BaseLayoutConstants {
   static final double helperIconTextSpacing = ScreenUtil().setWidth(6);
 
   // 图表相关参数
-  static final double lineWidth = ScreenUtil().setWidth(3);
-  static final double dotRadiusSelected = ScreenUtil().setWidth(6);
-  static final double dotRadiusNormal = ScreenUtil().setWidth(4);
-  static final double dotStrokeWidth = ScreenUtil().setWidth(2);
+  static final double lineWidth = ScreenUtil().setWidth(2.6);
+  static final double dotRadiusSelected = ScreenUtil().setWidth(4.2);
+  static final double dotRadiusNormal = ScreenUtil().setWidth(2);
+  static final double dotStrokeWidth = ScreenUtil().setWidth(1.5);
 
   // 标题相关参数
   static final EdgeInsets titlePadding = EdgeInsets.all(
@@ -972,6 +976,10 @@ class StatsShareResultPageConstants extends BaseLayoutConstants {
   static final double largeSectionSpacing = ScreenUtil().setHeight(30);
   static final double hugeSectionSpacing = ScreenUtil().setHeight(60);
   static final double cardMargin = ScreenUtil().setHeight(12);
+  static final EdgeInsets contentMargin = EdgeInsets.symmetric(
+    horizontal: ScreenUtil().setWidth(16),
+    vertical: ScreenUtil().setHeight(12),
+  );
 
   // 字体相关参数
   static final double largeFontSize = ScreenUtil().setSp(22);
@@ -987,6 +995,20 @@ class StatsShareResultPageConstants extends BaseLayoutConstants {
     12,
   );
   static final double pieChartLegendTitleSpacing = ScreenUtil().setHeight(20);
+}
+
+/// 周期回顾页面专用常量
+class PeriodReviewPageConstants extends BaseLayoutConstants {
+  static final double sectionSpacing = ScreenUtil().setHeight(16);
+  static final double itemSpacing = ScreenUtil().setHeight(12);
+  static final double bottomSpacing = ScreenUtil().setHeight(32);
+  static final EdgeInsets contentMargin = EdgeInsets.symmetric(
+    horizontal: ScreenUtil().setWidth(16),
+    vertical: ScreenUtil().setHeight(12),
+  );
+  static final EdgeInsets panelPadding = EdgeInsets.all(
+    ScreenUtil().setWidth(16),
+  );
 }
 
 /// 保留的页面布局常量类，用于兼容已有的页面

@@ -41,8 +41,8 @@ class AppHeroHeader extends StatelessWidget {
   final VoidCallback? onTitleTap;
 
   static final EdgeInsets _headerPadding = EdgeInsets.symmetric(
-    horizontal: 24.w,
-    vertical: 32.h,
+    horizontal: 22.w,
+    vertical: 24.h,
   );
 
   @override
@@ -64,7 +64,7 @@ class AppHeroHeader extends StatelessWidget {
             color: heroForeground,
           ),
         ),
-        SizedBox(height: 6.h),
+        SizedBox(height: 4.h),
         Text(
           subtitle,
           style: ThemeHelper.textStyleWithTheme(
@@ -85,7 +85,7 @@ class AppHeroHeader extends StatelessWidget {
       curve: Curves.easeOut,
       width: double.infinity,
       padding: _headerPadding,
-      decoration: ThemeHelper.heroDecoration(context, radius: 30.w),
+      decoration: ThemeHelper.heroDecoration(context, radius: 26.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -96,7 +96,7 @@ class AppHeroHeader extends StatelessWidget {
               if (badge != null) _HeaderBadge(data: badge!),
             ],
           ),
-          SizedBox(height: 18.h),
+          SizedBox(height: 16.h),
           Row(
             children: [
               for (int index = 0; index < actions.length; index++) ...[
@@ -154,14 +154,14 @@ class _HeaderAction extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: data.onTap,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(15.r),
         child: Ink(
-          padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
-          decoration: ThemeHelper.heroControlDecoration(context, radius: 18.r),
+          padding: EdgeInsets.symmetric(vertical: 11.h, horizontal: 10.w),
+          decoration: ThemeHelper.heroControlDecoration(context, radius: 15.r),
           child: Column(
             children: [
-              Icon(data.icon, size: 20.sp, color: heroForeground),
-              SizedBox(height: 8.h),
+              Icon(data.icon, size: 18.sp, color: heroForeground),
+              SizedBox(height: 6.h),
               Text(
                 data.title,
                 textAlign: TextAlign.center,

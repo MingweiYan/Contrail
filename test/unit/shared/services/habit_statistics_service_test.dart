@@ -14,15 +14,15 @@ void main() {
 
   final testHabits = [
     Habit(
-      id: '1',
-      name: '晨跑',
-      trackTime: true,
-      totalDuration: const Duration(minutes: 60),
-      currentDays: 5,
-      targetDays: 30,
-      goalType: GoalType.positive,
-      cycleType: CycleType.daily,
-    )
+        id: '1',
+        name: '晨跑',
+        trackTime: true,
+        totalDuration: const Duration(minutes: 60),
+        currentDays: 5,
+        targetDays: 30,
+        goalType: GoalType.positive,
+        cycleType: CycleType.daily,
+      )
       ..dailyCompletionStatus[todayOnly] = true
       ..dailyCompletionStatus[yesterday] = true
       ..trackingDurations[todayOnly] = [const Duration(minutes: 30)],
@@ -37,15 +37,15 @@ void main() {
       cycleType: CycleType.weekly,
     )..dailyCompletionStatus[todayOnly] = true,
     Habit(
-      id: '3',
-      name: '月度目标',
-      trackTime: true,
-      totalDuration: const Duration(minutes: 120),
-      currentDays: 5,
-      targetDays: 2,
-      goalType: GoalType.positive,
-      cycleType: CycleType.monthly,
-    )
+        id: '3',
+        name: '月度目标',
+        trackTime: true,
+        totalDuration: const Duration(minutes: 120),
+        currentDays: 5,
+        targetDays: 2,
+        goalType: GoalType.positive,
+        cycleType: CycleType.monthly,
+      )
       ..dailyCompletionStatus[dayBeforeYesterday] = true
       ..trackingDurations[dayBeforeYesterday] = [const Duration(minutes: 60)],
     Habit(
@@ -126,7 +126,9 @@ void main() {
 
     group('getWeeklyHabitStatistics', () {
       test('should return weekly statistics', () {
-        final result = habitStatisticsService.getWeeklyHabitStatistics(testHabits);
+        final result = habitStatisticsService.getWeeklyHabitStatistics(
+          testHabits,
+        );
 
         expect(result, isNotNull);
         expect(result['cycleType'], equals(CycleType.weekly));
@@ -135,7 +137,9 @@ void main() {
 
     group('getMonthlyHabitStatistics', () {
       test('should return monthly statistics', () {
-        final result = habitStatisticsService.getMonthlyHabitStatistics(testHabits);
+        final result = habitStatisticsService.getMonthlyHabitStatistics(
+          testHabits,
+        );
 
         expect(result, isNotNull);
         expect(result['cycleType'], equals(CycleType.monthly));
@@ -159,7 +163,9 @@ void main() {
 
     group('getYearlyHabitStatistics', () {
       test('should return yearly statistics', () {
-        final result = habitStatisticsService.getYearlyHabitStatistics(testHabits);
+        final result = habitStatisticsService.getYearlyHabitStatistics(
+          testHabits,
+        );
 
         expect(result, isNotNull);
         expect(result['cycleType'], equals(CycleType.annual));
@@ -195,7 +201,9 @@ void main() {
       });
 
       test('should handle empty habits list', () {
-        final result = habitStatisticsService.getHabitDetailedStats(emptyHabits);
+        final result = habitStatisticsService.getHabitDetailedStats(
+          emptyHabits,
+        );
 
         expect(result['totalHabits'], equals(0));
       });
@@ -203,14 +211,18 @@ void main() {
 
     group('getMonthlyHabitCompletionCounts', () {
       test('should return completion counts for current month', () {
-        final result = habitStatisticsService.getMonthlyHabitCompletionCounts(testHabits);
+        final result = habitStatisticsService.getMonthlyHabitCompletionCounts(
+          testHabits,
+        );
 
         expect(result, isNotNull);
         expect(result.length, equals(testHabits.length));
       });
 
       test('should return empty map for empty habits', () {
-        final result = habitStatisticsService.getMonthlyHabitCompletionCounts(emptyHabits);
+        final result = habitStatisticsService.getMonthlyHabitCompletionCounts(
+          emptyHabits,
+        );
 
         expect(result, isEmpty);
       });
@@ -218,26 +230,51 @@ void main() {
 
     group('getMonthlyHabitCompletionCountsFor', () {
       test('should return completion counts for specified month', () {
-        final result = habitStatisticsService.getMonthlyHabitCompletionCountsFor(
-          testHabits,
-          year: today.year,
-          month: today.month,
-        );
+        final result = habitStatisticsService
+            .getMonthlyHabitCompletionCountsFor(
+              testHabits,
+              year: today.year,
+              month: today.month,
+            );
 
         expect(result, isNotNull);
         expect(result.length, equals(testHabits.length));
+      });
+
+      test('同一天多条记录分别计数，旧版仅完成状态回退为一次', () {
+        final habit = Habit(id: 'multi', name: '多次记录')
+          ..trackingDurations[DateTime(2026, 4, 3)] = const [
+            Duration(minutes: 5),
+            Duration(minutes: 10),
+            Duration(minutes: 15),
+          ]
+          ..dailyCompletionStatus[DateTime(2026, 4, 3)] = true
+          ..dailyCompletionStatus[DateTime(2026, 4, 4)] = true;
+
+        final result = habitStatisticsService
+            .getMonthlyHabitCompletionCountsForByHabitId(
+              [habit],
+              year: 2026,
+              month: 4,
+            );
+
+        expect(result['multi'], 4);
       });
     });
 
     group('getMonthlyHabitCompletionMinutes', () {
       test('should return completion minutes for current month', () {
-        final result = habitStatisticsService.getMonthlyHabitCompletionMinutes(testHabits);
+        final result = habitStatisticsService.getMonthlyHabitCompletionMinutes(
+          testHabits,
+        );
 
         expect(result, isNotNull);
       });
 
       test('should only include habits with trackTime true', () {
-        final result = habitStatisticsService.getMonthlyHabitCompletionMinutes(testHabits);
+        final result = habitStatisticsService.getMonthlyHabitCompletionMinutes(
+          testHabits,
+        );
 
         for (final habitName in result.keys) {
           final habit = testHabits.firstWhere((h) => h.name == habitName);
@@ -248,11 +285,12 @@ void main() {
 
     group('getMonthlyHabitCompletionMinutesFor', () {
       test('should return completion minutes for specified month', () {
-        final result = habitStatisticsService.getMonthlyHabitCompletionMinutesFor(
-          testHabits,
-          year: today.year,
-          month: today.month,
-        );
+        final result = habitStatisticsService
+            .getMonthlyHabitCompletionMinutesFor(
+              testHabits,
+              year: today.year,
+              month: today.month,
+            );
 
         expect(result, isNotNull);
       });
@@ -272,12 +310,57 @@ void main() {
 
     group('getYearlyHabitCompletionMinutesFor', () {
       test('should return completion minutes for specified year', () {
-        final result = habitStatisticsService.getYearlyHabitCompletionMinutesFor(
-          testHabits,
-          year: today.year,
-        );
+        final result = habitStatisticsService
+            .getYearlyHabitCompletionMinutesFor(testHabits, year: today.year);
 
         expect(result, isNotNull);
+      });
+    });
+
+    group('custom range aggregation', () {
+      test('按实际记录条目统计任意范围内的次数', () {
+        final habit = Habit(id: 'range-count', name: '范围次数')
+          ..trackingDurations[DateTime(2026, 5, 3)] = const [
+            Duration(minutes: 5),
+            Duration(minutes: 10),
+          ]
+          ..trackingDurations[DateTime(2026, 5, 9)] = const [
+            Duration(minutes: 15),
+          ]
+          ..dailyCompletionStatus[DateTime(2026, 5, 4)] = true;
+
+        final result = habitStatisticsService
+            .getHabitCompletionCountsForRangeByHabitId(
+              [habit],
+              startDate: DateTime(2026, 5, 3),
+              endDate: DateTime(2026, 5, 4),
+            );
+
+        expect(result['range-count'], 3);
+      });
+
+      test('任意范围专注时长只聚合启用计时的习惯', () {
+        final timedHabit =
+            Habit(id: 'range-time', name: '范围时间', trackTime: true)
+              ..trackingDurations[DateTime(2026, 5, 3)] = const [
+                Duration(minutes: 20),
+                Duration(minutes: 25),
+              ];
+        final countOnlyHabit =
+            Habit(id: 'count-only', name: '只计次', trackTime: false)
+              ..trackingDurations[DateTime(2026, 5, 3)] = const [
+                Duration(minutes: 30),
+              ];
+
+        final result = habitStatisticsService
+            .getHabitCompletionMinutesForRangeByHabitId(
+              [timedHabit, countOnlyHabit],
+              startDate: DateTime(2026, 5, 1),
+              endDate: DateTime(2026, 5, 7),
+            );
+
+        expect(result['range-time'], 45);
+        expect(result, isNot(contains('count-only')));
       });
     });
 
@@ -360,6 +443,14 @@ void main() {
             goalType: GoalType.positive,
             cycleType: CycleType.daily,
           ),
+          Habit(
+            id: '6',
+            name: '零目标习惯',
+            trackTime: false,
+            targetDays: 0,
+            goalType: GoalType.positive,
+            cycleType: CycleType.daily,
+          ),
         ];
 
         final startDate = DateTime(today.year, today.month, 1);
@@ -372,6 +463,24 @@ void main() {
         );
 
         expect(result, isEmpty);
+      });
+
+      test('should sort specified-range completion rate descending', () {
+        final startDate = DateTime(today.year, today.month, 1);
+        final endDate = DateTime(today.year, today.month + 1, 0);
+
+        final result = habitStatisticsService.getHabitGoalCompletionDataFor(
+          testHabits,
+          startDate: startDate,
+          endDate: endDate,
+        );
+
+        for (int i = 0; i < result.length - 1; i++) {
+          expect(
+            result[i]['completionRate'],
+            greaterThanOrEqualTo(result[i + 1]['completionRate']),
+          );
+        }
       });
     });
   });

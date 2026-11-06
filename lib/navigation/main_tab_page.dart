@@ -47,7 +47,7 @@ class _MainTabPageState extends State<MainTabPage> {
     final visualTheme = ThemeHelper.visualTheme(context);
     const items = <({IconData icon, String label})>[
       (icon: Icons.list_rounded, label: '习惯'),
-      (icon: Icons.bar_chart_rounded, label: '统计'),
+      (icon: Icons.bar_chart_rounded, label: '追踪'),
       (icon: Icons.person_rounded, label: '我的'),
     ];
 

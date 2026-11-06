@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/shared/models/habit.dart';
@@ -28,11 +30,6 @@ class StatisticsChartWidget extends StatefulWidget {
 }
 
 class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
-  // 存储当前选中的数据点信息
-  FlSpot? touchedSpot;
-  // 存储当前选中的线条索引
-  int? touchedBarIndex;
-
   @override
   Widget build(BuildContext context) {
     if (widget.habits.isEmpty) {
@@ -62,12 +59,31 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       range: widget.rollingRange,
       weekStartDay: widget.weekStartDay,
     );
+    final visibleHabitCount = widget.isHabitVisible
+        .where((isVisible) => isVisible)
+        .length;
+    final visibleTimedHabitCount = widget.habits
+        .asMap()
+        .entries
+        .where(
+          (entry) => widget.isHabitVisible[entry.key] && entry.value.trackTime,
+        )
+        .length;
+    final visibleGoalHabitCount = widget.habits
+        .asMap()
+        .entries
+        .where(
+          (entry) =>
+              widget.isHabitVisible[entry.key] &&
+              entry.value.targetDays != null &&
+              entry.value.targetDays! > 0,
+        )
+        .length;
 
     // 为每个习惯生成次数统计数据
     final List<LineChartBarData> countData = widget.habits.asMap().entries.map((
       entry,
     ) {
-      final index = entry.key;
       final habit = entry.value;
       final data = chartAdapter.generateRollingTrendSpots(
         habit,
@@ -75,13 +91,16 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         widget.selectedPeriod,
         endDate: widget.rollingRange.end,
       );
-      return _createLineChartBarData(data, habit.color, index);
+      return _createLineChartBarData(
+        data,
+        habit.color,
+        showArea: visibleHabitCount == 1,
+      );
     }).toList();
 
     final List<LineChartBarData> timeData = widget.habits.asMap().entries.map((
       entry,
     ) {
-      final index = entry.key;
       final habit = entry.value;
       final data = chartAdapter.generateRollingTrendSpots(
         habit,
@@ -89,24 +108,26 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         widget.selectedPeriod,
         endDate: widget.rollingRange.end,
       );
-      return _createLineChartBarData(data, habit.color, index);
+      return _createLineChartBarData(
+        data,
+        habit.color,
+        showArea: visibleTimedHabitCount == 1,
+      );
     }).toList();
 
-    final List<LineChartBarData> completionData = widget.habits
-        .asMap()
-        .entries
-        .map((entry) {
-          final index = entry.key;
-          final habit = entry.value;
-          final data = chartAdapter.generateRollingCompletionRateSpots(
-            habit,
-            widget.selectedPeriod,
-            range: widget.rollingRange,
-            weekStartDay: widget.weekStartDay,
-          );
-          return _createLineChartBarData(data, habit.color, index);
-        })
-        .toList();
+    final List<LineChartBarData> completionData = widget.habits.map((habit) {
+      final data = chartAdapter.generateRollingCompletionRateSpots(
+        habit,
+        widget.selectedPeriod,
+        range: widget.rollingRange,
+        weekStartDay: widget.weekStartDay,
+      );
+      return _createLineChartBarData(
+        data,
+        habit.color,
+        showArea: visibleGoalHabitCount == 1,
+      );
+    }).toList();
 
     final bool hasTrackTime = widget.habits.any((h) => h.trackTime);
 
@@ -116,81 +137,96 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
     final List<LineChartBarData> filteredCompletionData = [];
     final List<String> filteredHabitNames = [];
     final List<Color> filteredHabitColors = [];
+    final List<String> filteredGoalHabitNames = [];
+    final List<Color> filteredGoalHabitColors = [];
     for (int i = 0; i < widget.habits.length; i++) {
       if (widget.isHabitVisible[i]) {
         filteredCountData.add(countData[i]);
-        filteredCompletionData.add(completionData[i]);
         filteredHabitNames.add(habitNames[i]);
         filteredHabitColors.add(habitColors[i]);
         if (widget.habits[i].trackTime) {
           filteredTimeData.add(timeData[i]);
         }
+        if (widget.habits[i].targetDays != null &&
+            widget.habits[i].targetDays! > 0) {
+          filteredCompletionData.add(completionData[i]);
+          filteredGoalHabitNames.add(habitNames[i]);
+          filteredGoalHabitColors.add(habitColors[i]);
+        }
       }
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 计算图表高度，根据屏幕高度的一定比例
-        final screenHeight = MediaQuery.of(context).size.height;
-        final chartHeight = screenHeight * 0.25; // 图表高度为屏幕高度的25%
+    final chartHeight = (MediaQuery.sizeOf(context).height * 0.25).clamp(
+      210.0,
+      250.0,
+    );
 
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildChartPanel(
-                context,
-                title: '习惯完成次数统计',
-                helperText: '提示：点击数据点查看详细值',
-                semanticsLabel: '习惯完成次数统计折线图，点击数据点查看提示',
-                chartHeight: chartHeight,
-                chartData: _createLineChartData(
-                  filteredCountData,
-                  titles,
-                  'count',
-                  filteredHabitNames,
-                  filteredHabitColors,
-                ),
-              ),
-              if (hasTrackTime)
-                _buildChartPanel(
-                  context,
-                  title: '习惯专注时间统计 (分钟)',
-                  helperText: '提示：点击数据点查看详细值',
-                  semanticsLabel: '习惯专注时间统计折线图，点击数据点查看提示',
-                  chartHeight: chartHeight,
-                  chartData: _createLineChartData(
-                    filteredTimeData,
-                    titles,
-                    'time',
-                    filteredHabitNames,
-                    filteredHabitColors,
-                  ),
-                ),
-              _buildChartPanel(
-                context,
-                title: '习惯完成率趋势',
-                helperText: '提示：点击数据点查看完成率',
-                semanticsLabel: '习惯完成率趋势折线图，点击数据点查看提示',
-                chartHeight: chartHeight,
-                chartData: _createLineChartData(
-                  filteredCompletionData,
-                  completionTitles,
-                  'completionRate',
-                  filteredHabitNames,
-                  filteredHabitColors,
-                ),
-              ),
-            ],
+    return Column(
+      children: [
+        _buildChartPanel(
+          context,
+          icon: Icons.show_chart_rounded,
+          accentColor: Theme.of(context).colorScheme.primary,
+          title: '记录趋势',
+          subtitle: '每个时间段内的记录次数',
+          tooltip: '点击或悬停曲线查看具体次数',
+          semanticsLabel: '习惯记录次数折线图，点击数据点查看提示',
+          chartHeight: chartHeight,
+          chartData: _createLineChartData(
+            filteredCountData,
+            titles,
+            'count',
+            filteredHabitNames,
+            filteredHabitColors,
           ),
-        );
-      },
+        ),
+        if (hasTrackTime)
+          _buildChartPanel(
+            context,
+            icon: Icons.timer_outlined,
+            accentColor: Theme.of(context).colorScheme.secondary,
+            title: '专注时长',
+            subtitle: '每个时间段内累计的分钟数',
+            tooltip: '点击或悬停曲线查看具体时长',
+            semanticsLabel: '习惯专注时长折线图，点击数据点查看提示',
+            chartHeight: chartHeight,
+            chartData: _createLineChartData(
+              filteredTimeData,
+              titles,
+              'time',
+              filteredHabitNames,
+              filteredHabitColors,
+            ),
+          ),
+        if (filteredCompletionData.isNotEmpty)
+          _buildChartPanel(
+            context,
+            icon: Icons.track_changes_rounded,
+            accentColor: Theme.of(context).colorScheme.tertiary,
+            title: '目标达成率',
+            subtitle: '实际记录与阶段目标的比例',
+            tooltip: '点击或悬停曲线查看具体完成率',
+            semanticsLabel: '习惯目标达成率折线图，点击数据点查看提示',
+            chartHeight: chartHeight,
+            chartData: _createLineChartData(
+              filteredCompletionData,
+              completionTitles,
+              'completionRate',
+              filteredGoalHabitNames,
+              filteredGoalHabitColors,
+            ),
+          ),
+      ],
     );
   }
 
   Widget _buildChartPanel(
     BuildContext context, {
+    required IconData icon,
+    required Color accentColor,
     required String title,
-    required String helperText,
+    required String subtitle,
+    required String tooltip,
     required String semanticsLabel,
     required double chartHeight,
     required LineChartData chartData,
@@ -205,13 +241,55 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: StatisticsChartWidgetConstants.chartTitleFontSize,
-              fontWeight: FontWeight.w800,
-              color: ThemeHelper.onBackground(context),
-            ),
+          Row(
+            children: [
+              Container(
+                width: 38.w,
+                height: 38.w,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(icon, size: 20.sp, color: accentColor),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize:
+                            StatisticsChartWidgetConstants.chartTitleFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: ThemeHelper.onBackground(context),
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                        color: ThemeHelper.onBackground(
+                          context,
+                        ).withValues(alpha: 0.58),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Tooltip(
+                message: tooltip,
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  size: 18.sp,
+                  color: ThemeHelper.onBackground(
+                    context,
+                  ).withValues(alpha: 0.42),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: StatisticsChartWidgetConstants.titleChartSpacing),
           if (chartData.lineBarsData.isEmpty)
@@ -219,14 +297,27 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
               height: chartHeight,
               width: double.infinity,
               child: Center(
-                child: Text(
-                  '当前没有选中的习惯',
-                  style: TextStyle(
-                    fontSize: AppTypographyConstants.panelSubtitleFontSize,
-                    color: ThemeHelper.onBackground(
-                      context,
-                    ).withValues(alpha: 0.6),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.visibility_off_outlined,
+                      size: 28.sp,
+                      color: ThemeHelper.onBackground(
+                        context,
+                      ).withValues(alpha: 0.28),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      '选择至少一个习惯以查看趋势',
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                        color: ThemeHelper.onBackground(
+                          context,
+                        ).withValues(alpha: 0.58),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
@@ -239,35 +330,6 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                 child: LineChart(chartData),
               ),
             ),
-          Padding(
-            padding: EdgeInsets.only(
-              top: StatisticsChartWidgetConstants.helperTopSpacing,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: StatisticsChartWidgetConstants.helperIconSize,
-                  color: ThemeHelper.onBackground(
-                    context,
-                  ).withValues(alpha: 0.7),
-                ),
-                SizedBox(
-                  width: StatisticsChartWidgetConstants.helperIconTextSpacing,
-                ),
-                Text(
-                  helperText,
-                  style: TextStyle(
-                    fontSize: StatisticsChartWidgetConstants.helperFontSize,
-                    color: ThemeHelper.onBackground(
-                      context,
-                    ).withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -276,40 +338,34 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
   // 创建线条数据
   LineChartBarData _createLineChartBarData(
     List<FlSpot> spots,
-    Color color,
-    int index,
-  ) {
+    Color color, {
+    required bool showArea,
+  }) {
     return LineChartBarData(
       spots: spots,
-      isCurved: true, // 曲线样式
-      curveSmoothness: 0.3, // 降低平滑度以减少过冲
+      isCurved: true,
+      curveSmoothness: 0.28,
+      preventCurveOverShooting: true,
+      preventCurveOvershootingThreshold: 1,
       color: color,
       barWidth: StatisticsChartWidgetConstants.lineWidth,
-      isStrokeCapRound: true, // 线条两端为圆形
+      isStrokeCapRound: true,
+      isStrokeJoinRound: true,
       dotData: FlDotData(
         show: true,
-        getDotPainter: (spot, percent, barData, index) {
-          // 根据是否选中显示不同样式的点
-          return FlDotCirclePainter(
-            radius: touchedSpot == spot && touchedBarIndex == index
-                ? StatisticsChartWidgetConstants.dotRadiusSelected
-                : StatisticsChartWidgetConstants.dotRadiusNormal,
-            color: touchedSpot == spot && touchedBarIndex == index
-                ? color.withValues(alpha: 1)
-                : color.withValues(alpha: 0.8),
-            strokeWidth: touchedSpot == spot && touchedBarIndex == index
-                ? StatisticsChartWidgetConstants.dotStrokeWidth
-                : 0,
-            strokeColor: ThemeHelper.onBackground(context),
-          );
-        },
+        checkToShowDot: (spot, barData) =>
+            spots.length <= 7 || spot.x == spots.last.x,
+        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+          radius: spots.length <= 7 ? 1.9.r : 2.3.r,
+          color: color,
+          strokeWidth: 0,
+          strokeColor: Colors.transparent,
+        ),
       ),
-      // 添加背景填充
       belowBarData: BarAreaData(
-        show: true,
-        color: color.withValues(alpha: 0.1), // 半透明背景色
+        show: showArea,
         gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0)],
+          colors: [color.withValues(alpha: 0.14), color.withValues(alpha: 0)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -335,21 +391,18 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       }
     }
 
-    // 根据图表类型和最大值设置不同的边距策略
-
+    late final double leftInterval;
     if (chartType == 'completionRate') {
-      maxY = 125;
+      maxY = 100;
+      leftInterval = 25;
     } else {
-      maxY = maxY == 0 ? 10 : maxY * 1.2;
-
-      // 向上取整到整数，以获得更规整的坐标上限
+      maxY = maxY == 0 ? (chartType == 'count' ? 4 : 60) : maxY * 1.14;
+      final calculatedInterval = _niceInterval(maxY / 4);
+      leftInterval = chartType == 'count'
+          ? math.max(1, calculatedInterval.ceilToDouble()).toDouble()
+          : calculatedInterval;
+      maxY = (maxY / leftInterval).ceil() * leftInterval;
     }
-
-    final leftInterval = chartType == 'count'
-        ? 1.0
-        : chartType == 'completionRate'
-        ? 25.0
-        : maxY / 5;
 
     return LineChartData(
       // 启用交互功能
@@ -363,20 +416,40 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                     color: barData.color != null
                         ? barData.color!.withValues(alpha: 0.3)
                         : ThemeHelper.outline(context),
-                    strokeWidth: ScreenUtil().setWidth(2),
+                    strokeWidth: ScreenUtil().setWidth(1),
+                    dashArray: const [4, 4],
                   ),
-                  FlDotData(show: false),
+                  FlDotData(
+                    show: true,
+                    getDotPainter: (spot, percent, data, index) {
+                      final color =
+                          barData.color ??
+                          Theme.of(context).colorScheme.primary;
+                      return FlDotCirclePainter(
+                        radius:
+                            StatisticsChartWidgetConstants.dotRadiusSelected,
+                        color: Theme.of(context).colorScheme.surface,
+                        strokeWidth:
+                            StatisticsChartWidgetConstants.dotStrokeWidth,
+                        strokeColor: color,
+                      );
+                    },
+                  ),
                 );
               }).toList();
             },
         touchTooltipData: LineTouchTooltipData(
           fitInsideHorizontally: true,
           fitInsideVertically: true,
-          tooltipRoundedRadius: ScreenUtil().setWidth(6),
+          tooltipRoundedRadius: ScreenUtil().setWidth(12),
           tooltipPadding: EdgeInsets.symmetric(
-            horizontal: ScreenUtil().setWidth(8),
-            vertical: ScreenUtil().setHeight(6),
+            horizontal: ScreenUtil().setWidth(10),
+            vertical: ScreenUtil().setHeight(8),
           ),
+          tooltipBorder: BorderSide(
+            color: ThemeHelper.outline(context).withValues(alpha: 0.16),
+          ),
+          getTooltipColor: (_) => Theme.of(context).colorScheme.surface,
           getTooltipItems: (touchedSpots) {
             final chartAdapter = StatisticsChartAdapter();
             return touchedSpots.map((touchedSpot) {
@@ -397,37 +470,24 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                       endDate: widget.rollingRange.end,
                     );
               return LineTooltipItem(
-                '$habitName: $text\n',
-                TextStyle(color: habitColors[touchedSpot.barIndex]),
+                '$habitName  $text\n',
+                TextStyle(
+                  color: habitColors[touchedSpot.barIndex],
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.sp,
+                ),
               );
             }).toList();
           },
           // 在0.68.0版本中，我们使用默认的tooltip样式
         ),
-        // 设置触摸回调
-        touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
-          setState(() {
-            if (event is FlTapUpEvent || event is FlPanEndEvent) {
-              // 触摸结束，重置选中状态
-              touchedSpot = null;
-              touchedBarIndex = null;
-            } else if (touchResponse != null &&
-                touchResponse.lineBarSpots != null &&
-                touchResponse.lineBarSpots!.isNotEmpty) {
-              // 触摸中，更新选中状态
-              final spot = touchResponse.lineBarSpots![0];
-              touchedSpot = FlSpot(spot.x, spot.y);
-              touchedBarIndex = spot.barIndex;
-            }
-          });
-        },
       ),
       // 标题配置
       titlesData: FlTitlesData(
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: ScreenUtil().setWidth(36),
+            reservedSize: ScreenUtil().setHeight(30),
             getTitlesWidget: (value, meta) {
               if (value.toInt() < titles.length) {
                 return Padding(
@@ -435,7 +495,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                   child: Text(
                     titles[value.toInt()],
                     style: TextStyle(
-                      fontSize: AppTypographyConstants.formSectionTitleFontSize,
+                      fontSize: 10.sp,
                       color: ThemeHelper.onSurfaceVariant(context),
                     ),
                   ),
@@ -451,7 +511,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: ScreenUtil().setWidth(48),
+            reservedSize: ScreenUtil().setWidth(36),
             interval: leftInterval,
             getTitlesWidget: (value, meta) {
               if (value == meta.min ||
@@ -464,7 +524,7 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
                       ? '${value.toInt()}%'
                       : value.toStringAsFixed(0),
                   style: TextStyle(
-                    fontSize: MediaQuery.textScalerOf(context).scale(12),
+                    fontSize: 10.sp,
                     color: ThemeHelper.onSurfaceVariant(context),
                   ),
                 );
@@ -474,33 +534,17 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
           ),
         ),
       ),
-      // 网格线配置 - 关闭背景虚线
       gridData: FlGridData(
         show: true,
         drawHorizontalLine: true,
         drawVerticalLine: false,
         horizontalInterval: leftInterval,
         getDrawingHorizontalLine: (value) => FlLine(
-          color: ThemeHelper.outline(context).withValues(alpha: 0.06),
+          color: ThemeHelper.outline(context).withValues(alpha: 0.1),
           strokeWidth: ScreenUtil().setWidth(1),
         ),
       ),
-      // 边框配置 - 只显示底部和左侧边框
-      borderData: FlBorderData(
-        show: true,
-        border: Border(
-          bottom: BorderSide(
-            color: ThemeHelper.outline(context),
-            width: ScreenUtil().setWidth(1),
-          ),
-          left: BorderSide(
-            color: ThemeHelper.outline(context),
-            width: ScreenUtil().setWidth(1),
-          ),
-          top: BorderSide.none,
-          right: BorderSide.none,
-        ),
-      ),
+      borderData: FlBorderData(show: false),
       clipData: const FlClipData(
         top: true,
         bottom: true,
@@ -515,5 +559,27 @@ class _StatisticsChartWidgetState extends State<StatisticsChartWidget> {
       // 线条数据
       lineBarsData: lineBarsData,
     );
+  }
+
+  double _niceInterval(double value) {
+    if (!value.isFinite || value <= 0) {
+      return 1;
+    }
+    final exponent = (math.log(value) / math.ln10).floor();
+    final magnitude = math.pow(10, exponent).toDouble();
+    final fraction = value / magnitude;
+    final double niceFraction;
+    if (fraction <= 1) {
+      niceFraction = 1;
+    } else if (fraction <= 2) {
+      niceFraction = 2;
+    } else if (fraction <= 2.5) {
+      niceFraction = 2.5;
+    } else if (fraction <= 5) {
+      niceFraction = 5;
+    } else {
+      niceFraction = 10;
+    }
+    return niceFraction * magnitude;
   }
 }

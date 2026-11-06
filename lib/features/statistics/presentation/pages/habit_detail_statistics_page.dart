@@ -3,13 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/utils/theme_helper.dart';
 import 'package:contrail/features/statistics/presentation/widgets/calendar_view_widget.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:contrail/features/statistics/presentation/adapters/statistics_chart_adapter.dart';
 import 'package:contrail/features/statistics/presentation/providers/habit_detail_statistics_provider.dart';
 import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/features/statistics/presentation/widgets/statistics_chart_widget.dart';
+import 'package:contrail/shared/utils/habit_record_statistics.dart';
 
 // 直接使用CycleType枚举，不再需要额外的TimePeriodEnum
 
@@ -35,155 +34,8 @@ class _HabitDetailStatisticsPageState extends State<HabitDetailStatisticsPage> {
 
 class _HabitDetailStatisticsView extends StatelessWidget {
   final Habit habit;
-  final StatisticsChartAdapter _chartAdapter = StatisticsChartAdapter();
 
-  _HabitDetailStatisticsView({required this.habit});
-
-  /// 构建完成情况模块
-  /// 显示当前周期内的习惯完成情况，包括饼图和详细数据
-  Widget _buildCompletionStatusModule(BuildContext context) {
-    final provider = Provider.of<HabitDetailStatisticsProvider>(context);
-    final stats = provider.calculateHabitStats();
-    final completedDays = stats['completedDays'] as int;
-    final remainingDays = stats['remainingDays'] as int;
-    final hasTarget = habit.targetDays != null && habit.targetDays! > 0;
-
-    if (!hasTarget) return Container();
-
-    final remainingColor = ThemeHelper.outline(context);
-    final completedForeground = ThemeHelper.getOptimalTextColor(
-      context,
-      habit.color,
-    );
-    final remainingForeground = ThemeHelper.getOptimalTextColor(
-      context,
-      remainingColor,
-    );
-
-    return Container(
-      margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
-      decoration: ThemeHelper.panelDecoration(
-        context,
-        radius: HabitDetailStatisticsPageConstants.moduleContainerBorderRadius,
-      ),
-      padding: HabitDetailStatisticsPageConstants.moduleContainerPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${provider.getCustomPeriodLabel()}完成情况',
-                style: TextStyle(
-                  fontSize:
-                      HabitDetailStatisticsPageConstants.sectionTitleFontSize,
-                  fontWeight: FontWeight.w800,
-                  color: ThemeHelper.onBackground(context),
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildCompactIconButton(
-                    context,
-                    icon: Icons.chevron_left_rounded,
-                    onTap: provider.previousPeriod,
-                  ),
-                  SizedBox(width: 8.w),
-                  _buildCompactIconButton(
-                    context,
-                    icon: Icons.chevron_right_rounded,
-                    onTap: provider.canGoNextPeriod
-                        ? provider.nextPeriod
-                        : null,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          SizedBox(
-            height: HabitDetailStatisticsPageConstants.titleSectionSpacing,
-          ),
-          Container(
-            padding: HabitDetailStatisticsPageConstants.chartContainerPadding,
-            decoration: ThemeHelper.panelDecoration(
-              context,
-              secondary: true,
-              radius: 24.r,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height:
-                        HabitDetailStatisticsPageConstants.chartContainerHeight,
-                    child: Padding(
-                      padding:
-                          HabitDetailStatisticsPageConstants.pieChartPadding,
-                      child: PieChart(
-                        PieChartData(
-                          sections: _chartAdapter.generatePieData(
-                            completedDays,
-                            remainingDays,
-                            habit.color,
-                            remainingColor: remainingColor,
-                            completedForeground: completedForeground,
-                            remainingForeground: remainingForeground,
-                          ),
-                          centerSpaceRadius: 40.r,
-                          sectionsSpace: 0,
-                          pieTouchData: PieTouchData(enabled: true),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 18.w),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildMetricRow(
-                        context,
-                        color: habit.color,
-                        label: '完成',
-                        value: '$completedDays 天',
-                      ),
-                      SizedBox(
-                        height: HabitDetailStatisticsPageConstants
-                            .statusSectionSpacing,
-                      ),
-                      _buildMetricRow(
-                        context,
-                        color: remainingColor,
-                        label: '剩余',
-                        value: '$remainingDays 天',
-                      ),
-                      SizedBox(
-                        height: HabitDetailStatisticsPageConstants
-                            .statusSectionSpacing,
-                      ),
-                      Text(
-                        '完成率: ${(stats['completionRate'] * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: HabitDetailStatisticsPageConstants
-                              .completionRateFontSize,
-                          fontWeight: FontWeight.w800,
-                          color: ThemeHelper.onBackground(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  const _HabitDetailStatisticsView({required this.habit});
 
   // 已不再需要自定义 TitlesData，统一由 StatisticsChartWidget 内部生成
 
@@ -199,6 +51,43 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     Map<String, Color> habitColors,
   ) {
     final provider = Provider.of<HabitDetailStatisticsProvider>(context);
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '活动日历',
+          style: TextStyle(
+            fontSize: HabitDetailStatisticsPageConstants.sectionTitleFontSize,
+            fontWeight: FontWeight.w800,
+            color: ThemeHelper.onBackground(context),
+          ),
+        ),
+        SizedBox(height: 3.h),
+        Text(
+          '${provider.calendarSelectedYear}年${provider.calendarSelectedMonth}月 · 有记录的日期会被点亮',
+          style: TextStyle(
+            fontSize: AppTypographyConstants.panelSubtitleFontSize,
+            color: ThemeHelper.onBackground(context).withValues(alpha: 0.56),
+          ),
+        ),
+      ],
+    );
+    final navigation = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildCompactIconButton(
+          context,
+          icon: Icons.chevron_left_rounded,
+          onTap: provider.previousCalendarMonth,
+        ),
+        SizedBox(width: 8.w),
+        _buildCompactIconButton(
+          context,
+          icon: Icons.chevron_right_rounded,
+          onTap: provider.nextCalendarMonth,
+        ),
+      ],
+    );
 
     return Container(
       margin: HabitDetailStatisticsPageConstants.moduleContainerMargin,
@@ -210,66 +99,57 @@ class _HabitDetailStatisticsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${provider.calendarSelectedYear}年${provider.calendarSelectedMonth}月专注记录',
-                style: TextStyle(
-                  fontSize:
-                      HabitDetailStatisticsPageConstants.sectionTitleFontSize,
-                  fontWeight: FontWeight.w800,
-                  color: ThemeHelper.onBackground(context),
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 240) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleBlock,
+                    SizedBox(height: 10.h),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: navigation,
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return Row(
                 children: [
-                  _buildCompactIconButton(
-                    context,
-                    icon: Icons.chevron_left_rounded,
-                    onTap: provider.previousCalendarMonth,
-                  ),
-                  SizedBox(width: 8.w),
-                  _buildCompactIconButton(
-                    context,
-                    icon: Icons.chevron_right_rounded,
-                    onTap: provider.nextCalendarMonth,
-                  ),
+                  Expanded(child: titleBlock),
+                  SizedBox(width: 10.w),
+                  navigation,
                 ],
-              ),
-            ],
+              );
+            },
           ),
           SizedBox(
             height: HabitDetailStatisticsPageConstants.titleSectionSpacing,
           ),
-          Container(
-            padding: EdgeInsets.all(12.w),
-            decoration: ThemeHelper.panelDecoration(
+          CalendarViewWidget(
+            habits: habits,
+            selectedYear: provider.calendarSelectedYear,
+            selectedMonth: provider.calendarSelectedMonth,
+            habitColors: habitColors,
+            weekStartDay: Provider.of<PersonalizationProvider>(
               context,
-              secondary: true,
-              radius: 24.r,
-            ),
-            child: CalendarViewWidget(
-              habits: habits,
-              selectedYear: provider.calendarSelectedYear,
-              selectedMonth: provider.calendarSelectedMonth,
-              habitColors: habitColors,
-              weekStartDay: Provider.of<PersonalizationProvider>(
-                context,
-                listen: false,
-              ).weekStartDay,
-            ),
+              listen: false,
+            ).weekStartDay,
           ),
         ],
       ),
     );
   }
 
-  /// 创建统一的时间范围选择器组件
-  /// 包含年、月、周三个选项，用于控制次数统计和时间统计的显示范围
-  Widget _buildTimeRangeSelector(BuildContext context) {
+  Widget _buildTrendControls(BuildContext context) {
     final provider = Provider.of<HabitDetailStatisticsProvider>(context);
+    final range = provider.getRollingDateRange();
+    final rangeText =
+        '${range.start.year}/${range.start.month}/${range.start.day} – '
+        '${range.end.year}/${range.end.month}/${range.end.day}';
 
     return Container(
       margin: EdgeInsets.symmetric(
@@ -278,74 +158,82 @@ class _HabitDetailStatisticsView extends StatelessWidget {
       ),
       padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
       decoration: ThemeHelper.panelDecoration(context, radius: 20.r),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          _buildCompactIconButton(
-            context,
-            icon: Icons.arrow_left_rounded,
-            onTap: provider.navigateToPreviousTimeUnit,
+          Row(
+            children: [
+              _buildCompactIconButton(
+                context,
+                icon: Icons.chevron_left_rounded,
+                onTap: provider.navigateToPreviousTimeUnit,
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      provider.getDisplayTimeLabel(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.sectionTitleFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: ThemeHelper.onBackground(context),
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      rangeText,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                        color: ThemeHelper.onBackground(
+                          context,
+                        ).withValues(alpha: 0.54),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildCompactIconButton(
+                context,
+                icon: Icons.chevron_right_rounded,
+                onTap: provider.canGoNextTimeUnit
+                    ? provider.navigateToNextTimeUnit
+                    : null,
+              ),
+            ],
           ),
-          Expanded(
-            child: Text(
-              provider.getDisplayTimeLabel(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: AppTypographyConstants.sectionTitleFontSize,
-                fontWeight: FontWeight.w800,
-                color: ThemeHelper.onBackground(context),
+          SizedBox(height: 14.h),
+          Container(
+            padding: EdgeInsets.all(4.w),
+            decoration: BoxDecoration(
+              color: ThemeHelper.visualTheme(context).panelSecondaryColor,
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(
+                color: ThemeHelper.visualTheme(context).panelBorderColor,
               ),
             ),
-          ),
-          _buildCompactIconButton(
-            context,
-            icon: Icons.arrow_right_rounded,
-            onTap: provider.canGoNextTimeUnit
-                ? provider.navigateToNextTimeUnit
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodSelector(BuildContext context) {
-    final provider = Provider.of<HabitDetailStatisticsProvider>(context);
-    return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: ScreenUtil().setWidth(16),
-        vertical: ScreenUtil().setHeight(12),
-      ),
-      padding: EdgeInsets.all(ScreenUtil().setWidth(16)),
-      decoration: ThemeHelper.panelDecoration(context, radius: 20.r),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildPeriodButton(
-            context,
-            '周',
-            provider.selectedPeriod == 'week',
-            () {
-              provider.setSelectedPeriod('week');
-            },
-          ),
-          SizedBox(width: ScreenUtil().setWidth(16)),
-          _buildPeriodButton(
-            context,
-            '月',
-            provider.selectedPeriod == 'month',
-            () {
-              provider.setSelectedPeriod('month');
-            },
-          ),
-          SizedBox(width: ScreenUtil().setWidth(16)),
-          _buildPeriodButton(
-            context,
-            '年',
-            provider.selectedPeriod == 'year',
-            () {
-              provider.setSelectedPeriod('year');
-            },
+            child: Row(
+              children: [
+                _buildPeriodButton(
+                  context,
+                  '周',
+                  provider.selectedPeriod == 'week',
+                  () => provider.setSelectedPeriod('week'),
+                ),
+                _buildPeriodButton(
+                  context,
+                  '月',
+                  provider.selectedPeriod == 'month',
+                  () => provider.setSelectedPeriod('month'),
+                ),
+                _buildPeriodButton(
+                  context,
+                  '年',
+                  provider.selectedPeriod == 'year',
+                  () => provider.setSelectedPeriod('year'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -360,36 +248,43 @@ class _HabitDetailStatisticsView extends StatelessWidget {
   ) {
     final scheme = Theme.of(context).colorScheme;
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
-          child: Ink(
-            padding: EdgeInsets.symmetric(
-              horizontal: ScreenUtil().setWidth(20),
-              vertical: ScreenUtil().setHeight(12),
-            ),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? scheme.primary.withValues(alpha: 0.16)
-                  : ThemeHelper.visualTheme(context).panelSecondaryColor,
-              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(24)),
-              border: Border.all(
-                color: isSelected
-                    ? scheme.primary.withValues(alpha: 0.45)
-                    : ThemeHelper.visualTheme(context).panelBorderColor,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(12.r),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.symmetric(vertical: 10.h),
+              decoration: BoxDecoration(
+                color: isSelected ? scheme.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: scheme.primary.withValues(alpha: 0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
               ),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: AppTypographyConstants.panelTitleFontSize,
-                  color: isSelected
-                      ? scheme.primary
-                      : ThemeHelper.onBackground(context),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize:
+                        AppTypographyConstants.statisticsSegmentLabelFontSize,
+                    color: isSelected
+                        ? scheme.onPrimary
+                        : ThemeHelper.onBackground(
+                            context,
+                          ).withValues(alpha: 0.62),
+                  ),
                 ),
               ),
             ),
@@ -397,6 +292,16 @@ class _HabitDetailStatisticsView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final totalMinutes = duration.inMinutes;
+    if (totalMinutes < 60) {
+      return '$totalMinutes 分';
+    }
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    return minutes == 0 ? '$hours 时' : '$hours时$minutes分';
   }
 
   @override
@@ -407,9 +312,15 @@ class _HabitDetailStatisticsView extends StatelessWidget {
     // 创建习惯颜色映射
     final Map<String, Color> habitColors = {habit.id: habit.color};
     final provider = Provider.of<HabitDetailStatisticsProvider>(context);
-    final stats = provider.calculateHabitStats();
-    final completedDays = stats['completedDays'] as int;
-    final completionRate = (stats['completionRate'] as double) * 100;
+    final rollingRange = provider.getRollingDateRange();
+    final recordCount = HabitRecordStatistics.recordCountInRange(
+      habit,
+      rollingRange,
+    );
+    final trackedDuration = HabitRecordStatistics.durationInRange(
+      habit,
+      rollingRange,
+    );
     final heroForeground = ThemeHelper.visualTheme(context).heroForeground;
     final heroSecondary = ThemeHelper.visualTheme(
       context,
@@ -462,7 +373,7 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                                 ),
                                 SizedBox(height: 6.h),
                                 Text(
-                                  '习惯详情统计面板',
+                                  '当前时间范围的记录次数与专注时长',
                                   style: TextStyle(
                                     fontSize: AppTypographyConstants
                                         .secondaryHeroSubtitleFontSize,
@@ -488,24 +399,16 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                           Expanded(
                             child: _buildHeroStat(
                               context,
-                              label: '已完成',
-                              value: '$completedDays 天',
+                              label: '记录次数',
+                              value: '$recordCount 次',
                             ),
                           ),
                           SizedBox(width: 10.w),
                           Expanded(
                             child: _buildHeroStat(
                               context,
-                              label: '完成率',
-                              value: '${completionRate.toStringAsFixed(1)}%',
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: _buildHeroStat(
-                              context,
-                              label: '目标',
-                              value: '${habit.targetDays ?? 0} 天',
+                              label: '专注时长',
+                              value: _formatDuration(trackedDuration),
                             ),
                           ),
                         ],
@@ -513,10 +416,8 @@ class _HabitDetailStatisticsView extends StatelessWidget {
                     ],
                   ),
                 ),
-                _buildCompletionStatusModule(context),
                 _buildCalendarModule(context, singleHabitList, habitColors),
-                _buildTimeRangeSelector(context),
-                _buildPeriodSelector(context),
+                _buildTrendControls(context),
                 StatisticsChartWidget(
                   habits: [habit],
                   selectedPeriod: provider.selectedPeriod,
@@ -572,34 +473,6 @@ class _HabitDetailStatisticsView extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildMetricRow(
-    BuildContext context, {
-    required Color color,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: HabitDetailStatisticsPageConstants.statusIndicatorSize,
-          height: HabitDetailStatisticsPageConstants.statusIndicatorSize,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        SizedBox(
-          width: HabitDetailStatisticsPageConstants.statusIndicatorSpacing,
-        ),
-        Text(
-          '$label: $value',
-          style: TextStyle(
-            fontSize: AppTypographyConstants.chartLegendFontSize,
-            fontWeight: FontWeight.w600,
-            color: ThemeHelper.onBackground(context),
-          ),
-        ),
-      ],
     );
   }
 

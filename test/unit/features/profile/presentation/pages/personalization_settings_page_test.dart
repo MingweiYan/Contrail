@@ -17,7 +17,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 1.0;
-      
+
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
@@ -26,9 +26,7 @@ void main() {
               ChangeNotifierProvider(create: (_) => ThemeProvider()),
               ChangeNotifierProvider(create: (_) => PersonalizationProvider()),
             ],
-            child: MaterialApp(
-              home: child,
-            ),
+            child: MaterialApp(home: child),
           ),
           child: const PersonalizationSettingsPage(),
         ),
@@ -38,7 +36,40 @@ void main() {
 
       expect(find.text('个性化设置'), findsOneWidget);
       expect(find.text('每周第一天'), findsOneWidget);
-      
+      expect(find.text('习惯卡片排序'), findsOneWidget);
+
+      tester.view.reset();
+    });
+
+    testWidgets('应该保存习惯卡片自动排序开关', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 1.0;
+
+      final personalizationProvider = PersonalizationProvider();
+      await personalizationProvider.initialize();
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(375, 812),
+          builder: (_, child) => MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => ThemeProvider()),
+              ChangeNotifierProvider.value(value: personalizationProvider),
+            ],
+            child: MaterialApp(home: child),
+          ),
+          child: const PersonalizationSettingsPage(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('habit-auto-sort-switch')));
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('habit_list_auto_sort_by_progress'), false);
+      expect(personalizationProvider.autoSortHabitsByProgress, false);
+
       tester.view.reset();
     });
 
@@ -46,7 +77,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 1.0;
-      
+
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
@@ -55,9 +86,7 @@ void main() {
               ChangeNotifierProvider(create: (_) => ThemeProvider()),
               ChangeNotifierProvider(create: (_) => PersonalizationProvider()),
             ],
-            child: MaterialApp(
-              home: child,
-            ),
+            child: MaterialApp(home: child),
           ),
           child: const PersonalizationSettingsPage(),
         ),
@@ -67,7 +96,7 @@ void main() {
 
       expect(find.text('周天'), findsOneWidget);
       expect(find.text('周一'), findsOneWidget);
-      
+
       tester.view.reset();
     });
 
@@ -75,7 +104,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 1.0;
-      
+
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
@@ -84,9 +113,7 @@ void main() {
               ChangeNotifierProvider(create: (_) => ThemeProvider()),
               ChangeNotifierProvider(create: (_) => PersonalizationProvider()),
             ],
-            child: MaterialApp(
-              home: child,
-            ),
+            child: MaterialApp(home: child),
           ),
           child: const PersonalizationSettingsPage(),
         ),
@@ -95,7 +122,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('选择每周的起始日期，影响日历显示和周统计数据'), findsOneWidget);
-      
+
       tester.view.reset();
     });
 
@@ -103,7 +130,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 1.0;
-      
+
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
@@ -112,9 +139,7 @@ void main() {
               ChangeNotifierProvider(create: (_) => ThemeProvider()),
               ChangeNotifierProvider(create: (_) => PersonalizationProvider()),
             ],
-            child: MaterialApp(
-              home: child,
-            ),
+            child: MaterialApp(home: child),
           ),
           child: const PersonalizationSettingsPage(),
         ),
@@ -123,7 +148,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('设置会自动保存并在下次应用启动时生效'), findsOneWidget);
-      
+
       tester.view.reset();
     });
   });

@@ -290,11 +290,13 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     return LineChartBarData(
       spots: spots,
       isCurved: true,
-      curveSmoothness: 0.3,
+      curveSmoothness: 0.22,
+      preventCurveOverShooting: true,
+      preventCurveOvershootingThreshold: 1,
       color: _habit.color,
       barWidth: 3.0,
       isStrokeCapRound: true,
-      dotData: FlDotData(show: true),
+      dotData: FlDotData(show: false),
       belowBarData: BarAreaData(show: false),
     );
   }
@@ -309,11 +311,13 @@ class HabitDetailStatisticsProvider extends BaseStatsProvider {
     return LineChartBarData(
       spots: spots,
       isCurved: true,
-      curveSmoothness: 0.3,
+      curveSmoothness: 0.22,
+      preventCurveOverShooting: true,
+      preventCurveOvershootingThreshold: 1,
       color: _habit.color,
       barWidth: 3.0,
       isStrokeCapRound: true,
-      dotData: FlDotData(show: true),
+      dotData: FlDotData(show: false),
       belowBarData: BarAreaData(show: false),
     );
   }
