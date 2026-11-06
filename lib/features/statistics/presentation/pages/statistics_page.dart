@@ -25,8 +25,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
   late AnimationController _fadeAnimation;
   final ScrollController _scrollController = ScrollController();
   bool _isDetailView = true;
-  // 跟踪第二个按钮当前显示的时间范围（week/month/year）
-  String _statsTimeRange = 'week'; // 默认显示周统计
 
   @override
   void initState() {
@@ -65,21 +63,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     // 使用依赖注入获取HabitStatisticsService实例
     final statisticsService = sl<HabitStatisticsService>();
-    Map<String, dynamic> stats;
-
-    // 根据当前选择的时间范围获取相应的统计数据
-    if (_statsTimeRange == 'month') {
-      stats = statisticsService.getMonthlyHabitStatistics(habits);
-    } else if (_statsTimeRange == 'year') {
-      stats = statisticsService.getYearlyHabitStatistics(habits);
-    } else {
-      stats = statisticsService.getWeeklyHabitStatistics(habits);
-    }
+    final stats = statisticsService.getMonthlyHabitStatistics(habits);
 
     // 导航到统计报告页面
-    AppRouter.router.go(
+    AppRouter.router.push(
       '/statistics/result',
-      extra: {'statisticsData': stats, 'periodType': _statsTimeRange},
+      extra: {'statisticsData': stats, 'periodType': 'month'},
     );
   }
 
@@ -124,17 +113,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
               habitColors[habits[i].id] = habits[i].color;
             }
 
-            // 计算统计数据 - 使用服务层方法
-            final rangeLabel = _currentRangeLabel();
-
             return SingleChildScrollView(
               controller: _scrollController,
               padding: HeroHeaderPageConstants.mainPagePadding,
               child: Column(
                 children: [
                   AppHeroHeader(
-                    title: '习惯统计',
-                    subtitle: '把每一次坚持变成清晰可读的轨迹',
+                    title: '习惯追踪',
+                    subtitle: '把每一次记录变成清晰可读的轨迹',
                     badge: AppHeroHeaderBadgeData(
                       icon: Icons.insights_outlined,
                       label: _isDetailView ? '明细模式' : '趋势模式',
@@ -145,29 +131,20 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             ? Icons.timeline_rounded
                             : Icons.stacked_line_chart_rounded,
                         title: '切换视图',
-                        subtitle: _isDetailView ? 'Detail' : 'Trend',
+                        subtitle: _isDetailView ? '明细' : '趋势',
                         onTap: () => _toggleView(statisticsProvider),
                       ),
                       AppHeroHeaderActionData(
-                        icon: _currentRangeIcon(),
-                        title: rangeLabel,
-                        subtitle: _currentRangeEnglishLabel(),
-                        onTap: () {
-                          setState(() {
-                            if (_statsTimeRange == 'week') {
-                              _statsTimeRange = 'month';
-                            } else if (_statsTimeRange == 'month') {
-                              _statsTimeRange = 'year';
-                            } else {
-                              _statsTimeRange = 'week';
-                            }
-                          });
-                        },
+                        icon: Icons.auto_graph_rounded,
+                        title: '周期回顾',
+                        subtitle: '周 · 月 · 年',
+                        onTap: () =>
+                            AppRouter.router.push('/statistics/review'),
                       ),
                       AppHeroHeaderActionData(
                         icon: Icons.send_rounded,
-                        title: '分享报告',
-                        subtitle: 'Export',
+                        title: '生成报告',
+                        subtitle: '预览与分享',
                         onTap: () => _sendProgressReport(context),
                       ),
                     ],
@@ -209,36 +186,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  String _currentRangeLabel() {
-    if (_statsTimeRange == 'month') {
-      return '本月次数';
-    }
-    if (_statsTimeRange == 'year') {
-      return '本年次数';
-    }
-    return '本周次数';
-  }
-
-  String _currentRangeEnglishLabel() {
-    if (_statsTimeRange == 'month') {
-      return 'Monthly';
-    }
-    if (_statsTimeRange == 'year') {
-      return 'Yearly';
-    }
-    return 'Weekly';
-  }
-
-  IconData _currentRangeIcon() {
-    if (_statsTimeRange == 'month') {
-      return Icons.calendar_view_month_outlined;
-    }
-    if (_statsTimeRange == 'year') {
-      return Icons.date_range_outlined;
-    }
-    return Icons.calendar_view_week_outlined;
-  }
-
   Widget _buildLegendFilterPanel(
     BuildContext context, {
     required List<Habit> habits,
@@ -246,6 +193,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     required void Function(int) onToggle,
   }) {
     final visualTheme = ThemeHelper.visualTheme(context);
+    final selectedCount = habitVisibility.where((visible) => visible).length;
     return Container(
       key: const ValueKey('statistics-legend-filter-panel'),
       width: double.infinity,
@@ -259,23 +207,52 @@ class _StatisticsPageState extends State<StatisticsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '图例筛选',
-            style: TextStyle(
-              fontSize: AppTypographyConstants.panelTitleFontSize,
-              fontWeight: FontWeight.w800,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            '默认展示全部；点击可单独查看，也可继续添加或取消选择',
-            style: TextStyle(
-              fontSize: AppTypographyConstants.panelSubtitleFontSize,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.65),
-            ),
+          Row(
+            children: [
+              Container(
+                width: 34.w,
+                height: 34.w,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(11.r),
+                ),
+                child: Icon(
+                  Icons.filter_alt_outlined,
+                  size: 18.sp,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '显示习惯  $selectedCount/${habits.length}',
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.panelTitleFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      selectedCount == habits.length
+                          ? '点击一个习惯可快速聚焦它的记录'
+                          : '可以继续多选，再次点击可取消',
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.56),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           SizedBox(height: 12.h),
           Wrap(
@@ -283,57 +260,60 @@ class _StatisticsPageState extends State<StatisticsPage> {
             runSpacing: 10.h,
             children: [
               for (int i = 0; i < habits.length; i++)
-                GestureDetector(
-                  onTap: () => onToggle(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 10.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: habitVisibility[i]
-                          ? habits[i].color.withValues(alpha: 0.12)
-                          : visualTheme.panelColor,
-                      borderRadius: BorderRadius.circular(999.r),
-                      border: Border.all(
-                        color: habitVisibility[i]
-                            ? habits[i].color.withValues(alpha: 0.55)
-                            : Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.2),
+                Semantics(
+                  button: true,
+                  selected: habitVisibility[i],
+                  child: GestureDetector(
+                    onTap: () => onToggle(i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 11.w,
+                        vertical: 8.h,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 10.w,
-                          height: 10.w,
-                          decoration: BoxDecoration(
-                            color: habits[i].color,
-                            shape: BoxShape.circle,
-                          ),
+                      decoration: BoxDecoration(
+                        color: habitVisibility[i]
+                            ? habits[i].color.withValues(alpha: 0.12)
+                            : visualTheme.panelColor,
+                        borderRadius: BorderRadius.circular(999.r),
+                        border: Border.all(
+                          color: habitVisibility[i]
+                              ? habits[i].color.withValues(alpha: 0.42)
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.14),
                         ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          habits[i].name,
-                          style: TextStyle(
-                            fontSize:
-                                AppTypographyConstants.chartLegendFontSize,
-                            fontWeight: habitVisibility[i]
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            color: habitVisibility[i]
-                                ? Theme.of(context).colorScheme.onSurface
-                                : Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.42),
-                            decoration: habitVisibility[i]
-                                ? TextDecoration.none
-                                : TextDecoration.lineThrough,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 9.w,
+                            height: 9.w,
+                            decoration: BoxDecoration(
+                              color: habitVisibility[i]
+                                  ? habits[i].color
+                                  : habits[i].color.withValues(alpha: 0.38),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 7.w),
+                          Text(
+                            habits[i].name,
+                            style: TextStyle(
+                              fontSize:
+                                  AppTypographyConstants.chartLegendFontSize,
+                              fontWeight: habitVisibility[i]
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: habitVisibility[i]
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.38),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

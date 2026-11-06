@@ -11,7 +11,7 @@ void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
-  
+
   group('CalendarViewWidget', () {
     final testHabits = [
       Habit(
@@ -68,8 +68,19 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.byType(CalendarViewWidget), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const ValueKey('calendar-marker-2-2'))),
+        const Size.square(16),
+      );
+
+      final marker = tester.widget<Container>(
+        find.byKey(const ValueKey('calendar-marker-2-2')),
+      );
+      final decoration = marker.decoration! as BoxDecoration;
+      expect(decoration.shape, BoxShape.circle);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('should display weekday headers correctly', (
@@ -98,9 +109,7 @@ void main() {
       }
     });
 
-    testWidgets('should display dates', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('should display dates', (WidgetTester tester) async {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
@@ -144,7 +153,7 @@ void main() {
       expect(find.byType(CalendarViewWidget), findsOneWidget);
     });
 
-    testWidgets('should adjust cell aspect ratio based on habit count', (
+    testWidgets('should show every habit marker and expand cells as needed', (
       WidgetTester tester,
     ) async {
       final manyHabits = List.generate(
@@ -165,6 +174,10 @@ void main() {
         for (int i = 0; i < 5; i++)
           '习惯$i': Colors.primaries[i % Colors.primaries.length],
       };
+      final markerDate = DateTime(testYear, testMonth, 15);
+      for (final habit in manyHabits) {
+        habit.dailyCompletionStatus[markerDate] = true;
+      }
 
       await tester.pumpWidget(
         ScreenUtilInit(
@@ -184,6 +197,18 @@ void main() {
       );
 
       expect(find.byType(CalendarViewWidget), findsOneWidget);
+      for (final habit in manyHabits) {
+        expect(
+          find.byKey(ValueKey('calendar-marker-15-${habit.id}')),
+          findsOneWidget,
+        );
+      }
+      expect(find.textContaining('+'), findsNothing);
+      final gridView = tester.widget<GridView>(find.byType(GridView));
+      final delegate =
+          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(delegate.mainAxisExtent, greaterThan(54));
+      expect(tester.takeException(), isNull);
     });
 
     Future<void> pumpCalendar(
@@ -258,44 +283,42 @@ void main() {
       expect(find.text('31'), findsOneWidget);
     });
 
-    testWidgets(
-      'every month in 2025 displays its last day (monday start)',
-      (tester) async {
-        for (int month = 1; month <= 12; month++) {
-          final lastDay = DateTime(2025, month + 1, 0).day;
-          await pumpCalendar(
-            tester,
-            year: 2025,
-            month: month,
-            weekStartDay: WeekStartDay.monday,
-          );
-          expect(
-            find.text('$lastDay'),
-            findsOneWidget,
-            reason: '2025-$month 应该显示最后一天 $lastDay',
-          );
-        }
-      },
-    );
+    testWidgets('every month in 2025 displays its last day (monday start)', (
+      tester,
+    ) async {
+      for (int month = 1; month <= 12; month++) {
+        final lastDay = DateTime(2025, month + 1, 0).day;
+        await pumpCalendar(
+          tester,
+          year: 2025,
+          month: month,
+          weekStartDay: WeekStartDay.monday,
+        );
+        expect(
+          find.text('$lastDay'),
+          findsOneWidget,
+          reason: '2025-$month 应该显示最后一天 $lastDay',
+        );
+      }
+    });
 
-    testWidgets(
-      'every month in 2025 displays its last day (sunday start)',
-      (tester) async {
-        for (int month = 1; month <= 12; month++) {
-          final lastDay = DateTime(2025, month + 1, 0).day;
-          await pumpCalendar(
-            tester,
-            year: 2025,
-            month: month,
-            weekStartDay: WeekStartDay.sunday,
-          );
-          expect(
-            find.text('$lastDay'),
-            findsOneWidget,
-            reason: '2025-$month 应该显示最后一天 $lastDay',
-          );
-        }
-      },
-    );
+    testWidgets('every month in 2025 displays its last day (sunday start)', (
+      tester,
+    ) async {
+      for (int month = 1; month <= 12; month++) {
+        final lastDay = DateTime(2025, month + 1, 0).day;
+        await pumpCalendar(
+          tester,
+          year: 2025,
+          month: month,
+          weekStartDay: WeekStartDay.sunday,
+        );
+        expect(
+          find.text('$lastDay'),
+          findsOneWidget,
+          reason: '2025-$month 应该显示最后一天 $lastDay',
+        );
+      }
+    });
   });
 }

@@ -11,6 +11,9 @@ import 'package:contrail/shared/utils/page_layout_constants.dart';
 /// 统计明细视图组件
 /// 显示日历视图和时间轴视图
 class StatisticsDetailView extends StatelessWidget {
+  static const double _minimumSwipeDistance = 42;
+  static const double _minimumSwipeVelocity = 300;
+
   final List<Habit> visibleHabits;
   final StatisticsProvider statisticsProvider;
   final Map<String, Color> habitColors;
@@ -24,47 +27,49 @@ class StatisticsDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // 明细视图时间选择器（固定为月份选择）
-        _buildMonthSelector(context),
-
-        // 主体内容：日历视图和时间轴视图
-        _buildDetailContent(context),
-      ],
-    );
+    return Column(children: [_buildDetailContent(context)]);
   }
 
-  // 构建月份选择器
-  Widget _buildMonthSelector(BuildContext context) {
-    return _buildPanel(
-      context,
-      secondary: true,
-      margin: StatisticsDetailViewConstants.containerMargin,
-      padding: StatisticsDetailViewConstants.containerPadding,
+  Widget _buildMonthNavigator(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      decoration: BoxDecoration(
+        color: ThemeHelper.visualTheme(context).panelSecondaryColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: ThemeHelper.visualTheme(context).panelBorderColor,
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            onPressed: () => statisticsProvider.navigateToDetailPreviousMonth(),
+            tooltip: '上个月',
+            visualDensity: VisualDensity.compact,
+            onPressed: statisticsProvider.navigateToDetailPreviousMonth,
             icon: Icon(
-              Icons.arrow_left,
-              color: ThemeHelper.onBackground(context),
+              Icons.chevron_left_rounded,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           Text(
             '${statisticsProvider.detailSelectedYear}年${statisticsProvider.detailSelectedMonth}月',
             style: TextStyle(
               fontSize: StatisticsDetailViewConstants.subtitleFontSize,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               color: ThemeHelper.onBackground(context),
             ),
           ),
           IconButton(
-            onPressed: () => statisticsProvider.navigateToDetailNextMonth(),
+            tooltip: '下个月',
+            visualDensity: VisualDensity.compact,
+            onPressed: statisticsProvider.navigateToDetailNextMonth,
             icon: Icon(
-              Icons.arrow_right,
-              color: ThemeHelper.onBackground(context),
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -77,33 +82,63 @@ class StatisticsDetailView extends StatelessWidget {
     return Column(
       children: [
         // 日历视图 - 独立的白色块
-        _buildPanel(
-          context,
-          margin: StatisticsDetailViewConstants.containerMargin,
-          padding: StatisticsDetailViewConstants.containerPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '完成日历',
-                style: TextStyle(
-                  fontSize: StatisticsDetailViewConstants.titleFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onBackground(context),
+        _buildPeriodSwipeSurface(
+          key: const ValueKey('statistics-calendar-period-swipe'),
+          onPrevious: statisticsProvider.navigateToDetailPreviousMonth,
+          onNext: statisticsProvider.navigateToDetailNextMonth,
+          child: _buildPanel(
+            context,
+            margin: StatisticsDetailViewConstants.containerMargin,
+            padding: StatisticsDetailViewConstants.containerPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '活动日历',
+                            style: TextStyle(
+                              fontSize:
+                                  StatisticsDetailViewConstants.titleFontSize,
+                              fontWeight: FontWeight.w800,
+                              color: ThemeHelper.onBackground(context),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '颜色越丰富，表示当天记录的习惯越多',
+                            style: TextStyle(
+                              fontSize:
+                                  AppTypographyConstants.panelSubtitleFontSize,
+                              color: ThemeHelper.onBackground(
+                                context,
+                              ).withValues(alpha: 0.56),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildMonthNavigator(context),
+                  ],
                 ),
-              ),
-              SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
-              CalendarViewWidget(
-                habits: visibleHabits,
-                selectedYear: statisticsProvider.detailSelectedYear,
-                selectedMonth: statisticsProvider.detailSelectedMonth,
-                habitColors: habitColors,
-                weekStartDay: Provider.of<PersonalizationProvider>(
-                  context,
-                  listen: false,
-                ).weekStartDay,
-              ),
-            ],
+                SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
+                CalendarViewWidget(
+                  habits: visibleHabits,
+                  selectedYear: statisticsProvider.detailSelectedYear,
+                  selectedMonth: statisticsProvider.detailSelectedMonth,
+                  habitColors: habitColors,
+                  weekStartDay: Provider.of<PersonalizationProvider>(
+                    context,
+                    listen: false,
+                  ).weekStartDay,
+                ),
+              ],
+            ),
           ),
         ),
         // 时间轴视图 - 独立的白色块
@@ -114,13 +149,28 @@ class StatisticsDetailView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '活动时间轴',
-                style: TextStyle(
-                  fontSize: StatisticsDetailViewConstants.titleFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onBackground(context),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '活动时间轴',
+                    style: TextStyle(
+                      fontSize: StatisticsDetailViewConstants.titleFontSize,
+                      fontWeight: FontWeight.w800,
+                      color: ThemeHelper.onBackground(context),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '从选中月份开始，向下滚动会继续加载更早的专注记录',
+                    style: TextStyle(
+                      fontSize: AppTypographyConstants.panelSubtitleFontSize,
+                      color: ThemeHelper.onBackground(
+                        context,
+                      ).withValues(alpha: 0.56),
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: StatisticsDetailViewConstants.titleSpacing),
               TimelineViewWidget(
@@ -134,6 +184,39 @@ class StatisticsDetailView extends StatelessWidget {
         // 添加底部内边距，确保内容不会贴在底部
         SizedBox(height: StatisticsDetailViewConstants.bottomSpacing),
       ],
+    );
+  }
+
+  Widget _buildPeriodSwipeSurface({
+    required Key key,
+    required Widget child,
+    required VoidCallback onPrevious,
+    required VoidCallback onNext,
+  }) {
+    var dragDistance = 0.0;
+    return GestureDetector(
+      key: key,
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) => dragDistance = 0,
+      onHorizontalDragUpdate: (details) {
+        dragDistance += details.primaryDelta ?? 0;
+      },
+      onHorizontalDragCancel: () => dragDistance = 0,
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        final gestureDelta = dragDistance.abs() >= _minimumSwipeDistance
+            ? dragDistance
+            : velocity.abs() >= _minimumSwipeVelocity
+            ? velocity
+            : 0;
+        dragDistance = 0;
+        if (gestureDelta > 0) {
+          onPrevious();
+        } else if (gestureDelta < 0) {
+          onNext();
+        }
+      },
+      child: child,
     );
   }
 

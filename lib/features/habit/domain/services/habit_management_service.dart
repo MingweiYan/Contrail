@@ -1,8 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:contrail/shared/models/goal_type.dart';
 import 'package:contrail/shared/utils/logger.dart';
+import 'package:contrail/shared/utils/habit_record_statistics.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
 
 /// 习惯统计服务 - 负责处理所有与习惯统计相关的业务逻辑
@@ -62,7 +64,8 @@ class HabitManagementService {
       // 如果追踪时间，显示时间目标
       if (habit.trackTime) {
         int totalMinutesInCycle = getTotalMinutesInCurrentCycle(habit);
-        int targetMinutes = habit.targetTimeMinutes ?? 
+        int targetMinutes =
+            habit.targetTimeMinutes ??
             _calculateDefaultTargetTimeMinutes(habit.targetDays!);
         buffer.write(
           ' · 时间: ${totalMinutesInCycle ~/ 60}h${totalMinutesInCycle % 60}m/${targetMinutes ~/ 60}h${targetMinutes % 60}m',
@@ -144,66 +147,38 @@ class HabitManagementService {
   }
 
   /// 获取当前周期内的完成天数
-  int getCompletedDaysInCurrentCycle(Habit habit) {
+  int getCompletedDaysInCurrentCycle(
+    Habit habit, {
+    WeekStartDay weekStartDay = WeekStartDay.monday,
+  }) {
     final now = DateTime.now();
-    DateTime startDate;
+    final range = _getCurrentCycleRange(habit, now, weekStartDay);
+    return HabitRecordStatistics.recordedDayCountInRange(habit, range);
+  }
 
-    switch (habit.cycleType!) {
-      case CycleType.weekly:
-        // 本周开始（周一）
-        startDate = now.subtract(Duration(days: now.weekday - 1));
-        break;
-      case CycleType.monthly:
-        // 本月开始
-        startDate = DateTime(now.year, now.month, 1);
-        break;
-      case CycleType.daily:
-      default:
-        // 今天
-        startDate = DateTime(now.year, now.month, now.day);
-        break;
-    }
-
-    int count = 0;
-    habit.dailyCompletionStatus.forEach((date, completed) {
-      if (completed &&
-          date.isAfter(startDate.subtract(const Duration(days: 1))) &&
-          date.isBefore(now.add(const Duration(days: 1)))) {
-        count++;
-      }
-    });
-
-    return count;
+  /// 获取当前周期内的记录次数。同一天的多条记录会分别计数。
+  int getRecordCountInCurrentCycle(
+    Habit habit, {
+    WeekStartDay weekStartDay = WeekStartDay.monday,
+  }) {
+    final now = DateTime.now();
+    final range = _getCurrentCycleRange(habit, now, weekStartDay);
+    return HabitRecordStatistics.recordCountInRange(habit, range);
   }
 
   /// 获取当前周期内的总时长（分钟）
   int getTotalMinutesInCurrentCycle(Habit habit, {WeekStartDay? weekStartDay}) {
     final now = DateTime.now();
-    DateTime startDate;
-
-    switch (habit.cycleType!) {
-      case CycleType.weekly:
-        // 本周开始（根据用户设置的周起始日）
-        weekStartDay ??= WeekStartDay.monday;
-        startDate = _getWeekStartDate(now, weekStartDay);
-        break;
-      case CycleType.monthly:
-        // 本月开始
-        startDate = DateTime(now.year, now.month, 1);
-        break;
-      case CycleType.daily:
-      default:
-        // 今天
-        startDate = DateTime(now.year, now.month, now.day);
-        break;
-    }
+    final range = _getCurrentCycleRange(
+      habit,
+      now,
+      weekStartDay ?? WeekStartDay.monday,
+    );
 
     int totalMinutes = 0;
-    final startOnly = DateTime(startDate.year, startDate.month, startDate.day);
-    final todayOnly = DateTime(now.year, now.month, now.day);
     habit.trackingDurations.forEach((dt, durations) {
       final entryDay = DateTime(dt.year, dt.month, dt.day);
-      if (!entryDay.isBefore(startOnly) && !entryDay.isAfter(todayOnly)) {
+      if (TimeManagementUtil.isDateInRange(entryDay, range)) {
         for (final duration in durations) {
           totalMinutes += duration.inMinutes;
         }
@@ -211,6 +186,32 @@ class HabitManagementService {
     });
 
     return totalMinutes;
+  }
+
+  DateTimeRange _getCurrentCycleRange(
+    Habit habit,
+    DateTime now,
+    WeekStartDay weekStartDay,
+  ) {
+    final today = TimeManagementUtil.dateOnly(now);
+    late final DateTime startDate;
+
+    switch (habit.cycleType ?? CycleType.daily) {
+      case CycleType.weekly:
+        startDate = _getWeekStartDate(today, weekStartDay);
+        break;
+      case CycleType.monthly:
+        startDate = DateTime(today.year, today.month, 1);
+        break;
+      case CycleType.annual:
+        startDate = DateTime(today.year, 1, 1);
+        break;
+      case CycleType.daily:
+        startDate = today;
+        break;
+    }
+
+    return DateTimeRange(start: startDate, end: today);
   }
 
   /// 获取指定日期所在周的开始日期
@@ -244,7 +245,8 @@ class HabitManagementService {
     if (!habit.trackTime) return 0.0;
 
     int completedMinutes = getTotalMinutesInCurrentCycle(habit);
-    int targetMinutes = habit.targetTimeMinutes ?? 
+    int targetMinutes =
+        habit.targetTimeMinutes ??
         _calculateDefaultTargetTimeMinutes(habit.targetDays!);
     final progress = completedMinutes / targetMinutes;
     if (habit.goalType == GoalType.negative) {

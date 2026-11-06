@@ -8,6 +8,7 @@ import 'package:contrail/shared/utils/icon_helper.dart';
 import 'package:contrail/features/habit/presentation/pages/add_habit_page.dart';
 import 'package:contrail/features/statistics/presentation/pages/habit_detail_statistics_page.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/habit_record_statistics.dart';
 
 /// 习惯项组件，用于显示单个习惯的卡片
 class HabitItemWidget extends StatelessWidget {
@@ -18,9 +19,10 @@ class HabitItemWidget extends StatelessWidget {
   final String Function(Habit) formatDescription;
   final double Function(Habit) getFinalProgress;
   final bool isFirst;
+  final int? reorderIndex;
 
   const HabitItemWidget({
-    Key? key,
+    super.key,
     required this.habit,
     required this.onDelete,
     required this.onRefresh,
@@ -28,7 +30,8 @@ class HabitItemWidget extends StatelessWidget {
     required this.formatDescription,
     required this.getFinalProgress,
     this.isFirst = false,
-  }) : super(key: key);
+    this.reorderIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,12 +47,9 @@ class HabitItemWidget extends StatelessWidget {
     final today = DateTime.now();
     final todayOnly = DateTime(today.year, today.month, today.day);
     final isCompletedToday =
-        habit.dailyCompletionStatus.containsKey(todayOnly) &&
-        habit.dailyCompletionStatus[todayOnly] == true;
-    final completedInCycle = habit.cycleType != null && habit.targetDays != null
-        ? habitManagementService.getCompletedDaysInCurrentCycle(habit)
-        : (isCompletedToday ? 1 : 0);
-    final targetInCycle = habit.targetDays ?? 1;
+        HabitRecordStatistics.recordCountForDay(habit, todayOnly) > 0;
+    final recordCountInCycle = habitManagementService
+        .getRecordCountInCurrentCycle(habit);
     final countProgress = habit.cycleType != null && habit.targetDays != null
         ? habitManagementService
               .getCompletionRateInCurrentCycle(habit)
@@ -82,7 +82,7 @@ class HabitItemWidget extends StatelessWidget {
     final goalTypeIcon = habit.goalType == GoalType.negative
         ? Icons.trending_down_rounded
         : Icons.trending_up_rounded;
-    final countMetricText = '$completedInCycle/$targetInCycle';
+    final countMetricText = '$recordCountInCycle';
     final timeMetricText = '$completedMinutes/$targetMinutes';
     final habitIcon = IconHelper.getIconData(habit.icon, logError: false);
 
@@ -206,6 +206,7 @@ class HabitItemWidget extends StatelessWidget {
                     top: 24.h,
                     bottom: 22.h,
                     child: Container(
+                      key: const ValueKey('habit-card-timeline-rail'),
                       width: 3.w,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -223,6 +224,7 @@ class HabitItemWidget extends StatelessWidget {
                     left: 16.w,
                     top: 28.h,
                     child: Container(
+                      key: const ValueKey('habit-card-timeline-node'),
                       width: 16.w,
                       height: 16.w,
                       decoration: BoxDecoration(
@@ -348,7 +350,7 @@ class HabitItemWidget extends StatelessWidget {
                                   icon: Icons.exposure_plus_1_rounded,
                                   accentColor: timelineColor,
                                 ),
-                                if (habit.trackTime) ...[
+                                if (habit.trackTime)
                                   _buildMetricButton(
                                     context,
                                     label: '时间',
@@ -356,7 +358,6 @@ class HabitItemWidget extends StatelessWidget {
                                     icon: Icons.schedule_rounded,
                                     accentColor: timelineColor,
                                   ),
-                                ],
                               ],
                             ),
                           ),
@@ -364,19 +365,24 @@ class HabitItemWidget extends StatelessWidget {
                             left: 0,
                             right: 94.w,
                             bottom: 6.h,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(999.r),
-                              child: LinearProgressIndicator(
-                                value: displayProgress,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.outline.withValues(alpha: 0.24),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  timelineColor,
-                                ),
-                                minHeight: 7.h,
-                              ),
-                            ),
+                            child: reorderIndex == null
+                                ? _buildProgressIndicator(
+                                    context,
+                                    displayProgress,
+                                    timelineColor,
+                                  )
+                                : ReorderableDragStartListener(
+                                    index: reorderIndex!,
+                                    child: Semantics(
+                                      button: true,
+                                      label: '拖动进度条调整${habit.name}的顺序',
+                                      child: _buildProgressIndicator(
+                                        context,
+                                        displayProgress,
+                                        timelineColor,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -490,6 +496,24 @@ class HabitItemWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildProgressIndicator(
+    BuildContext context,
+    double progress,
+    Color accentColor,
+  ) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999.r),
+      child: LinearProgressIndicator(
+        value: progress,
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.outline.withValues(alpha: 0.24),
+        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+        minHeight: 7.h,
+      ),
+    );
+  }
+
   Widget _buildActionButton(
     BuildContext context,
     List<Color> gradientColors, {
@@ -501,6 +525,7 @@ class HabitItemWidget extends StatelessWidget {
     );
 
     return Container(
+      key: const ValueKey('habit-card-action-button'),
       width: 72.w,
       height: 72.w,
       decoration: BoxDecoration(

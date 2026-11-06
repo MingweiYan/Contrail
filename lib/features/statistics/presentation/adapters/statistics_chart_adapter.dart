@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:contrail/shared/models/habit.dart';
 import 'package:contrail/shared/models/cycle_type.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
+import 'package:contrail/shared/utils/habit_record_statistics.dart';
 import 'package:contrail/shared/utils/time_management_util.dart';
 
 class StatisticsChartAdapter {
@@ -134,19 +135,15 @@ class StatisticsChartAdapter {
         final dayKey = TimeManagementUtil.dateOnly(date);
         double value;
         if (chartType == 'count') {
-          final completed = habit.dailyCompletionStatus[dayKey] ?? false;
-          value = completed ? 1.0 : 0.0;
+          value = HabitRecordStatistics.recordCountForDay(
+            habit,
+            dayKey,
+          ).toDouble();
         } else {
-          int totalSeconds = 0;
-          habit.trackingDurations.forEach((dt, durations) {
-            if (dt.year == dayKey.year &&
-                dt.month == dayKey.month &&
-                dt.day == dayKey.day) {
-              for (final d in durations) {
-                totalSeconds += d.inSeconds;
-              }
-            }
-          });
+          final totalSeconds = HabitRecordStatistics.durationForDay(
+            habit,
+            dayKey,
+          ).inSeconds;
           value = totalSeconds > 0 ? (totalSeconds / 60.0) : 0.0;
         }
         spots.add(FlSpot(i.toDouble(), value));
@@ -166,19 +163,12 @@ class StatisticsChartAdapter {
           }
           final dayKey = TimeManagementUtil.dateOnly(d);
           if (chartType == 'count') {
-            final completed = habit.dailyCompletionStatus[dayKey] ?? false;
-            if (completed) sum += 1;
+            sum += HabitRecordStatistics.recordCountForDay(habit, dayKey);
           } else {
-            int totalSeconds = 0;
-            habit.trackingDurations.forEach((dt, durations) {
-              if (dt.year == dayKey.year &&
-                  dt.month == dayKey.month &&
-                  dt.day == dayKey.day) {
-                for (final d in durations) {
-                  totalSeconds += d.inSeconds;
-                }
-              }
-            });
+            final totalSeconds = HabitRecordStatistics.durationForDay(
+              habit,
+              dayKey,
+            ).inSeconds;
             if (totalSeconds > 0) sum += (totalSeconds / 60.0);
           }
           d = TimeManagementUtil.addCalendarDays(d, 1);
@@ -194,19 +184,12 @@ class StatisticsChartAdapter {
           final date = DateTime(selectedYear, m, d);
           final dayKey = TimeManagementUtil.dateOnly(date);
           if (chartType == 'count') {
-            final completed = habit.dailyCompletionStatus[dayKey] ?? false;
-            if (completed) sum += 1;
+            sum += HabitRecordStatistics.recordCountForDay(habit, dayKey);
           } else {
-            int totalSeconds = 0;
-            habit.trackingDurations.forEach((dt, durations) {
-              if (dt.year == dayKey.year &&
-                  dt.month == dayKey.month &&
-                  dt.day == dayKey.day) {
-                for (final d in durations) {
-                  totalSeconds += d.inSeconds;
-                }
-              }
-            });
+            final totalSeconds = HabitRecordStatistics.durationForDay(
+              habit,
+              dayKey,
+            ).inSeconds;
             if (totalSeconds > 0) sum += (totalSeconds / 60.0);
           }
         }
@@ -310,21 +293,14 @@ class StatisticsChartAdapter {
     }
 
     double countFor(DateTime dayKey) {
-      final completed = habit.dailyCompletionStatus[dayKey] ?? false;
-      return completed ? 1.0 : 0.0;
+      return HabitRecordStatistics.recordCountForDay(habit, dayKey).toDouble();
     }
 
     double timeMinutesFor(DateTime dayKey) {
-      int totalSeconds = 0;
-      habit.trackingDurations.forEach((dt, durations) {
-        if (dt.year == dayKey.year &&
-            dt.month == dayKey.month &&
-            dt.day == dayKey.day) {
-          for (final d in durations) {
-            totalSeconds += d.inSeconds;
-          }
-        }
-      });
+      final totalSeconds = HabitRecordStatistics.durationForDay(
+        habit,
+        dayKey,
+      ).inSeconds;
       return totalSeconds > 0 ? (totalSeconds / 60.0) : 0.0;
     }
 

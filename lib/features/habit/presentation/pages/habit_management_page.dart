@@ -16,6 +16,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:contrail/shared/utils/page_layout_constants.dart';
 import 'package:contrail/shared/widgets/app_hero_header.dart';
 import 'package:contrail/shared/widgets/scroll_to_top_fab.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:contrail/features/profile/presentation/providers/personalization_provider.dart';
 
 class HabitManagementPage extends StatefulWidget {
   const HabitManagementPage({super.key});
@@ -25,15 +27,19 @@ class HabitManagementPage extends StatefulWidget {
 }
 
 class _HabitManagementPageState extends State<HabitManagementPage> {
+  static const _manualOrderPreferenceKey = 'habit_list_manual_order';
+
   late final UpdateHabitUseCase _updateHabitUseCase;
   late final HabitManagementService _habitManagementService;
   final ScrollController _scrollController = ScrollController();
+  List<String> _manualHabitOrder = const [];
 
   @override
   void initState() {
     super.initState();
     _updateHabitUseCase = sl<UpdateHabitUseCase>();
     _habitManagementService = sl<HabitManagementService>();
+    _loadSortPreferences();
   }
 
   @override
@@ -81,6 +87,86 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   // 获取最终的进度值 - 使用统计服务
   double _getFinalProgress(Habit habit) {
     return _habitManagementService.getFinalProgress(habit);
+  }
+
+  Future<void> _loadSortPreferences() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _manualHabitOrder =
+          preferences.getStringList(_manualOrderPreferenceKey) ?? const [];
+    });
+  }
+
+  List<Habit> _orderedHabits(
+    List<Habit> source, {
+    required bool autoSortByProgress,
+  }) {
+    final habits = List<Habit>.from(source);
+    if (autoSortByProgress) {
+      final sourceIndex = <String, int>{
+        for (var index = 0; index < source.length; index++)
+          source[index].id: index,
+      };
+      habits.sort((first, second) {
+        final progressComparison = _getFinalProgress(
+          first,
+        ).compareTo(_getFinalProgress(second));
+        if (progressComparison != 0) {
+          return progressComparison;
+        }
+        return (sourceIndex[first.id] ?? 0).compareTo(
+          sourceIndex[second.id] ?? 0,
+        );
+      });
+      return habits;
+    }
+
+    final manualIndex = <String, int>{
+      for (var index = 0; index < _manualHabitOrder.length; index++)
+        _manualHabitOrder[index]: index,
+    };
+    habits.sort((first, second) {
+      final firstIndex = manualIndex[first.id];
+      final secondIndex = manualIndex[second.id];
+      if (firstIndex == null && secondIndex == null) {
+        return 0;
+      }
+      if (firstIndex == null) {
+        return 1;
+      }
+      if (secondIndex == null) {
+        return -1;
+      }
+      return firstIndex.compareTo(secondIndex);
+    });
+    return habits;
+  }
+
+  Future<void> _reorderHabits(
+    List<Habit> currentOrder,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final reordered = List<Habit>.from(currentOrder);
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+
+    setState(() {
+      _manualHabitOrder = reordered.map((habit) => habit.id).toList();
+    });
+
+    final personalizationProvider = context.read<PersonalizationProvider>();
+    final preferences = await SharedPreferences.getInstance();
+    await Future.wait([
+      personalizationProvider.setAutoSortHabitsByProgress(false),
+      preferences.setStringList(_manualOrderPreferenceKey, _manualHabitOrder),
+    ]);
   }
 
   Future<bool> _showRepeatCompletionConfirmation(Habit habit) async {
@@ -170,8 +256,13 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   @override
   Widget build(BuildContext context) {
     final habitProvider = context.watch<HabitProvider>();
-    final habits = List<Habit>.from(habitProvider.habits)
-      ..sort((a, b) => _getFinalProgress(a).compareTo(_getFinalProgress(b)));
+    final autoSortByProgress = context
+        .watch<PersonalizationProvider>()
+        .autoSortHabitsByProgress;
+    final habits = _orderedHabits(
+      habitProvider.habits,
+      autoSortByProgress: autoSortByProgress,
+    );
 
     return Scaffold(
       floatingActionButton: ScrollToTopFab(controller: _scrollController),
@@ -282,8 +373,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 ),
               ),
             ),
-          )
-        else
+          ),
+        if (!isLoading && habits.isNotEmpty)
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
               pagePadding.left,
@@ -291,23 +382,48 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
               pagePadding.right,
               listPadding.bottom,
             ),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
+            sliver: SliverReorderableList(
+              itemCount: habits.length,
+              onReorder: (oldIndex, newIndex) =>
+                  _reorderHabits(habits, oldIndex, newIndex),
+              itemBuilder: (context, index) {
                 final item = habits[index];
-                return HabitItemWidget(
+                return KeyedSubtree(
                   key: ValueKey(item.id),
-                  habit: item,
-                  onDelete: _deleteHabit,
-                  onRefresh: _refreshHabits,
-                  onNavigateToTracking: _navigateToTrackingPage,
-                  formatDescription: _formatHabitDescription,
-                  getFinalProgress: _getFinalProgress,
-                  isFirst: index == 0,
+                  child: _buildCenteredHabitContent(
+                    frameKey: ValueKey('habit-card-frame-${item.id}'),
+                    child: HabitItemWidget(
+                      habit: item,
+                      onDelete: _deleteHabit,
+                      onRefresh: _refreshHabits,
+                      onNavigateToTracking: _navigateToTrackingPage,
+                      formatDescription: _formatHabitDescription,
+                      getFinalProgress: _getFinalProgress,
+                      isFirst: index == 0,
+                      reorderIndex: index,
+                    ),
+                  ),
                 );
-              }, childCount: habits.length),
+              },
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildCenteredHabitContent({required Widget child, Key? frameKey}) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        key: frameKey,
+        constraints: const BoxConstraints(
+          maxWidth: HabitManagementPageConstants.habitListMaxWidth,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 6.w),
+          child: child,
+        ),
+      ),
     );
   }
 

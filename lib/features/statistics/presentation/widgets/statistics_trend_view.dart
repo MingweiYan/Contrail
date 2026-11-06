@@ -11,6 +11,9 @@ import 'package:contrail/features/profile/presentation/providers/personalization
 /// 统计趋势视图组件
 /// 显示趋势图表和相关控件
 class StatisticsTrendView extends StatelessWidget {
+  static const double _minimumSwipeDistance = 42;
+  static const double _minimumSwipeVelocity = 300;
+
   final List<Habit> habits;
   final List<bool> isHabitVisible;
   final StatisticsProvider statisticsProvider;
@@ -24,29 +27,59 @@ class StatisticsTrendView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // 趋势视图时间选择器（可切换周/月/年）
-        _buildTimeSelector(context),
-
-        // 周/月/年维度切换控件
-        _buildPeriodSelector(context),
-
-        // 图表组件
-        _buildChart(context),
-      ],
+    return _buildPeriodSwipeSurface(
+      key: const ValueKey('statistics-trend-period-swipe'),
+      onPrevious: statisticsProvider.navigateToPreviousTimeUnit,
+      onNext: statisticsProvider.canGoNextTimeUnit
+          ? statisticsProvider.navigateToNextTimeUnit
+          : null,
+      child: Column(
+        children: [_buildTrendControls(context), _buildChart(context)],
+      ),
     );
   }
 
-  // 构建时间范围说明（自然周期标题 + 起止日期 + 左右翻页）
-  Widget _buildTimeSelector(BuildContext context) {
+  Widget _buildPeriodSwipeSurface({
+    required Key key,
+    required Widget child,
+    required VoidCallback onPrevious,
+    required VoidCallback? onNext,
+  }) {
+    var dragDistance = 0.0;
+    return GestureDetector(
+      key: key,
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) => dragDistance = 0,
+      onHorizontalDragUpdate: (details) {
+        dragDistance += details.primaryDelta ?? 0;
+      },
+      onHorizontalDragCancel: () => dragDistance = 0,
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        final gestureDelta = dragDistance.abs() >= _minimumSwipeDistance
+            ? dragDistance
+            : velocity.abs() >= _minimumSwipeVelocity
+            ? velocity
+            : 0;
+        dragDistance = 0;
+        if (gestureDelta > 0) {
+          onPrevious();
+        } else if (gestureDelta < 0) {
+          onNext?.call();
+        }
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildTrendControls(BuildContext context) {
     final period = statisticsProvider.trendSelectedPeriod;
     final isRolling = statisticsProvider.isRollingWindow;
     final int days = period == 'week'
         ? 7
         : period == 'month'
-            ? 30
-            : 365;
+        ? 30
+        : 365;
     final range = statisticsProvider.getRollingDateRange();
     final start = range.start;
     final end = range.end;
@@ -54,12 +87,10 @@ class StatisticsTrendView extends StatelessWidget {
         ? '${start.year}/${start.month}/${start.day} – ${end.year}/${end.month}/${end.day}'
         : '${start.month}/${start.day} – ${end.month}/${end.day}';
 
-    // 标题：自然周期显示具体时间，滚动窗口显示"最近 N"
     final String titleText = statisticsProvider.getDisplayTimeLabel();
 
     return _buildPanel(
       context,
-      secondary: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -67,23 +98,48 @@ class StatisticsTrendView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
+                tooltip: '上一个周期',
                 icon: Icon(
-                  Icons.chevron_left,
+                  Icons.chevron_left_rounded,
                   color: ThemeHelper.onBackground(context),
                 ),
-                onPressed: () => statisticsProvider.navigateToPreviousTimeUnit(),
+                onPressed: () =>
+                    statisticsProvider.navigateToPreviousTimeUnit(),
               ),
-              Text(
-                titleText,
-                style: TextStyle(
-                  fontSize: AppTypographyConstants.sectionTitleFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeHelper.onBackground(context),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      titleText,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.sectionTitleFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: ThemeHelper.onBackground(context),
+                      ),
+                    ),
+                    SizedBox(height: ScreenUtil().setHeight(3)),
+                    Text(
+                      isRolling
+                          ? '$rangeText · 持续更新'
+                          : '$rangeText · $days 天窗口',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: AppTypographyConstants.chartLegendFontSize,
+                        color: ThemeHelper.onBackground(
+                          context,
+                        ).withValues(alpha: 0.58),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               IconButton(
+                tooltip: statisticsProvider.canGoNextTimeUnit
+                    ? '下一个周期'
+                    : '已经是最新周期',
                 icon: Icon(
-                  Icons.chevron_right,
+                  Icons.chevron_right_rounded,
                   color: statisticsProvider.canGoNextTimeUnit
                       ? ThemeHelper.onBackground(context)
                       : ThemeHelper.onBackground(
@@ -96,12 +152,37 @@ class StatisticsTrendView extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: ScreenUtil().setHeight(6)),
-          Text(
-            isRolling ? rangeText : '近 $days 天数据 · $rangeText',
-            style: TextStyle(
-              fontSize: AppTypographyConstants.chartLegendFontSize,
-              color: ThemeHelper.onBackground(context).withValues(alpha: 0.7),
+          SizedBox(height: ScreenUtil().setHeight(14)),
+          Container(
+            padding: EdgeInsets.all(ScreenUtil().setWidth(4)),
+            decoration: BoxDecoration(
+              color: ThemeHelper.visualTheme(context).panelSecondaryColor,
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(16)),
+              border: Border.all(
+                color: ThemeHelper.visualTheme(context).panelBorderColor,
+              ),
+            ),
+            child: Row(
+              children: [
+                _buildPeriodButton(
+                  context,
+                  '周',
+                  statisticsProvider.trendSelectedPeriod == 'week',
+                  () => statisticsProvider.setTrendSelectedPeriod('week'),
+                ),
+                _buildPeriodButton(
+                  context,
+                  '月',
+                  statisticsProvider.trendSelectedPeriod == 'month',
+                  () => statisticsProvider.setTrendSelectedPeriod('month'),
+                ),
+                _buildPeriodButton(
+                  context,
+                  '年',
+                  statisticsProvider.trendSelectedPeriod == 'year',
+                  () => statisticsProvider.setTrendSelectedPeriod('year'),
+                ),
+              ],
             ),
           ),
         ],
@@ -129,46 +210,6 @@ class StatisticsTrendView extends StatelessWidget {
     );
   }
 
-
-  // 构建维度选择器（周/月/年）
-  Widget _buildPeriodSelector(BuildContext context) {
-    return _buildPanel(
-      context,
-      secondary: true,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildPeriodButton(
-            context,
-            '周',
-            statisticsProvider.trendSelectedPeriod == 'week',
-            () {
-              statisticsProvider.setTrendSelectedPeriod('week');
-            },
-          ),
-          SizedBox(width: ScreenUtil().setWidth(16)),
-          _buildPeriodButton(
-            context,
-            '月',
-            statisticsProvider.trendSelectedPeriod == 'month',
-            () {
-              statisticsProvider.setTrendSelectedPeriod('month');
-            },
-          ),
-          SizedBox(width: ScreenUtil().setWidth(16)),
-          _buildPeriodButton(
-            context,
-            '年',
-            statisticsProvider.trendSelectedPeriod == 'year',
-            () {
-              statisticsProvider.setTrendSelectedPeriod('year');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   // 创建维度切换按钮
   Widget _buildPeriodButton(
     BuildContext context,
@@ -176,36 +217,47 @@ class StatisticsTrendView extends StatelessWidget {
     bool isSelected,
     VoidCallback onPressed,
   ) {
-    final visualTheme = ThemeHelper.visualTheme(context);
     return Expanded(
-      child: GestureDetector(
-        onTap: onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: EdgeInsets.symmetric(
-            horizontal: ScreenUtil().setWidth(18),
-            vertical: ScreenUtil().setHeight(12),
-          ),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.92)
-                : visualTheme.panelColor,
-            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(18)),
-            border: Border.all(
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.86)
-                  : visualTheme.panelBorderColor,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        child: GestureDetector(
+          onTap: onPressed,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.symmetric(
+              horizontal: ScreenUtil().setWidth(14),
+              vertical: ScreenUtil().setHeight(10),
             ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              fontSize: AppTypographyConstants.formSectionTitleFontSize,
+            decoration: BoxDecoration(
               color: isSelected
-                  ? ThemeHelper.onPrimary(context)
-                  : ThemeHelper.onBackground(context),
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.18),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontSize: AppTypographyConstants.statisticsSegmentLabelFontSize,
+                color: isSelected
+                    ? ThemeHelper.onPrimary(context)
+                    : ThemeHelper.onBackground(context).withValues(alpha: 0.62),
+              ),
             ),
           ),
         ),

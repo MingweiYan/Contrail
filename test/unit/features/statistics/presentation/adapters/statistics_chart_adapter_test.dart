@@ -444,33 +444,35 @@ void main() {
       }
     });
 
-    test(
-      'generateRollingTrendSpots week count 应返回 7 个点并读取 dailyCompletionStatus',
-      () {
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final habit = Habit(
-          id: 'test',
-          name: '测试习惯',
-          colorValue: Colors.blue.toARGB32(),
-          icon: 'run',
-        );
-        // 今天完成一次
-        habit.dailyCompletionStatus[today] = true;
-        // 昨天也完成
-        habit.dailyCompletionStatus[today.subtract(const Duration(days: 1))] =
-            true;
+    test('generateRollingTrendSpots week count 应逐条计数并兼容旧完成状态', () {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final habit = Habit(
+        id: 'test',
+        name: '测试习惯',
+        colorValue: Colors.blue.toARGB32(),
+        icon: 'run',
+      );
+      // 今天记录三次；dailyCompletionStatus 只表示今天有记录，不能把三次压成一次。
+      habit.dailyCompletionStatus[today] = true;
+      habit.trackingDurations[today] = const [
+        Duration(minutes: 5),
+        Duration(minutes: 10),
+        Duration(minutes: 15),
+      ];
+      // 昨天是没有 trackingDurations 的旧数据，仍应回退为一次。
+      habit.dailyCompletionStatus[today.subtract(const Duration(days: 1))] =
+          true;
 
-        final spots = adapter.generateRollingTrendSpots(habit, 'count', 'week');
-        expect(spots.length, 7);
-        // 最后一个点（index=6）对应今天
-        expect(spots[6].y, 1.0);
-        // 倒数第二个点（index=5）对应昨天
-        expect(spots[5].y, 1.0);
-        // 其他日期默认 0
-        expect(spots[0].y, 0.0);
-      },
-    );
+      final spots = adapter.generateRollingTrendSpots(habit, 'count', 'week');
+      expect(spots.length, 7);
+      // 最后一个点（index=6）对应今天
+      expect(spots[6].y, 3.0);
+      // 倒数第二个点（index=5）对应昨天
+      expect(spots[5].y, 1.0);
+      // 其他日期默认 0
+      expect(spots[0].y, 0.0);
+    });
 
     test('generateRollingTrendSpots month count 应返回 30 个点', () {
       final habit = Habit(
@@ -495,12 +497,16 @@ void main() {
         colorValue: Colors.blue.toARGB32(),
         icon: 'run',
       );
-      // 今天完成一次，应累加到最后一个月（index=11）的当月
+      // 今天记录两次，应逐条累加到最后一个月（index=11）的当月。
       habit.dailyCompletionStatus[today] = true;
+      habit.trackingDurations[today] = const [
+        Duration(minutes: 5),
+        Duration(minutes: 10),
+      ];
 
       final spots = adapter.generateRollingTrendSpots(habit, 'count', 'year');
       expect(spots.length, 12);
-      expect(spots[11].y, 1.0);
+      expect(spots[11].y, 2.0);
     });
 
     test('generateRollingTrendSpots time 对不追踪时间的习惯返回全 0', () {

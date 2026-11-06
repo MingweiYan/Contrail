@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' show DateTimeRange;
 import '../models/habit.dart';
 import '../models/cycle_type.dart';
 import '../utils/time_management_util.dart';
+import '../utils/habit_record_statistics.dart';
 
 class HabitStatisticsService {
   final DateTime Function() _now;
@@ -613,19 +614,40 @@ class HabitStatisticsService {
     );
   }
 
+  /// 获取任意日期范围内按稳定习惯 ID 聚合的记录次数。
+  Map<String, int> getHabitCompletionCountsForRangeByHabitId(
+    List<Habit> habits, {
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    return _completionCountsByHabitId(
+      habits,
+      DateTimeRange(start: startDate, end: endDate),
+    );
+  }
+
+  /// 获取任意日期范围内按稳定习惯 ID 聚合的专注分钟数。
+  Map<String, int> getHabitCompletionMinutesForRangeByHabitId(
+    List<Habit> habits, {
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    return _completionMinutesByHabitId(
+      habits,
+      DateTimeRange(start: startDate, end: endDate),
+    );
+  }
+
   Map<String, int> _completionCountsByHabitId(
     List<Habit> habits,
     DateTimeRange range,
   ) {
     final completionCounts = <String, int>{};
     for (final habit in habits) {
-      var count = 0;
-      habit.dailyCompletionStatus.forEach((date, completed) {
-        if (completed && TimeManagementUtil.isDateInRange(date, range)) {
-          count++;
-        }
-      });
-      completionCounts[habit.id] = count;
+      completionCounts[habit.id] = HabitRecordStatistics.recordCountInRange(
+        habit,
+        range,
+      );
     }
     return completionCounts;
   }
@@ -692,7 +714,6 @@ class HabitStatisticsService {
       startDate: startDate,
       endDate: endDate,
     );
-    res.sort((a, b) => b['completionRate'].compareTo(a['completionRate']));
     return res;
   }
 
@@ -704,7 +725,7 @@ class HabitStatisticsService {
   }) {
     final List<Map<String, dynamic>> goalCompletionData = [];
     for (final habit in habits) {
-      if (habit.targetDays != null) {
+      if (habit.targetDays != null && habit.targetDays! > 0) {
         final stats = _calculateHabitCompletionForPeriod(
           habit,
           startDate,
@@ -720,6 +741,17 @@ class HabitStatisticsService {
         });
       }
     }
+    goalCompletionData.sort((first, second) {
+      final rateComparison = (second['completionRate'] as double).compareTo(
+        first['completionRate'] as double,
+      );
+      if (rateComparison != 0) {
+        return rateComparison;
+      }
+      return first['habitId'].toString().compareTo(
+        second['habitId'].toString(),
+      );
+    });
     return goalCompletionData;
   }
 }

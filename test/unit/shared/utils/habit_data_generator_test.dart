@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:contrail/core/di/injection_container.dart';
 import 'package:contrail/features/habit/domain/use_cases/add_habit_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +74,50 @@ void main() {
         expect(hasDateData, true);
       });
 
+      test('should cover the full past year and every recent month', () {
+        final referenceDate = DateTime(2026, 11, 4, 14, 30);
+        final habits = HabitDataGenerator.generateMockHabitsWithData(
+          referenceDate: referenceDate,
+          random: Random(7),
+        );
+        final today = DateTime(2026, 11, 4);
+        final earliestDate = today.subtract(const Duration(days: 365));
+        final recordDates = habits
+            .expand((habit) => habit.trackingDurations.keys)
+            .map((date) => DateTime(date.year, date.month, date.day))
+            .toList();
+        final recordCount = habits.fold<int>(
+          0,
+          (total, habit) =>
+              total +
+              habit.trackingDurations.values.fold<int>(
+                0,
+                (habitTotal, durations) => habitTotal + durations.length,
+              ),
+        );
+
+        expect(recordCount, 480);
+        expect(recordDates, contains(earliestDate));
+        expect(recordDates, contains(today));
+        expect(
+          recordDates.every(
+            (date) => !date.isBefore(earliestDate) && !date.isAfter(today),
+          ),
+          isTrue,
+        );
+
+        final coveredMonths = recordDates
+            .map((date) => '${date.year}-${date.month}')
+            .toSet();
+        for (var monthOffset = 0; monthOffset < 12; monthOffset++) {
+          final expectedMonth = DateTime(today.year, today.month - monthOffset);
+          expect(
+            coveredMonths,
+            contains('${expectedMonth.year}-${expectedMonth.month}'),
+          );
+        }
+      });
+
       test('should generate valid duration tracking', () {
         final habits = HabitDataGenerator.generateMockHabitsWithData();
 
@@ -84,12 +130,15 @@ void main() {
         }
       });
 
-      test('should generate currentDays between 0 and 30', () {
+      test('should keep currentDays equal to distinct completed dates', () {
         final habits = HabitDataGenerator.generateMockHabitsWithData();
 
         for (final habit in habits) {
-          expect(habit.currentDays, greaterThanOrEqualTo(0));
-          expect(habit.currentDays, lessThanOrEqualTo(30));
+          final completedDates = habit.dailyCompletionStatus.entries
+              .where((entry) => entry.value)
+              .map((entry) => entry.key)
+              .toSet();
+          expect(habit.currentDays, completedDates.length);
         }
       });
     });

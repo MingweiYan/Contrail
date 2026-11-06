@@ -10,6 +10,9 @@ import 'package:contrail/shared/services/habit_service.dart';
 
 /// 习惯数据生成器，用于创建测试数据
 class HabitDataGenerator {
+  static const int _historyRangeDays = 365;
+  static const int _mockRecordCount = 480;
+  static const int _monthlyCoverageCount = 12;
   static final Random _random = Random();
   static final List<Color> _colors = [
     Colors.blue,
@@ -65,9 +68,21 @@ class HabitDataGenerator {
     return jsonEncode(richTextTemplate);
   }
 
-  /// 创建6个习惯并在过去一个月内随机生成100条数据
-  static List<Habit> generateMockHabitsWithData() {
+  /// 创建 6 个习惯，并生成覆盖过去一年的 480 条记录。
+  ///
+  /// 每个习惯在最近 12 个自然月中至少有一条记录，同时显式包含
+  /// 一年前和今天两个边界，确保年趋势、日历和时间轴都有完整测试数据。
+  static List<Habit> generateMockHabitsWithData({
+    DateTime? referenceDate,
+    Random? random,
+  }) {
     final List<Habit> habits = [];
+    final randomSource = random ?? _random;
+    final referenceMoment = referenceDate ?? DateTime.now();
+    final today = _dateOnly(referenceMoment);
+    final earliestDate = today.subtract(
+      const Duration(days: _historyRangeDays),
+    );
 
     // 创建6个习惯
     for (int i = 0; i < 6; i++) {
@@ -92,55 +107,114 @@ class HabitDataGenerator {
       habits.add(habit);
     }
 
-    // 在过去一个月内随机生成100条数据
-    final DateTime today = DateTime.now();
-    final DateTime oneMonthAgo = today.subtract(const Duration(days: 30));
+    var generatedRecordCount = 0;
 
-    // 生成100条随机数据
-    for (int i = 0; i < 100; i++) {
-      // 随机选择一个习惯
-      final habitIndex = _random.nextInt(habits.length);
-      final habit = habits[habitIndex];
-
-      // 随机选择过去一个月内的日期
-      final int randomDays = _random.nextInt(30);
-      final DateTime randomDate = oneMonthAgo.add(Duration(days: randomDays));
-      final dateKey = DateTime(
-        randomDate.year,
-        randomDate.month,
-        randomDate.day,
-      );
-
-      // 随机决定是否完成
-      final bool isCompleted = _random.nextBool();
-
-      if (isCompleted) {
-        // 更新完成状态
-        habit.dailyCompletionStatus[dateKey] = true;
-        habit.currentDays++;
-
-        // 如果习惯跟踪时间，添加时间数据
-        if (habit.trackTime) {
-          // 随机生成持续时间（5-60分钟）
-          final int minutes = 5 + _random.nextInt(56);
-          final duration = Duration(minutes: minutes);
-
-          // 更新总持续时间
-          habit.totalDuration += duration;
-
-          // 添加到当天的跟踪时间列表
-          if (!habit.trackingDurations.containsKey(dateKey)) {
-            habit.trackingDurations[dateKey] = [];
-          }
-          habit.trackingDurations[dateKey]!.add(duration);
-        }
-      } else {
-        // 如果已存在该日期的完成状态，删除它
-        habit.dailyCompletionStatus.remove(dateKey);
+    // 先为每个习惯铺满最近 12 个自然月，避免纯随机数据造成月份空洞。
+    for (var habitIndex = 0; habitIndex < habits.length; habitIndex++) {
+      for (
+        var monthOffset = 0;
+        monthOffset < _monthlyCoverageCount;
+        monthOffset++
+      ) {
+        final recordDay = _dateInPreviousMonth(
+          today: today,
+          monthOffset: monthOffset,
+          seed: habitIndex * _monthlyCoverageCount + monthOffset,
+        );
+        _addRecord(
+          habits[habitIndex],
+          _timestampOnDay(recordDay, referenceMoment, randomSource),
+          _randomDuration(randomSource, minimumMinutes: 5, maximumMinutes: 60),
+        );
+        generatedRecordCount++;
       }
     }
 
+    // 显式覆盖一年前和今天，保证测试数据的可见范围确实跨越一年。
+    _addRecord(
+      habits.first,
+      _timestampOnDay(earliestDate, referenceMoment, randomSource),
+      _randomDuration(randomSource, minimumMinutes: 5, maximumMinutes: 60),
+    );
+    generatedRecordCount++;
+    _addRecord(
+      habits[1],
+      _timestampOnDay(today, referenceMoment, randomSource),
+      _randomDuration(randomSource, minimumMinutes: 5, maximumMinutes: 60),
+    );
+    generatedRecordCount++;
+
+    // 剩余记录随机分布在完整年度范围内，保留自然的数据密度和同日多次场景。
+    while (generatedRecordCount < _mockRecordCount) {
+      final habit = habits[randomSource.nextInt(habits.length)];
+      final recordDay = earliestDate.add(
+        Duration(days: randomSource.nextInt(_historyRangeDays + 1)),
+      );
+      _addRecord(
+        habit,
+        _timestampOnDay(recordDay, referenceMoment, randomSource),
+        _randomDuration(randomSource, minimumMinutes: 5, maximumMinutes: 60),
+      );
+      generatedRecordCount++;
+    }
+
+    // currentDays 表示记录天数而不是记录次数，按日期去重后统一回填。
+    for (final habit in habits) {
+      habit.currentDays = habit.dailyCompletionStatus.entries
+          .where((entry) => entry.value)
+          .length;
+    }
+
     return habits;
+  }
+
+  static DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  static DateTime _dateInPreviousMonth({
+    required DateTime today,
+    required int monthOffset,
+    required int seed,
+  }) {
+    final monthStart = DateTime(today.year, today.month - monthOffset);
+    final monthEndDay = DateTime(monthStart.year, monthStart.month + 1, 0).day;
+    final latestAllowedDay = monthOffset == 0
+        ? min(today.day, monthEndDay)
+        : monthEndDay;
+    final day = 1 + seed % latestAllowedDay;
+    return DateTime(monthStart.year, monthStart.month, day);
+  }
+
+  static DateTime _timestampOnDay(
+    DateTime day,
+    DateTime referenceMoment,
+    Random random,
+  ) {
+    final normalizedDay = _dateOnly(day);
+    final isToday = normalizedDay == _dateOnly(referenceMoment);
+    final latestMinute = isToday
+        ? max(1, referenceMoment.hour * 60 + referenceMoment.minute + 1)
+        : 24 * 60;
+    final minuteOfDay = random.nextInt(latestMinute);
+    return normalizedDay.add(Duration(minutes: minuteOfDay));
+  }
+
+  static Duration _randomDuration(
+    Random random, {
+    required int minimumMinutes,
+    required int maximumMinutes,
+  }) {
+    return Duration(
+      minutes:
+          minimumMinutes + random.nextInt(maximumMinutes - minimumMinutes + 1),
+    );
+  }
+
+  static void _addRecord(Habit habit, DateTime timestamp, Duration duration) {
+    final dateKey = _dateOnly(timestamp);
+    habit.dailyCompletionStatus[dateKey] = true;
+    habit.totalDuration += duration;
+    habit.trackingDurations.putIfAbsent(timestamp, () => []).add(duration);
   }
 
   /// 生成测试数据并保存到HabitProvider
@@ -158,7 +232,7 @@ class HabitDataGenerator {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // 生成6个习惯并添加100条数据
+      // 生成 6 个习惯并添加覆盖过去一年的 480 条数据
       final habits = generateMockHabitsWithData();
 
       // 为生成的习惯添加专注数据
@@ -182,7 +256,7 @@ class HabitDataGenerator {
 
       // 显示成功消息
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('测试数据生成成功！已创建6个习惯并生成100条数据，包括对应的专注数据')),
+        const SnackBar(content: Text('测试数据生成成功！已创建6个习惯，并生成覆盖过去一年的480条记录及专注数据')),
       );
     } catch (e) {
       if (!context.mounted) {
@@ -203,27 +277,37 @@ class HabitDataGenerator {
 
   /// 为习惯生成对应的专注数据
   static void _generateFocusDataForHabits(List<Habit> habits) {
-    final today = DateTime.now();
-    final oneMonthAgo = today.subtract(const Duration(days: 30));
+    final referenceMoment = DateTime.now();
+    final today = _dateOnly(referenceMoment);
+    final earliestDate = today.subtract(
+      const Duration(days: _historyRangeDays),
+    );
 
     // 为每个习惯生成5条专注记录
     for (final habit in habits) {
       // 只对跟踪时间的习惯生成专注数据
       if (habit.trackTime) {
         for (int i = 0; i < 5; i++) {
-          // 随机选择过去一个月内的日期
-          final int randomDays = _random.nextInt(30);
-          final DateTime randomDate = oneMonthAgo.add(
-            Duration(days: randomDays),
+          // 随机选择过去一年内的日期
+          final recordDay = earliestDate.add(
+            Duration(days: _random.nextInt(_historyRangeDays + 1)),
+          );
+          final timestamp = _timestampOnDay(
+            recordDay,
+            referenceMoment,
+            _random,
           );
 
           // 随机生成专注持续时间（15-90分钟）
-          final int minutes = 15 + _random.nextInt(76);
-          final duration = Duration(minutes: minutes);
+          final duration = _randomDuration(
+            _random,
+            minimumMinutes: 15,
+            maximumMinutes: 90,
+          );
 
           // 直接在Habit对象上添加专注记录
           // 使用HabitService添加追踪记录
-          sl<HabitService>().addTrackingRecord(habit, randomDate, duration);
+          sl<HabitService>().addTrackingRecord(habit, timestamp, duration);
         }
       }
     }

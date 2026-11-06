@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:contrail/shared/models/habit.dart';
-import 'package:contrail/shared/utils/page_layout_constants.dart';
-import 'package:contrail/shared/utils/theme_helper.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:contrail/shared/utils/time_management_util.dart';
 
-// 日历视图中习惯点大小分析：
-// 1. 当某天完成的习惯数量 <= 2 个时，使用 Row 布局（一行显示），习惯点大小固定为 12.0 x 12.0
-// 2. 当某天完成的习惯数量 > 2 个时，使用 GridView.builder 布局（多行显示，每行2个），习惯点大小由GridView自动计算
-// 3. 这导致了超过一行后习惯点变大的现象，因为GridView的习惯点大小没有明确设置为与Row布局相同的尺寸
+import 'package:contrail/shared/models/habit.dart';
+import 'package:contrail/shared/utils/time_management_util.dart';
 
 class CalendarViewWidget extends StatelessWidget {
   final List<Habit> habits;
@@ -28,225 +21,223 @@ class CalendarViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 获取当月天数
     final startDate = DateTime(selectedYear, selectedMonth, 1);
-    final endDate = DateTime(selectedYear, selectedMonth + 1, 0);
-    final daysInMonth = endDate.day;
+    final daysInMonth = DateTime(selectedYear, selectedMonth + 1, 0).day;
     final today = DateTime.now();
-    final isTodayInCurrentMonth =
-        today.year == selectedYear && today.month == selectedMonth;
-
-    // 直接使用从父组件传入的周起始日参数
-
-    // 计算月份的第一天是星期几（0-6，对应周日到周六）
-    int firstDayOfMonthWeekday = startDate.weekday % 7;
-
-    // 根据周起始日调整星期计算
-    if (weekStartDay == WeekStartDay.monday) {
-      // 对于周一为起始日，将周一作为0
-      firstDayOfMonthWeekday = (firstDayOfMonthWeekday - 1) % 7;
-      if (firstDayOfMonthWeekday < 0) firstDayOfMonthWeekday += 7;
-    }
-
-    // 计算需要显示的行数：
-    // firstDayOfMonthWeekday 是本月第一天前需要补的空格数（0-6），
-    // 加上本月天数后向上取整得到实际周数。
-    final weeksInMonth = ((daysInMonth + firstDayOfMonthWeekday) / 7).ceil();
+    final firstWeekdayOffset = weekStartDay == WeekStartDay.monday
+        ? startDate.weekday - DateTime.monday
+        : startDate.weekday % 7;
+    final weeksInMonth = ((daysInMonth + firstWeekdayOffset) / 7).ceil();
     final daysToDisplay = weeksInMonth * 7;
 
-    // 动态调整单元格宽高比，增加高度以便显示更多习惯
-    double cellAspectRatio = 0.7;
-    if (habits.isEmpty) {
-      // 如果没有习惯，可以使用更小的高度
-      cellAspectRatio = 0.9;
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const markerDiameter = 16.0;
+        const markerSpacing = 2.0;
+        const gridSpacing = 3.0;
+        const dayCellHorizontalPadding = 2.0;
+        final cellWidth = (constraints.maxWidth - gridSpacing * 6) / 7;
+        final markerAreaWidth = cellWidth - dayCellHorizontalPadding;
+        final estimatedMarkerColumns =
+            ((markerAreaWidth + markerSpacing) /
+                    (markerDiameter + markerSpacing))
+                .floor();
+        final markerColumns = estimatedMarkerColumns < 1
+            ? 1
+            : estimatedMarkerColumns;
+        final markerRows = habits.isEmpty
+            ? 0
+            : (habits.length + markerColumns - 1) ~/ markerColumns;
+        final dayCellExtent = habits.isEmpty
+            ? 40.0
+            : 60.0 + (markerRows - 1) * (markerDiameter + markerSpacing + 1);
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 7, // 7列，对应星期
-        childAspectRatio: cellAspectRatio,
-        crossAxisSpacing: ScreenUtil().setWidth(2), // 减小间距，使布局更紧凑
-        mainAxisSpacing: ScreenUtil().setHeight(2),
-      ),
-      itemCount: 7 + daysToDisplay, // 7天标题 + 显示的日期数量
-      itemBuilder: (context, index) {
-        // 星期标题
-        if (index < 7) {
-          // 根据周起始日生成星期标题数组
-          List<String> weekDays;
-          if (weekStartDay == WeekStartDay.monday) {
-            weekDays = ['一', '二', '三', '四', '五', '六', '日'];
-          } else {
-            weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-          }
-
-          // 计算是否为周末
-          bool isWeekend;
-          if (weekStartDay == WeekStartDay.monday) {
-            // 周一为起始日时，周六和周日是周末
-            isWeekend = index == 5 || index == 6;
-          } else {
-            // 周日为起始日时，周六和周日是周末
-            isWeekend = index == 0 || index == 6;
-          }
-
-          return Container(
-            alignment: Alignment.center,
-            padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(12)),
-            child: Text(
-              weekDays[index],
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isWeekend
-                    ? ThemeHelper.error(context)
-                    : ThemeHelper.onSurface(context),
-                fontSize: AppTypographyConstants.panelTitleFontSize,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildWeekdayHeader(context),
+            const SizedBox(height: 7),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                mainAxisExtent: dayCellExtent,
+                crossAxisSpacing: gridSpacing,
+                mainAxisSpacing: 6,
               ),
+              itemCount: daysToDisplay,
+              itemBuilder: (context, index) {
+                final day = index - firstWeekdayOffset + 1;
+                if (day < 1 || day > daysInMonth) {
+                  return const SizedBox.shrink();
+                }
+
+                final date = DateTime(selectedYear, selectedMonth, day);
+                final isToday =
+                    date.year == today.year &&
+                    date.month == today.month &&
+                    date.day == today.day;
+                final isWeekend =
+                    date.weekday == DateTime.saturday ||
+                    date.weekday == DateTime.sunday;
+                final completedHabits = habits
+                    .where((habit) => _hasRecordOnDay(habit, date))
+                    .toList();
+
+                return _buildDayCell(
+                  context,
+                  date: date,
+                  isToday: isToday,
+                  isWeekend: isWeekend,
+                  completedHabits: completedHabits,
+                );
+              },
             ),
-          );
-        }
-
-        // 日期单元格
-        final displayIndex = index - 7;
-        final dayOffset = displayIndex - firstDayOfMonthWeekday + 1;
-
-        // 当前月份的日期
-        final isCurrentMonthDate = dayOffset > 0 && dayOffset <= daysInMonth;
-        final day = isCurrentMonthDate ? dayOffset : 0;
-
-        // 今天的日期
-        final isToday =
-            isTodayInCurrentMonth && isCurrentMonthDate && day == today.day;
-        // 计算星期几
-        int weekday = 0;
-        bool isWeekend = false;
-        if (isCurrentMonthDate) {
-          // 获取实际的星期几
-          weekday = DateTime(selectedYear, selectedMonth, day).weekday % 7;
-
-          // 根据周起始日确定是否为周末
-          if (weekStartDay == WeekStartDay.monday) {
-            // 周一为起始日时，周六和周日是周末
-            isWeekend = weekday == 6 || weekday == 0; // 0是周日，6是周六
-          } else {
-            // 周日为起始日时，周六和周日是周末
-            isWeekend = weekday == 0 || weekday == 6;
-          }
-        }
-
-        // 检查哪些习惯在当天完成
-        List<int> completedHabitIndices = [];
-        if (isCurrentMonthDate) {
-          final date = DateTime(selectedYear, selectedMonth, day);
-          final dateOnly = DateTime(date.year, date.month, date.day);
-
-          for (int i = 0; i < habits.length; i++) {
-            final habit = habits[i];
-            if (habit.dailyCompletionStatus.containsKey(dateOnly) &&
-                habit.dailyCompletionStatus[dateOnly] == true) {
-              completedHabitIndices.add(i);
-            }
-          }
-        }
-
-        // 构建单元格内容
-        return Container(
-          decoration: BoxDecoration(
-            color: isToday
-                ? ThemeHelper.primary(context).withValues(
-                    alpha: 0.1,
-                  ) // 今天的特殊背景色
-                : isCurrentMonthDate
-                ? ThemeHelper.surface(context)
-                : Colors.transparent, // 非当前月份不显示背景
-            borderRadius: BorderRadius.circular(
-              ScreenUtil().setWidth(12),
-            ), // 圆角更美观
-            border: isToday
-                ? Border.all(
-                    color: ThemeHelper.primary(context),
-                    width: ScreenUtil().setWidth(2),
-                  ) // 今天边框高亮
-                : null,
-            boxShadow: isToday
-                ? [
-                    BoxShadow(
-                      color: ThemeHelper.primary(
-                        context,
-                      ).withValues(alpha: 0.2),
-                      blurRadius: ScreenUtil().setWidth(4),
-                      offset: Offset(0, ScreenUtil().setHeight(2)),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Stack(
-            children: [
-              // 日期
-              if (isCurrentMonthDate)
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: EdgeInsets.all(ScreenUtil().setWidth(6)),
-                    child: Text(
-                      '$day',
-                      style: TextStyle(
-                        fontSize: AppTypographyConstants.panelTitleFontSize,
-                        fontWeight: isToday
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isToday
-                            ? ThemeHelper.primary(context) // 今天日期特殊颜色
-                            : isWeekend
-                            ? ThemeHelper.error(context)
-                            : ThemeHelper.onSurface(context),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // 习惯完成标记 - 统一使用GridView来确保大小一致
-              if (isCurrentMonthDate && completedHabitIndices.isNotEmpty)
-                Positioned(
-                  bottom: ScreenUtil().setHeight(4),
-                  left: ScreenUtil().setWidth(4),
-                  right: ScreenUtil().setWidth(4),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // 总是使用2列，确保单个习惯点大小与两个习惯点时的大小对齐
-                      mainAxisSpacing: ScreenUtil().setHeight(2),
-                      crossAxisSpacing: ScreenUtil().setWidth(2),
-                    ),
-                    itemCount: completedHabitIndices.length,
-                    itemBuilder: (context, i) {
-                      final habitIndex = completedHabitIndices[i];
-                      final color =
-                          habitColors[habits[habitIndex].id] ??
-                          habitColors[habits[habitIndex].name] ??
-                          ThemeHelper.outline(context);
-                      return Container(
-                        width: ScreenUtil().setWidth(12),
-                        height: ScreenUtil().setHeight(12),
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: ThemeHelper.surface(context),
-                            width: ScreenUtil().setWidth(1),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildWeekdayHeader(BuildContext context) {
+    final weekdays = weekStartDay == WeekStartDay.monday
+        ? const ['一', '二', '三', '四', '五', '六', '日']
+        : const ['日', '一', '二', '三', '四', '五', '六'];
+
+    return Row(
+      children: weekdays.asMap().entries.map((entry) {
+        final index = entry.key;
+        final isWeekend = weekStartDay == WeekStartDay.monday
+            ? index >= 5
+            : index == 0 || index == 6;
+        return Expanded(
+          child: Center(
+            child: Text(
+              entry.value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant
+                    .withValues(alpha: isWeekend ? 0.58 : 0.78),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDayCell(
+    BuildContext context, {
+    required DateTime date,
+    required bool isToday,
+    required bool isWeekend,
+    required List<Habit> completedHabits,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final activityColor = completedHabits.isEmpty
+        ? null
+        : habitColors[completedHabits.first.id] ??
+              habitColors[completedHabits.first.name] ??
+              completedHabits.first.color;
+    final activityStrength = completedHabits.isEmpty
+        ? 0.0
+        : (0.10 + completedHabits.length.clamp(1, 4) * 0.035);
+    final backgroundColor = activityColor == null
+        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.28)
+        : activityColor.withValues(alpha: activityStrength);
+
+    return Semantics(
+      label: '${date.month}月${date.day}日，${completedHabits.length}个习惯有记录',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(11),
+          border: isToday
+              ? Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.75),
+                  width: 1.4,
+                )
+              : Border.all(
+                  color: colorScheme.outline.withValues(
+                    alpha: completedHabits.isEmpty ? 0.08 : 0.04,
+                  ),
+                ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(1, 6, 1, 5),
+          child: Column(
+            children: [
+              Text(
+                '${date.day}',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1,
+                  fontWeight: isToday || completedHabits.isNotEmpty
+                      ? FontWeight.w800
+                      : FontWeight.w600,
+                  color: isToday
+                      ? colorScheme.primary
+                      : isWeekend
+                      ? colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
+                      : colorScheme.onSurface.withValues(
+                          alpha: completedHabits.isEmpty ? 0.72 : 0.9,
+                        ),
+                ),
+              ),
+              const Spacer(),
+              if (completedHabits.isNotEmpty)
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  runAlignment: WrapAlignment.center,
+                  spacing: 2,
+                  runSpacing: 2,
+                  children: [
+                    for (final habit in completedHabits)
+                      Container(
+                        key: ValueKey(
+                          'calendar-marker-${date.day}-${habit.id}',
+                        ),
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              habitColors[habit.id] ??
+                              habitColors[habit.name] ??
+                              habit.color,
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  (habitColors[habit.id] ??
+                                          habitColors[habit.name] ??
+                                          habit.color)
+                                      .withValues(alpha: 0.32),
+                              blurRadius: 3.5,
+                              spreadRadius: 0.3,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                )
+              else
+                const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _hasRecordOnDay(Habit habit, DateTime date) {
+    return habit.dailyCompletionStatus.entries.any(
+      (entry) =>
+          entry.value &&
+          entry.key.year == date.year &&
+          entry.key.month == date.month &&
+          entry.key.day == date.day,
     );
   }
 }

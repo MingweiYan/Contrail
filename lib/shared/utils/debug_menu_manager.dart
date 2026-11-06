@@ -273,27 +273,12 @@ class DebugMenuManager with WidgetsBindingObserver {
               ),
               SizedBox(height: ScreenUtil().setHeight(20)),
 
-              // 关闭debug模式按钮
-              ElevatedButton(
-                onPressed: deactivateDebugMode,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: EdgeInsets.symmetric(
-                    vertical: ScreenUtil().setHeight(16),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      ScreenUtil().setWidth(12),
-                    ),
-                  ),
-                ),
-                child: Text(
-                  '🛑 关闭Debug模式',
-                  style: TextStyle(
-                    fontSize: AppTypographyConstants.formSectionTitleFontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              // 关闭debug模式按钮，与其他工具入口保持相同高度和文字基线。
+              _buildFullWidthDebugButton(
+                context,
+                '🛑 关闭Debug模式',
+                Colors.red,
+                deactivateDebugMode,
               ),
             ],
           ),
@@ -309,26 +294,30 @@ class DebugMenuManager with WidgetsBindingObserver {
     Color color,
     VoidCallback onTap,
   ) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: EdgeInsets.symmetric(vertical: ScreenUtil().setHeight(24)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+    return SizedBox(
+      width: double.infinity,
+      height: 58.h,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(ScreenUtil().setWidth(12)),
+          ),
+          elevation: 2,
         ),
-        elevation: 2,
-        // 水平占满屏幕
-        minimumSize: Size(double.infinity, 0),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: AppTypographyConstants.panelTitleFontSize,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+        child: Text(
+          text,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: AppTypographyConstants.panelTitleFontSize,
+            fontWeight: FontWeight.bold,
+            height: 1,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }
