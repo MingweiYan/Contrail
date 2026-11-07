@@ -211,9 +211,9 @@ class StatisticsDetailView extends StatelessWidget {
             : 0;
         dragDistance = 0;
         if (gestureDelta > 0) {
-          onPrevious();
-        } else if (gestureDelta < 0) {
           onNext();
+        } else if (gestureDelta < 0) {
+          onPrevious();
         }
       },
       child: child,

@@ -29,6 +29,18 @@ class CalendarViewWidget extends StatelessWidget {
         : startDate.weekday % 7;
     final weeksInMonth = ((daysInMonth + firstWeekdayOffset) / 7).ceil();
     final daysToDisplay = weeksInMonth * 7;
+    final completedHabitsByDay = <int, List<Habit>>{};
+    var maximumMarkersOnSingleDay = 0;
+    for (var day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(selectedYear, selectedMonth, day);
+      final completedHabits = habits
+          .where((habit) => _hasRecordOnDay(habit, date))
+          .toList();
+      completedHabitsByDay[day] = completedHabits;
+      if (completedHabits.length > maximumMarkersOnSingleDay) {
+        maximumMarkersOnSingleDay = completedHabits.length;
+      }
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -36,6 +48,9 @@ class CalendarViewWidget extends StatelessWidget {
         const markerSpacing = 2.0;
         const gridSpacing = 3.0;
         const dayCellHorizontalPadding = 2.0;
+        const dayCellVerticalPadding = 11.0;
+        const dayLabelExtent = 12.0;
+        const markerTopSpacing = 8.0;
         final cellWidth = (constraints.maxWidth - gridSpacing * 6) / 7;
         final markerAreaWidth = cellWidth - dayCellHorizontalPadding;
         final estimatedMarkerColumns =
@@ -45,12 +60,16 @@ class CalendarViewWidget extends StatelessWidget {
         final markerColumns = estimatedMarkerColumns < 1
             ? 1
             : estimatedMarkerColumns;
-        final markerRows = habits.isEmpty
+        final markerRows = maximumMarkersOnSingleDay == 0
             ? 0
-            : (habits.length + markerColumns - 1) ~/ markerColumns;
-        final dayCellExtent = habits.isEmpty
+            : (maximumMarkersOnSingleDay + markerColumns - 1) ~/ markerColumns;
+        final dayCellExtent = maximumMarkersOnSingleDay == 0
             ? 40.0
-            : 60.0 + (markerRows - 1) * (markerDiameter + markerSpacing + 1);
+            : dayCellVerticalPadding +
+                  dayLabelExtent +
+                  markerTopSpacing +
+                  markerRows * markerDiameter +
+                  (markerRows - 1) * markerSpacing;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -81,9 +100,7 @@ class CalendarViewWidget extends StatelessWidget {
                 final isWeekend =
                     date.weekday == DateTime.saturday ||
                     date.weekday == DateTime.sunday;
-                final completedHabits = habits
-                    .where((habit) => _hasRecordOnDay(habit, date))
-                    .toList();
+                final completedHabits = completedHabitsByDay[day]!;
 
                 return _buildDayCell(
                   context,
@@ -186,8 +203,8 @@ class CalendarViewWidget extends StatelessWidget {
                         ),
                 ),
               ),
-              const Spacer(),
-              if (completedHabits.isNotEmpty)
+              if (completedHabits.isNotEmpty) ...[
+                const SizedBox(height: 8),
                 Wrap(
                   alignment: WrapAlignment.center,
                   runAlignment: WrapAlignment.center,
@@ -221,9 +238,8 @@ class CalendarViewWidget extends StatelessWidget {
                         ),
                       ),
                   ],
-                )
-              else
-                const SizedBox(height: 16),
+                ),
+              ],
             ],
           ),
         ),

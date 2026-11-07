@@ -184,12 +184,15 @@ void main() {
           designSize: const Size(375, 812),
           child: MaterialApp(
             home: Scaffold(
-              body: CalendarViewWidget(
-                habits: manyHabits,
-                selectedYear: testYear,
-                selectedMonth: testMonth,
-                habitColors: manyHabitColors,
-                weekStartDay: WeekStartDay.monday,
+              body: SizedBox(
+                width: 375,
+                child: CalendarViewWidget(
+                  habits: manyHabits,
+                  selectedYear: testYear,
+                  selectedMonth: testMonth,
+                  habitColors: manyHabitColors,
+                  weekStartDay: WeekStartDay.monday,
+                ),
               ),
             ),
           ),
@@ -208,6 +211,56 @@ void main() {
       final delegate =
           gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
       expect(delegate.mainAxisExtent, greaterThan(54));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('cell height follows the busiest day instead of habit count', (
+      WidgetTester tester,
+    ) async {
+      final manyHabits = List.generate(
+        8,
+        (i) => Habit(
+          id: '$i',
+          name: '习惯$i',
+          trackTime: false,
+          totalDuration: Duration.zero,
+          currentDays: 0,
+          targetDays: 30,
+          goalType: GoalType.positive,
+          cycleType: CycleType.daily,
+        ),
+      );
+      manyHabits.first.dailyCompletionStatus[DateTime(
+            testYear,
+            testMonth,
+            15,
+          )] =
+          true;
+
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(375, 812),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 375,
+                child: CalendarViewWidget(
+                  habits: manyHabits,
+                  selectedYear: testYear,
+                  selectedMonth: testMonth,
+                  habitColors: const {},
+                  weekStartDay: WeekStartDay.monday,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final gridView = tester.widget<GridView>(find.byType(GridView));
+      final delegate =
+          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(delegate.mainAxisExtent, 47);
       expect(tester.takeException(), isNull);
     });
 

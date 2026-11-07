@@ -30,7 +30,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('日历卡片右滑与左滑等价于上一月和下一月箭头', (tester) async {
+  testWidgets('日历卡片左滑减少月份、右滑增加月份', (tester) async {
     final provider = StatisticsProvider();
     final initial = DateTime(
       provider.detailSelectedYear,
@@ -48,20 +48,20 @@ void main() {
     final swipeSurface = find.byKey(
       const ValueKey('statistics-calendar-period-swipe'),
     );
-    await tester.drag(swipeSurface, const Offset(100, 0));
+    await tester.drag(swipeSurface, const Offset(-100, 0));
     await tester.pump();
 
     final previousMonth = DateTime(initial.year, initial.month - 1);
     expect(provider.detailSelectedYear, previousMonth.year);
     expect(provider.detailSelectedMonth, previousMonth.month);
 
-    await tester.drag(swipeSurface, const Offset(-100, 0));
+    await tester.drag(swipeSurface, const Offset(100, 0));
     await tester.pump();
     expect(provider.detailSelectedYear, initial.year);
     expect(provider.detailSelectedMonth, initial.month);
   });
 
-  testWidgets('趋势页右滑与左滑复用周期箭头并遵守最新周期边界', (tester) async {
+  testWidgets('趋势页左滑减少周期、右滑增加周期并遵守最新边界', (tester) async {
     final provider = StatisticsProvider();
     final initialYear = provider.trendSelectedYear;
     final initialWeek = provider.trendSelectedWeek;
@@ -77,25 +77,25 @@ void main() {
     final swipeSurface = find.byKey(
       const ValueKey('statistics-trend-period-swipe'),
     );
-    await tester.drag(swipeSurface, const Offset(100, 0));
+    await tester.drag(swipeSurface, const Offset(-100, 0));
     await tester.pump();
     expect((
       provider.trendSelectedYear,
       provider.trendSelectedWeek,
     ), isNot((initialYear, initialWeek)));
 
-    await tester.drag(swipeSurface, const Offset(-100, 0));
+    await tester.drag(swipeSurface, const Offset(100, 0));
     await tester.pump();
     expect(provider.trendSelectedYear, initialYear);
     expect(provider.trendSelectedWeek, initialWeek);
     expect(provider.isRollingWindow, isFalse);
 
-    await tester.drag(swipeSurface, const Offset(-100, 0));
+    await tester.drag(swipeSurface, const Offset(100, 0));
     await tester.pump();
     expect(provider.isRollingWindow, isTrue);
     expect(provider.canGoNextTimeUnit, isFalse);
 
-    await tester.drag(swipeSurface, const Offset(-100, 0));
+    await tester.drag(swipeSurface, const Offset(100, 0));
     await tester.pump();
     expect(provider.isRollingWindow, isTrue);
     expect(provider.trendSelectedYear, initialYear);

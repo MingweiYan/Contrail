@@ -63,9 +63,9 @@ class StatisticsTrendView extends StatelessWidget {
             : 0;
         dragDistance = 0;
         if (gestureDelta > 0) {
-          onPrevious();
-        } else if (gestureDelta < 0) {
           onNext?.call();
+        } else if (gestureDelta < 0) {
+          onPrevious();
         }
       },
       child: child,
